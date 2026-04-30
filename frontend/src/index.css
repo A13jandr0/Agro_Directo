@@ -1,0 +1,34 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f3f4f6;
+}
+
+/* Campo de formulario reutilizable */
+.input-field {
+  @apply w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm
+         focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500
+         transition-all duration-200 bg-white;
+}
+
+.input-field:disabled {
+  @apply bg-gray-100 cursor-not-allowed;
+}
+
+/* Animación de entrada para modales */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
