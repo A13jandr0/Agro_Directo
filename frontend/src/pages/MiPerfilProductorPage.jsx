@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Leaf, LayoutDashboard, Sprout, PlusCircle, ShoppingBag, MapPin, BarChart2, User, Settings, LogOut, 
@@ -6,16 +6,21 @@ import {
   Mail, Phone, Lock, Save, X, Eye, EyeOff
 } from 'lucide-react';
 import axios from 'axios';
+import { toast } from 'react-hot-toast';
 
 const MiPerfilProductorPage = () => {
   const navigate = useNavigate();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('Personal');
   
-  // Estados mock para notificaciones
-  const [toastMsg, setToastMsg] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Estados para Documentos
+  const [fileCI, setFileCI] = useState(null);
+  const [fileRAU, setFileRAU] = useState(null);
+  const [hasCI, setHasCI] = useState(false);
+  const [hasRAU, setHasRAU] = useState(false);
+  const [isUploadingDocs, setIsUploadingDocs] = useState(false);
 
   // Estados de Formulario - Personal
   const [formDataPersonal, setFormDataPersonal] = useState({
@@ -45,53 +50,59 @@ const MiPerfilProductorPage = () => {
     nuevaPassword: '',
     confirmarPassword: ''
   });
-  const [showPassword, setShowPassword] = useState({ actual: false, nueva: false, confirmar: false });
 
-  React.useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          navigate('/login');
-          return;
-        }
-        const res = await axios.get('http://localhost:5000/api/usuarios/mi-perfil', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const data = res.data;
-        
-        setFormDataPersonal({
-          nombreCompleto: data.nombre_completo || '',
-          correo: data.correo || '',
-          celular: data.celular || '',
-          tipoProductor: data.tipo_productor || 'Individual',
-          aniosExperiencia: data.anios_experiencia || 0,
-          tipoDocumento: data.tipo_documento || 'CI',
-          numeroDocumento: data.numero_documento || '',
-          estado: data.estado || 'PENDIENTE_VERIFICACION',
-          fechaRegistro: data.fecha_registro || '',
-          rol: data.rol || 'PRODUCTOR'
-        });
+  const [showPassword, setShowPassword] = useState({
+    actual: false,
+    nueva: false,
+    confirmar: false
+  });
 
-        setFormDataFinca({
-          nombreFinca: data.nombre_finca || '',
-          departamento: data.departamento || 'Santa Cruz',
-          provincia: data.provincia || '',
-          municipio: data.municipio || '',
-          descripcionFinca: 'Terreno dedicado a la agricultura sostenible y producción de granos y hortalizas.'
-        });
-      } catch (error) {
-        console.error("Error fetching profile", error);
-        if (error.response?.status === 401) {
-          navigate('/login');
-        } else {
-          setToastMsg("Error al cargar los datos del perfil");
-          setTimeout(() => setToastMsg(''), 4000);
-        }
-      } finally {
-        setIsLoading(false);
+  const fetchProfile = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return navigate('/login');
+      const res = await axios.get('http://localhost:5000/api/usuarios/mi-perfil', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = res.data;
+      
+      setFormDataPersonal({
+        nombreCompleto: data.nombre_completo || '',
+        correo: data.correo || '',
+        celular: data.celular || '',
+        tipoProductor: data.tipo_productor || 'Individual',
+        aniosExperiencia: data.anios_experiencia || 0,
+        tipoDocumento: data.tipo_documento || 'CI',
+        numeroDocumento: data.numero_documento || '',
+        estado: data.estado || 'Pendiente_Verificacion',
+        fechaRegistro: data.fecha_registro ? new Date(data.fecha_registro).toLocaleDateString() : 'N/A'
+      });
+
+      setFormDataFinca({
+        nombreFinca: data.nombre_finca || '',
+        departamento: data.departamento || 'Santa Cruz',
+        provincia: data.provincia || '',
+        municipio: data.municipio || '',
+        descripcionFinca: 'Terreno dedicado a la agricultura sostenible y producción de granos y hortalizas.'
+      });
+
+      if (data.url_documento) {
+        if (data.url_documento.includes('documento_ci')) setHasCI(true);
+        if (data.url_documento.includes('documento_rau')) setHasRAU(true);
       }
-    };
+    } catch (error) {
+      console.error("Error fetching profile", error);
+      if (error.response?.status === 401) {
+        navigate('/login');
+      } else {
+        toast.error("Error al cargar los datos del perfil");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchProfile();
   }, [navigate]);
 
@@ -101,54 +112,64 @@ const MiPerfilProductorPage = () => {
     if (pass.length >= 8) strength++;
     if (/[A-Z]/.test(pass)) strength++;
     if (/[0-9]/.test(pass)) strength++;
-    return strength; // 0, 1, 2, 3
+    return strength; 
   };
   const passStrength = getPasswordStrength(formDataSeguridad.nuevaPassword);
   const strengthColors = ['bg-gray-200', 'bg-red-500', 'bg-yellow-500', 'bg-green-500'];
 
-  // Menu items del Sidebar
-  const menuItems = [
-    { id: 'dashboard', label: 'Mi Dashboard', icon: LayoutDashboard, path: '/dashboard/productor' },
-    { id: 'cosechas', label: 'Mis Cosechas', icon: Sprout, path: '/dashboard/productor/cosechas' },
-    { id: 'publicar', label: 'Publicar Producto', icon: PlusCircle, path: '#' },
-    { id: 'pedidos', label: 'Mis Pedidos', icon: ShoppingBag, path: '/dashboard/productor/pedidos' },
-    { id: 'finca', label: 'Mi Finca', icon: MapPin, path: '/dashboard/productor/finca' },
-    { id: 'ingresos', label: 'Mis Ingresos', icon: BarChart2, path: '/dashboard/productor/ingresos' },
-    { id: 'perfil', label: 'Mi Perfil', icon: User, path: '/dashboard/productor/perfil', active: true },
-    { id: 'configuracion', label: 'Configuración', icon: Settings, path: '#' },
-  ];
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    navigate('/login');
-  };
-
   const handleSave = async () => {
     setIsSaving(true);
+    const loadingToast = toast.loading('Guardando cambios...');
     try {
       const token = localStorage.getItem('token');
       await axios.put('http://localhost:5000/api/productor/perfil', {
-        nombreCompleto: formDataPersonal.nombreCompleto,
+        nombre_completo: formDataPersonal.nombreCompleto,
         celular: formDataPersonal.celular,
-        tipoProductor: formDataPersonal.tipoProductor,
-        aniosExperiencia: formDataPersonal.aniosExperiencia,
-        tipoDocumento: formDataPersonal.tipoDocumento,
-        numeroDocumento: formDataPersonal.numeroDocumento,
-        nombreFinca: formDataFinca.nombreFinca,
+        tipo_productor: formDataPersonal.tipoProductor,
+        anios_experiencia: formDataPersonal.aniosExperiencia,
+        tipo_documento: formDataPersonal.tipoDocumento,
+        numero_documento: formDataPersonal.numeroDocumento,
+        nombre_finca: formDataFinca.nombreFinca,
         municipio: formDataFinca.municipio,
         provincia: formDataFinca.provincia,
         departamento: formDataFinca.departamento
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setToastMsg('Perfil actualizado correctamente');
-      setTimeout(() => setToastMsg(''), 3000);
+      toast.success('Perfil actualizado correctamente', { id: loadingToast });
     } catch (error) {
       console.error(error);
-      setToastMsg('Error al guardar el perfil');
-      setTimeout(() => setToastMsg(''), 3000);
+      toast.error('Error al guardar el perfil', { id: loadingToast });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleUploadDocumentos = async () => {
+    if (!fileCI && !fileRAU) return;
+    setIsUploadingDocs(true);
+    const loadingToast = toast.loading('Subiendo documentos...');
+    try {
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      if (fileCI) formData.append('documento_ci', fileCI);
+      if (fileRAU) formData.append('documento_rau', fileRAU);
+
+      await axios.post('http://localhost:5000/api/usuarios/documentos', formData, {
+        headers: { 
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token}` 
+        }
+      });
+      toast.success('Documentos enviados correctamente', { id: loadingToast });
+      setFileCI(null);
+      setFileRAU(null);
+      await fetchProfile();
+    } catch (error) {
+      console.error(error);
+      toast.error('Error al subir los documentos', { id: loadingToast });
+    } finally {
+      setIsUploadingDocs(false);
     }
   };
 
@@ -161,87 +182,37 @@ const MiPerfilProductorPage = () => {
     return name.substring(0, 2).toUpperCase();
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex h-full items-center justify-center p-20">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin"></div>
+          <p className="text-slate-500 font-bold animate-pulse">Cargando perfil...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex h-screen bg-[#f9fafb] font-sans overflow-hidden relative">
+    <div className="p-6 sm:p-8 lg:p-10 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
       
-      {/* TOAST MESSAGE */}
-      {toastMsg && (
-        <div className="fixed top-4 right-4 z-[100] bg-[#1D9E75] text-white px-6 py-3 rounded-lg shadow-lg font-medium animate-fade-in-down flex items-center gap-2">
-          <CheckCircle2 className="w-5 h-5" />
-          {toastMsg}
-        </div>
-      )}
-
-      {/* OVERLAY PARA MÓVIL */}
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setIsMobileMenuOpen(false)}></div>
-      )}
-
-      {/* SIDEBAR FIJO */}
-      <aside className={`fixed lg:static inset-y-0 left-0 w-[240px] bg-[#0F6E56] text-white z-50 transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col shadow-2xl lg:shadow-none shrink-0`}>
-        <div className="h-16 flex items-center gap-2 px-6 border-b border-white/10 shrink-0">
-          <Leaf className="w-6 h-6 text-white" />
-          <span className="text-xl font-bold tracking-wider">AgroDirecto</span>
-        </div>
-        
-        <nav className="flex-1 overflow-y-auto py-4">
-          <ul className="space-y-1">
-            {menuItems.map(item => {
-              const Icon = item.icon;
-              return (
-                <li key={item.id}>
-                  <button 
-                    onClick={() => item.path !== '#' && navigate(item.path)}
-                    className={`w-full flex items-center gap-3 px-6 py-3 text-sm font-medium transition-colors ${item.active ? 'bg-white/15 border-l-[3px] border-white text-white' : 'text-white/80 hover:bg-white/5 hover:text-white border-l-[3px] border-transparent'}`}
-                  >
-                    <Icon className="w-5 h-5 shrink-0" />
-                    <span>{item.label}</span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-
-        <div className="border-t border-white/10 p-4 shrink-0">
-          <button onClick={handleLogout} className="w-full flex items-center gap-3 px-2 py-2 text-sm font-medium text-red-200 hover:text-red-100 hover:bg-white/5 rounded transition-colors">
-            <LogOut className="w-5 h-5" />
-            <span>Cerrar sesión</span>
-          </button>
-        </div>
-      </aside>
-
-      {/* ÁREA PRINCIPAL */}
-      <div className="flex-1 flex flex-col min-w-0">
-        
-        {/* HEADER TOP NAV */}
-        <header className="h-[64px] bg-white shadow-sm flex items-center justify-between px-4 sm:px-8 z-10 shrink-0 border-b border-gray-100 lg:hidden">
-          <div className="flex items-center gap-4">
-            <button className="text-gray-500 hover:text-[#1D9E75]" onClick={() => setIsMobileMenuOpen(true)}>
-              <Menu className="w-6 h-6" />
-            </button>
-            <h1 className="text-lg font-bold text-[#1a1a1a]">Mi Perfil</h1>
+      {/* HEADER SECTION */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-2">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-xl shadow-emerald-500/20 shrink-0">
+            <User className="w-8 h-8" />
           </div>
-        </header>
-
-        {/* CONTENIDO SCROLLABLE */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-          
-          {/* HEADER DE LA SECCIÓN (Solo Desktop) */}
-          <div className="hidden lg:flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 rounded-xl bg-[#E1F5EE] flex items-center justify-center text-[#1D9E75] shrink-0">
-              <User className="w-7 h-7" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-[#1a1a1a]">Mi Perfil</h1>
-              <p className="text-sm text-[#6b7280]">Gestiona tu información personal y de seguridad</p>
-            </div>
+          <div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Mi Perfil</h1>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Configuración de Cuenta y Seguridad</p>
           </div>
+        </div>
+      </div>
 
-          <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
-            
-            {/* COLUMNA IZQUIERDA (320px) */}
-            <div className="w-full lg:w-[320px] flex flex-col gap-6 shrink-0">
+      <div className="flex flex-col lg:flex-row gap-8">
+        
+        {/* COLUMNA IZQUIERDA (320px) */}
+        <div className="w-full lg:w-[320px] flex flex-col gap-6 shrink-0">
               
               {/* Card de Perfil */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col items-center text-center">
@@ -324,20 +295,54 @@ const MiPerfilProductorPage = () => {
                   <h3 className="text-sm font-bold text-[#1a1a1a] uppercase tracking-wider text-gray-500">Mis documentos</h3>
                 </div>
                 
-                <div className="space-y-3 mb-4">
-                  <div className="flex items-center justify-between p-2.5 bg-gray-50 border border-gray-100 rounded-lg">
-                    <span className="text-xs font-semibold text-[#1a1a1a]">Carnet de Identidad</span>
-                    <CheckCircle2 className="w-4 h-4 text-green-500" />
+                {hasCI && hasRAU ? (
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 shrink-0" />
+                    <div>
+                      <h4 className="text-emerald-800 font-bold text-sm">Documentos enviados</h4>
+                      <p className="text-emerald-700 text-xs mt-1">Tus documentos han sido subidos y están en revisión por el administrador.</p>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between p-2.5 bg-gray-50 border border-gray-100 rounded-lg">
-                    <span className="text-xs font-semibold text-[#1a1a1a]">Registro Agrario (RAU)</span>
-                    <AlertCircle className="w-4 h-4 text-yellow-500" />
-                  </div>
-                </div>
+                ) : (
+                  <>
+                    <div className="space-y-3 mb-4">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center justify-between p-2.5 bg-gray-50 border border-gray-100 rounded-lg">
+                          <span className="text-xs font-semibold text-[#1a1a1a]">Carnet de Identidad</span>
+                          {fileCI || hasCI ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <AlertCircle className="w-4 h-4 text-yellow-500" />}
+                        </div>
+                        {!hasCI && (
+                          <label className="flex items-center gap-2 p-2 border-2 border-dashed border-gray-200 rounded-lg cursor-pointer hover:border-emerald-500 transition-colors">
+                            <Upload className="w-4 h-4 text-gray-400" />
+                            <span className="text-[10px] text-gray-500 font-medium truncate">{fileCI ? fileCI.name : 'Subir CI (.pdf/.jpg)'}</span>
+                            <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={e => setFileCI(e.target.files[0])} />
+                          </label>
+                        )}
+                      </div>
 
-                <button className="w-full bg-white border border-gray-200 text-[#1a1a1a] py-2 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors text-sm shadow-sm">
-                  <Upload className="w-4 h-4" /> Subir nuevo documento
-                </button>
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center justify-between p-2.5 bg-gray-50 border border-gray-100 rounded-lg">
+                          <span className="text-xs font-semibold text-[#1a1a1a]">RAU (Registro Agropecuario)</span>
+                          {fileRAU || hasRAU ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <AlertCircle className="w-4 h-4 text-yellow-500" />}
+                        </div>
+                        {!hasRAU && (
+                          <label className="flex items-center gap-2 p-2 border-2 border-dashed border-gray-200 rounded-lg cursor-pointer hover:border-emerald-500 transition-colors">
+                            <Upload className="w-4 h-4 text-gray-400" />
+                            <span className="text-[10px] text-gray-500 font-medium truncate">{fileRAU ? fileRAU.name : 'Subir RAU (.pdf/.jpg)'}</span>
+                            <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={e => setFileRAU(e.target.files[0])} />
+                          </label>
+                        )}
+                      </div>
+                    </div>
+
+                    <button 
+                      onClick={handleUploadDocumentos}
+                      disabled={isUploadingDocs || (!fileCI && !fileRAU)}
+                      className="w-full bg-[#1a1a1a] border border-gray-200 text-white py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-black transition-colors text-sm shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                      {isUploadingDocs ? 'Subiendo...' : <><Upload className="w-4 h-4" /> Enviar documentos</>}
+                    </button>
+                  </>
+                )}
               </div>
 
             </div>
@@ -428,8 +433,14 @@ const MiPerfilProductorPage = () => {
                         <label className="block text-sm font-semibold text-[#1a1a1a] mb-1.5">Departamento</label>
                         <select value={formDataFinca.departamento} onChange={e => setFormDataFinca({...formDataFinca, departamento: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/20 focus:border-[#1D9E75] bg-white">
                           <option>Santa Cruz</option>
-                          <option>Cochabamba</option>
                           <option>La Paz</option>
+                          <option>Cochabamba</option>
+                          <option>Beni</option>
+                          <option>Pando</option>
+                          <option>Oruro</option>
+                          <option>Potosí</option>
+                          <option>Tarija</option>
+                          <option>Chuquisaca</option>
                         </select>
                       </div>
                       <div>
@@ -444,20 +455,7 @@ const MiPerfilProductorPage = () => {
 
                     <div>
                       <label className="block text-sm font-semibold text-[#1a1a1a] mb-1.5">Descripción de la finca</label>
-                      <textarea rows="4" value={formDataFinca.descripcionFinca} onChange={e => setFormDataFinca({...formDataFinca, descripcionFinca: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/20 focus:border-[#1D9E75] resize-none"></textarea>
-                    </div>
-
-                    <div className="bg-[#E1F5EE]/50 border border-[#1D9E75]/20 rounded-xl p-4 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <MapPin className="w-6 h-6 text-[#1D9E75]" />
-                        <div>
-                          <h4 className="text-sm font-bold text-[#1a1a1a]">Ubicación en el mapa</h4>
-                          <p className="text-xs text-[#6b7280]">Configura el pin exacto de tu finca para el cálculo de fletes.</p>
-                        </div>
-                      </div>
-                      <button onClick={() => navigate('/dashboard/productor/finca')} className="text-sm font-bold text-[#1D9E75] hover:underline whitespace-nowrap">
-                        Ver y editar ubicación →
-                      </button>
+                      <textarea rows="4" value={formDataFinca.descripcionFinca} onChange={e => setFormDataFinca({...formDataFinca, descripcionFinca: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/20 focus:border-[#1D9E75] resize-none" placeholder="Cuéntanos más sobre tu producción..." />
                     </div>
                   </div>
                 )}
@@ -465,82 +463,39 @@ const MiPerfilProductorPage = () => {
                 {/* TAB: SEGURIDAD */}
                 {activeTab === 'Seguridad' && (
                   <div className="space-y-6 animate-fade-in max-w-md">
-
-                    {/* ALERTA DE VERIFICACIÓN PENDIENTE */}
-                    {formDataPersonal.estado === 'PENDIENTE_VERIFICACION' && (
-                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
-                        <AlertCircle className="w-6 h-6 text-amber-600 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <h4 className="text-amber-800 font-bold text-sm">Verificación pendiente</h4>
-                          <p className="text-amber-700 text-xs mt-1">Tu cuenta está siendo revisada por el equipo de AgroDirecto. Mientras tanto, tienes acceso limitado a ciertas funciones como la publicación de productos.</p>
-                        </div>
-                      </div>
-                    )}
-                    {formDataPersonal.estado === 'RECHAZADO' && (
-                      <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
-                        <AlertCircle className="w-6 h-6 text-red-600 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <h4 className="text-red-800 font-bold text-sm">Verificación rechazada</h4>
-                          <p className="text-red-700 text-xs mt-1">Tu verificación fue rechazada. Por favor, sube nuevos documentos o contacta al soporte.</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* INFO DE CUENTA */}
-                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 space-y-3">
-                      <h4 className="text-sm font-bold text-[#1a1a1a] uppercase tracking-wider text-gray-500">Información de Cuenta</h4>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <span className="block text-[10px] text-gray-400 uppercase font-bold">Rol</span>
-                          <span className="text-sm font-semibold text-[#1D9E75]">{formDataPersonal.rol}</span>
-                        </div>
-                        <div>
-                          <span className="block text-[10px] text-gray-400 uppercase font-bold">Estado</span>
-                          <span className={`text-sm font-semibold ${formDataPersonal.estado === 'VERIFICADO' ? 'text-green-600' : formDataPersonal.estado === 'RECHAZADO' ? 'text-red-600' : 'text-amber-600'}`}>
-                            {formDataPersonal.estado === 'PENDIENTE_VERIFICACION' ? 'Pendiente' : formDataPersonal.estado === 'VERIFICADO' ? 'Verificado' : formDataPersonal.estado === 'RECHAZADO' ? 'Rechazado' : formDataPersonal.estado}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="block text-[10px] text-gray-400 uppercase font-bold">Miembro desde</span>
-                          <span className="text-sm font-medium text-gray-700">{formDataPersonal.fechaRegistro ? new Date(formDataPersonal.fechaRegistro).toLocaleDateString('es-BO') : '—'}</span>
-                        </div>
-                      </div>
+                    <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex items-start gap-3">
+                      <Lock className="w-5 h-5 text-blue-500 mt-0.5" />
+                      <p className="text-xs text-blue-700 leading-relaxed font-medium">Recomendamos usar una contraseña fuerte que combine letras, números y símbolos para mayor seguridad.</p>
                     </div>
 
-                    {/* CAMBIO DE CONTRASEÑA */}
-                    <div>
-                      <label className="block text-sm font-semibold text-[#1a1a1a] mb-1.5 flex items-center gap-2"><Lock className="w-4 h-4 text-gray-400"/> Contraseña actual</label>
+                    <div className="space-y-4">
                       <div className="relative">
-                        <input type={showPassword.actual ? 'text' : 'password'} value={formDataSeguridad.passwordActual} onChange={e => setFormDataSeguridad({...formDataSeguridad, passwordActual: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/20 focus:border-[#1D9E75]" />
-                        <button type="button" onClick={() => setShowPassword({...showPassword, actual: !showPassword.actual})} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                        <label className="block text-sm font-semibold text-[#1a1a1a] mb-1.5">Contraseña actual</label>
+                        <input type={showPassword.actual ? "text" : "password"} value={formDataSeguridad.passwordActual} onChange={e => setFormDataSeguridad({...formDataSeguridad, passwordActual: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/20 focus:border-[#1D9E75]" />
+                        <button type="button" onClick={() => setShowPassword({...showPassword, actual: !showPassword.actual})} className="absolute right-3 top-[38px] text-gray-400 hover:text-gray-600">
                           {showPassword.actual ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                       </div>
-                    </div>
-                    
-                    <div className="pt-4 border-t border-gray-100">
-                      <label className="block text-sm font-semibold text-[#1a1a1a] mb-1.5">Nueva contraseña</label>
-                      <div className="relative mb-2">
-                        <input type={showPassword.nueva ? 'text' : 'password'} value={formDataSeguridad.nuevaPassword} onChange={e => setFormDataSeguridad({...formDataSeguridad, nuevaPassword: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/20 focus:border-[#1D9E75]" />
-                        <button type="button" onClick={() => setShowPassword({...showPassword, nueva: !showPassword.nueva})} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+
+                      <div className="relative">
+                        <label className="block text-sm font-semibold text-[#1a1a1a] mb-1.5">Nueva contraseña</label>
+                        <input type={showPassword.nueva ? "text" : "password"} value={formDataSeguridad.nuevaPassword} onChange={e => setFormDataSeguridad({...formDataSeguridad, nuevaPassword: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/20 focus:border-[#1D9E75]" />
+                        <button type="button" onClick={() => setShowPassword({...showPassword, nueva: !showPassword.nueva})} className="absolute right-3 top-[38px] text-gray-400 hover:text-gray-600">
                           {showPassword.nueva ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
+                        
+                        {/* Indicador de fuerza */}
+                        <div className="mt-2 flex gap-1 h-1">
+                          {[1, 2, 3].map(i => (
+                            <div key={i} className={`flex-1 rounded-full ${i <= passStrength ? strengthColors[passStrength] : 'bg-gray-100'}`}></div>
+                          ))}
+                        </div>
                       </div>
-                      
-                      {/* Indicador de Fortaleza */}
-                      <div className="flex gap-1 mb-2">
-                        {[1, 2, 3].map(level => (
-                          <div key={level} className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${passStrength >= level ? strengthColors[passStrength] : 'bg-gray-200'}`}></div>
-                        ))}
-                      </div>
-                      <p className="text-xs text-[#6b7280]">Requisitos: Al menos 8 caracteres, una mayúscula y un número.</p>
-                    </div>
 
-                    <div>
-                      <label className="block text-sm font-semibold text-[#1a1a1a] mb-1.5">Confirmar nueva contraseña</label>
-                      <div className="relative mb-4">
-                        <input type={showPassword.confirmar ? 'text' : 'password'} value={formDataSeguridad.confirmarPassword} onChange={e => setFormDataSeguridad({...formDataSeguridad, confirmarPassword: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/20 focus:border-[#1D9E75]" />
-                        <button type="button" onClick={() => setShowPassword({...showPassword, confirmar: !showPassword.confirmar})} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                      <div className="relative">
+                        <label className="block text-sm font-semibold text-[#1a1a1a] mb-1.5">Confirmar contraseña</label>
+                        <input type={showPassword.confirmar ? "text" : "password"} value={formDataSeguridad.confirmarPassword} onChange={e => setFormDataSeguridad({...formDataSeguridad, confirmarPassword: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/20 focus:border-[#1D9E75]" />
+                        <button type="button" onClick={() => setShowPassword({...showPassword, confirmar: !showPassword.confirmar})} className="absolute right-3 top-[38px] text-gray-400 hover:text-gray-600">
                           {showPassword.confirmar ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                       </div>
@@ -574,13 +529,10 @@ const MiPerfilProductorPage = () => {
                 </div>
               )}
 
-            </div>
-          </div>
-
-        </main>
       </div>
     </div>
-  );
+  </div>
+);
 };
 
 export default MiPerfilProductorPage;

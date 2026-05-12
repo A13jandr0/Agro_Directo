@@ -119,7 +119,22 @@ const RegisterTransportistaPage = () => {
     setServerError('');
 
     try {
-      const payload = { ...formData, rol: 'Transportista' };
+      const payload = { 
+        nombre_completo: formData.nombreCompleto,
+        correo: formData.correo,
+        contrasena: formData.contrasena,
+        celular: formData.celular,
+        rol: 'TRANSPORTISTA',
+        acepto_terminos: formData.aceptaTerminos,
+        acepto_privacidad: formData.aceptaPrivacidad,
+        // Perfil
+        tipo_transporte: formData.tipoTransporte,
+        capacidad_carga_kg: parseFloat(formData.capacidadCargaKg),
+        zona_operacion: formData.zonaOperacion,
+        numero_licencia: formData.numeroLicencia,
+        placa_vehiculo: formData.placaVehiculo,
+        tipo_documento_subido: 'Licencia' // Default para el primer documento
+      };
       const res = await axios.post('http://localhost:5000/api/auth/register', payload);
       
       const token = res.data.token;
@@ -249,7 +264,7 @@ const RegisterTransportistaPage = () => {
               <label className="block text-sm font-semibold text-gray-700 mb-3">Tipo de Transporte</label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {[
-                  { id: 'Camion', icon: '🚛', label: 'Camión' },
+                  { id: 'Camión', icon: '🚛', label: 'Camión' },
                   { id: 'Camioneta', icon: '🚐', label: 'Camioneta' },
                   { id: 'Moto', icon: '🏍️', label: 'Moto' },
                   { id: 'Otro', icon: '📦', label: 'Otro' }

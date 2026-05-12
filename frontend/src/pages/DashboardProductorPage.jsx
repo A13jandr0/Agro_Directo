@@ -1,78 +1,40 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { 
-  Leaf, 
-  LayoutDashboard, 
-  Sprout, 
-  PlusCircle, 
-  ShoppingBag, 
-  MapPin, 
-  BarChart2, 
-  User, 
-  Settings, 
-  LogOut, 
-  AlertTriangle, 
-  DollarSign, 
-  Package, 
-  Star, 
-  Upload, 
-  Edit2, 
-  Trash2, 
-  Bell,
-  Menu,
-  X
+  Sprout, PlusCircle, ShoppingBag, MapPin, AlertTriangle, DollarSign, Package, 
+  Star, Upload, Edit2, Trash2, Lock, ArrowUpRight, TrendingUp, Clock, 
+  BarChart3, Eye, ChevronRight, Zap
 } from 'lucide-react';
 import axios from 'axios';
+import DashboardVentasProductor from '../components/DashboardVentasProductor';
 
 const DashboardProductorPage = () => {
   const navigate = useNavigate();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [userData, setUserData] = useState(null);
   const [serverError, setServerError] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  // Datos del productor autenticado
-  const [productor, setProductor] = useState({
-    nombre: '',
-    estado: 'PENDIENTE_VERIFICACION',
-    lat: null,
-    lng: null
-  });
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchProfile = async () => {
       try {
         const token = localStorage.getItem('token');
+        if (!token) return navigate('/login');
         const res = await axios.get('http://localhost:5000/api/usuarios/mi-perfil', {
           headers: { Authorization: `Bearer ${token}` }
         });
-        const data = res.data;
-        setProductor({
-          nombre: data.nombre_completo || '',
-          estado: data.estado || 'PENDIENTE_VERIFICACION',
-          lat: data.latitud != null ? data.latitud : null,
-          lng: data.longitud != null ? data.longitud : null
-        });
+        setUserData(res.data);
       } catch (error) {
         console.error("Error fetching dashboard profile", error);
-        setServerError(error.response?.data?.error || 'Error en el servidor al cargar los datos');
+        setServerError(error.response?.data?.error || 'Error al cargar datos del perfil');
       } finally {
-        setIsLoaded(true);
+        setLoading(false);
       }
     };
     fetchProfile();
-  }, []);
-
-  const getInitials = (name) => {
-    if (!name) return 'U';
-    const parts = name.trim().split(' ');
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
-    return name.substring(0, 2).toUpperCase();
-  };
+  }, [navigate]);
 
   const [metricas] = useState({
-    ingresosMes: 'Bs. 2,450',
+    ingresosMes: '2,450',
     pedidosActivos: 3,
     productosPublicados: 7,
     calificacionPromedio: 4.8
@@ -83,276 +45,265 @@ const DashboardProductorPage = () => {
     { id: 2, nombre: 'Tomate Santa Cruz', categoria: 'Hortalizas', precio: 45, stock: 15, estado: 'Agotado' },
     { id: 3, nombre: 'Maíz Amarillo Duro', categoria: 'Granos', precio: 95, stock: 200, estado: 'Activo' },
     { id: 4, nombre: 'Sorgo Forrajero', categoria: 'Cereales', precio: 80, stock: 120, estado: 'Activo' },
-    { id: 5, nombre: 'Yuca Blanca', categoria: 'Tubérculos', precio: 30, stock: 0, estado: 'Pendiente' },
   ]);
 
   const [pedidos] = useState([
-    { id: 'PD-001', comprador: 'Supermercados Ketal', producto: '20 qq - Soya Grano', fecha: '27 Abr 2026', monto: 'Bs. 2,400', estado: 'Pendiente' },
-    { id: 'PD-002', comprador: 'Maria Lopez', producto: '5 cajas - Tomate', fecha: '26 Abr 2026', monto: 'Bs. 225', estado: 'Pagado' },
-    { id: 'PD-003', comprador: 'Agroindustrias Norte', producto: '50 qq - Maíz Amarillo', fecha: '25 Abr 2026', monto: 'Bs. 4,750', estado: 'Enviado' },
+    { id: 'PD-001', comprador: 'Supermercados Ketal', producto: '20 qq - Soya Grano', fecha: 'Hoy', monto: '2,400', estado: 'Pendiente' },
+    { id: 'PD-002', comprador: 'Maria Lopez', producto: '5 cajas - Tomate', fecha: 'Ayer', monto: '225', estado: 'Pagado' },
+    { id: 'PD-003', comprador: 'Agroindustrias Norte', producto: '50 qq - Maíz Amarillo', fecha: '25 Abr', monto: '4,750', estado: 'Enviado' },
   ]);
 
-  const menuItems = [
-    { id: 'dashboard', label: 'Mi Dashboard', icon: LayoutDashboard, active: true, path: '/dashboard/productor' },
-    { id: 'cosechas', label: 'Mis Cosechas', icon: Sprout, active: false, path: '/dashboard/productor/cosechas' },
-    { id: 'publicar', label: 'Publicar Producto', icon: PlusCircle, active: false, path: '#' },
-    { id: 'pedidos', label: 'Mis Pedidos', icon: ShoppingBag, active: false, path: '/dashboard/productor/pedidos' },
-    { id: 'finca', label: 'Mi Finca', icon: MapPin, active: false, path: '/dashboard/productor/finca' },
-    { id: 'ingresos', label: 'Mis Ingresos', icon: BarChart2, active: false, path: '/dashboard/productor/ingresos' },
-    { id: 'perfil', label: 'Mi Perfil', icon: User, active: false, path: '/dashboard/productor/perfil' },
-    { id: 'configuracion', label: 'Configuración', icon: Settings, active: false, path: '#' },
-  ];
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center py-20">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center animate-pulse">
+            <Sprout className="w-7 h-7 text-emerald-400" />
+          </div>
+          <div className="w-48 h-2 rounded-full animate-shimmer" />
+          <p className="text-slate-400 font-medium text-sm">Preparando tu panel...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    navigate('/login');
-  };
+  const canPublish = userData?.estado === 'VERIFICADO' && userData?.latitud != null && userData?.longitud != null;
 
   const renderBadge = (estado) => {
-    switch(estado) {
-      case 'Activo':
-      case 'Pagado':
-      case 'Entregado':
-        return <span className="bg-[#1D9E75]/10 text-[#1D9E75] px-2 py-1 rounded-full text-xs font-semibold">● {estado}</span>;
-      case 'Agotado':
-      case 'Pendiente':
-        if(estado === 'Agotado') {
-            return <span className="bg-red-100 text-red-600 px-2 py-1 rounded-full text-xs font-semibold">● {estado}</span>;
-        }
-        return <span className="bg-yellow-100 text-yellow-600 px-2 py-1 rounded-full text-xs font-semibold">● {estado}</span>;
-      case 'Enviado':
-        return <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-xs font-semibold">● {estado}</span>;
-      default:
-        return <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs font-semibold">● {estado}</span>;
-    }
+    const styles = {
+      'Activo': 'badge-success', 'Pagado': 'badge-success', 'Entregado': 'badge-success',
+      'Agotado': 'badge-danger', 'Pendiente': 'badge-warning', 'Enviado': 'badge-info',
+    };
+    return <span className={`badge ${styles[estado] || 'badge-neutral'}`}>{estado.toUpperCase()}</span>;
   };
 
+  const metricCards = [
+    { label: 'Ingresos del Mes', value: `Bs. ${metricas.ingresosMes}`, icon: DollarSign, gradient: 'from-emerald-500 to-teal-600', bgLight: 'bg-emerald-50', trend: '+12.5%', trendColor: 'text-emerald-600' },
+    { label: 'Pedidos Activos', value: metricas.pedidosActivos, icon: Package, gradient: 'from-blue-500 to-indigo-600', bgLight: 'bg-blue-50', trend: 'Hoy', trendColor: 'text-blue-600' },
+    { label: 'Cosechas Online', value: metricas.productosPublicados, icon: Sprout, gradient: 'from-violet-500 to-purple-600', bgLight: 'bg-violet-50', trend: 'Catálogo', trendColor: 'text-violet-600' },
+    { label: 'Reputación', value: metricas.calificacionPromedio, icon: Star, gradient: 'from-amber-500 to-orange-600', bgLight: 'bg-amber-50', trend: 'Excelente', trendColor: 'text-amber-600' }
+  ];
+
   return (
-    <div className="flex h-screen bg-[#f9fafb] font-sans overflow-hidden">
+    <div className="p-5 sm:p-8 lg:p-10 max-w-7xl mx-auto space-y-7">
       
-      {/* OVERLAY PARA MÓVIL */}
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setIsMobileMenuOpen(false)}></div>
-      )}
-
-      {/* SIDEBAR FIJO */}
-      <aside className={`fixed lg:static inset-y-0 left-0 w-[240px] bg-[#0F6E56] text-white z-50 transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col shadow-2xl lg:shadow-none`}>
-        <div className="h-16 flex items-center gap-2 px-6 border-b border-white/10 shrink-0">
-          <Leaf className="w-6 h-6 text-white" />
-          <span className="text-xl font-bold tracking-wider">AgroDirecto</span>
-        </div>
+      {/* HERO */}
+      <div className="relative overflow-hidden rounded-3xl animate-slide-up">
+        {/* Gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0c1f17] via-[#0f2a1d] to-[#0a1f14]" />
+        {/* Animated orbs */}
+        <div className="absolute top-[-40%] right-[-10%] w-[400px] h-[400px] bg-emerald-500/15 rounded-full blur-[80px] animate-float" />
+        <div className="absolute bottom-[-30%] left-[-5%] w-[300px] h-[300px] bg-teal-400/10 rounded-full blur-[60px] animate-float" style={{ animationDelay: '2s' }} />
+        <div className="absolute inset-0 dot-pattern opacity-20" />
         
-        <nav className="flex-1 overflow-y-auto py-4">
-          <ul className="space-y-1">
-            {menuItems.map(item => {
-              const Icon = item.icon;
-              return (
-                <li key={item.id}>
-                  <button 
-                    onClick={() => item.path !== '#' && navigate(item.path)}
-                    className={`w-full flex items-center gap-3 px-6 py-3 text-sm font-medium transition-colors ${item.active ? 'bg-white/15 border-l-[3px] border-white text-white' : 'text-white/80 hover:bg-white/5 hover:text-white border-l-[3px] border-transparent'}`}
-                  >
-                    <Icon className="w-5 h-5 shrink-0" />
-                    <span>{item.label}</span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-
-        <div className="border-t border-white/10 p-4 shrink-0">
-          <button onClick={handleLogout} className="w-full flex items-center gap-3 px-2 py-2 text-sm font-medium text-red-200 hover:text-red-100 hover:bg-white/5 rounded transition-colors">
-            <LogOut className="w-5 h-5" />
-            <span>Cerrar sesión</span>
-          </button>
-        </div>
-      </aside>
-
-      {/* ÁREA PRINCIPAL */}
-      <div className="flex-1 flex flex-col min-w-0">
-        
-        {/* HEADER DE 64PX */}
-        <header className="h-[64px] bg-white shadow-sm flex items-center justify-between px-4 sm:px-8 z-10 shrink-0">
-          <div className="flex items-center gap-4">
-            <button className="lg:hidden text-gray-500 hover:text-[#1D9E75]" onClick={() => setIsMobileMenuOpen(true)}>
-              <Menu className="w-6 h-6" />
-            </button>
-            <h1 className="text-sm font-medium text-[#6b7280] hidden sm:block">Buenos días, <span className="font-bold text-[#1a1a1a]">{productor.nombre}</span></h1>
-          </div>
-
-          <div className="flex items-center gap-6">
-            <button className="relative text-gray-500 hover:text-[#1D9E75] transition-colors">
-              <Bell className="w-5 h-5" />
-              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
-            </button>
-            
-            <button className="flex items-center gap-2 focus:outline-none group">
-              <div className="w-9 h-9 rounded-full bg-[#1D9E75] text-white flex items-center justify-center font-bold text-sm shadow-sm group-hover:ring-2 group-hover:ring-[#1D9E75]/30 transition-all">
-                {getInitials(productor.nombre)}
+        <div className="relative z-10 p-8 sm:p-10">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+              <div className="flex items-center gap-2 mb-5">
+                <span className="bg-emerald-500/20 text-emerald-400 px-4 py-1.5 rounded-full text-[11px] font-black uppercase tracking-[0.15em] border border-emerald-500/20 backdrop-blur-sm">
+                  <Zap className="w-3 h-3 inline mr-1" />
+                  Resumen General
+                </span>
               </div>
-            </button>
-          </div>
-        </header>
-
-        {/* CONTENIDO SCROLLABLE */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6">
-          
-          {/* BANNER DE ERROR DEL SERVIDOR */}
-          {serverError && (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3 shadow-sm">
-              <AlertTriangle className="w-6 h-6 text-red-600 shrink-0" />
-              <p className="text-red-700 text-sm font-medium">{serverError}</p>
+              <h1 className="text-3xl sm:text-4xl font-black mb-3 tracking-tight text-white leading-tight">
+                Hola, {userData?.nombre_completo?.split(' ')[0] || 'Productor'}
+              </h1>
+              <p className="text-emerald-200/50 font-medium max-w-lg text-[15px] leading-relaxed">
+                Tu finca está produciendo {metricas.productosPublicados} tipos de cosechas este mes. 
+                {metricas.pedidosActivos > 0 ? ` Tienes ${metricas.pedidosActivos} pedidos pendientes por gestionar.` : ' No tienes pedidos pendientes hoy.'}
+              </p>
             </div>
-          )}
-
-          {/* BANNERS DE ALERTA */}
-          <div className="space-y-4">
-            {isLoaded && productor.estado === 'PENDIENTE_VERIFICACION' && (
-              <div className="bg-[#FEF3C7] border border-yellow-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="w-6 h-6 text-[#92400E] shrink-0 mt-0.5" />
-                  <p className="text-[#92400E] text-sm font-medium">Tu cuenta está pendiente de verificación. Sube tus documentos para poder publicar productos.</p>
-                </div>
-                <button className="bg-[#D97706] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-yellow-700 transition-colors shrink-0 whitespace-nowrap shadow-sm">
-                  Subir documentos
-                </button>
-              </div>
-            )}
-
-            {isLoaded && (productor.lat === null || productor.lng === null) && (
-              <div className="bg-[#FEE2E2] border border-red-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
-                <div className="flex items-start gap-3">
-                  <MapPin className="w-6 h-6 text-[#991B1B] shrink-0 mt-0.5" />
-                  <p className="text-[#991B1B] text-sm font-medium">No has registrado la ubicación de tu finca. Sin esto no podrás publicar productos.</p>
-                </div>
-                <button className="bg-[#DC2626] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors shrink-0 whitespace-nowrap shadow-sm">
-                  Registrar ubicación
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* MÉTRICAS (4 Tarjetas) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {[
-              { label: 'Ingresos del mes', value: metricas.ingresosMes, icon: DollarSign },
-              { label: 'Pedidos activos', value: metricas.pedidosActivos, icon: Package },
-              { label: 'Productos publicados', value: metricas.productosPublicados, icon: Sprout },
-              { label: 'Calificación promedio', value: metricas.calificacionPromedio, icon: Star }
-            ].map((m, idx) => {
-              const Icon = m.icon;
-              return (
-                <div key={idx} className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-[#E1F5EE] flex items-center justify-center shrink-0">
-                    <Icon className="w-6 h-6 text-[#1D9E75]" />
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-bold text-[#1a1a1a]">{m.value}</h3>
-                    <p className="text-sm font-medium text-[#6b7280]">{m.label}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* ACCIONES RÁPIDAS (3 Botones) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button className="bg-[#1D9E75] hover:bg-[#0F6E56] text-white py-3 px-4 rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors shadow-sm">
-              <PlusCircle className="w-5 h-5" />
-              Publicar nueva cosecha
-            </button>
-            <button className="bg-white hover:bg-gray-50 border-2 border-[#1D9E75] text-[#1D9E75] py-3 px-4 rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors shadow-sm">
-              <MapPin className="w-5 h-5" />
-              Actualizar ubicación de finca
-            </button>
-            <button className="bg-white hover:bg-gray-50 border-2 border-gray-200 text-[#6b7280] hover:text-[#1a1a1a] py-3 px-4 rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors shadow-sm">
-              <Upload className="w-5 h-5" />
-              Subir documentos
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
             
-            {/* MIS PRODUCTOS RECIENTES (2 columnas) */}
-            <div className="xl:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-                <h2 className="text-lg font-bold text-[#1a1a1a]">Mis productos recientes</h2>
-                <a href="#" className="text-sm font-semibold text-[#1D9E75] hover:underline">Ver todos →</a>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => canPublish ? navigate('/dashboard/productor/cosechas') : null}
+                disabled={!canPublish}
+                className="px-7 py-3.5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-2xl font-bold text-sm transition-all duration-500 shadow-xl shadow-emerald-500/20 hover:shadow-2xl hover:shadow-emerald-500/30 flex items-center gap-2.5 disabled:opacity-40 disabled:cursor-not-allowed group hover:-translate-y-0.5"
+              >
+                {canPublish ? <PlusCircle className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
+                Publicar Cosecha
+                <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ALERTS */}
+      <div className="space-y-3 stagger-children">
+        {serverError && (
+          <div className="card-elevated p-4 flex items-center gap-3 text-rose-700 bg-rose-50 border-rose-200">
+            <div className="w-10 h-10 bg-rose-100 rounded-xl flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+            <p className="text-sm font-bold">{serverError}</p>
+          </div>
+        )}
+        {userData?.estado === 'PENDIENTE_VERIFICACION' && (
+          <div className="card-elevated !border-amber-200 bg-amber-50/50 p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/20">
+                <Upload className="w-6 h-6 text-white" />
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-gray-50/50 text-[#6b7280] text-xs uppercase tracking-wider">
-                      <th className="px-6 py-3 font-semibold">Producto</th>
-                      <th className="px-6 py-3 font-semibold">Categoría</th>
-                      <th className="px-6 py-3 font-semibold">Precio</th>
-                      <th className="px-6 py-3 font-semibold">Stock</th>
-                      <th className="px-6 py-3 font-semibold">Estado</th>
-                      <th className="px-6 py-3 font-semibold text-right">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {productos.map(prod => (
-                      <tr key={prod.id} className="hover:bg-gray-50/50 transition-colors">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded bg-[#E1F5EE] flex items-center justify-center text-[#1D9E75] shrink-0 overflow-hidden">
-                               <Sprout className="w-5 h-5" />
-                            </div>
-                            <span className="font-medium text-[#1a1a1a]">{prod.nombre}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="bg-gray-100 text-[#6b7280] text-xs font-semibold px-2.5 py-1 rounded-md">{prod.categoria}</span>
-                        </td>
-                        <td className="px-6 py-4 font-semibold text-[#1a1a1a]">Bs. {prod.precio}</td>
-                        <td className="px-6 py-4 text-[#6b7280]">{prod.stock} qq</td>
-                        <td className="px-6 py-4">{renderBadge(prod.estado)}</td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex justify-end gap-2">
-                            <button className="text-[#6b7280] hover:text-[#1D9E75] transition-colors p-1"><Edit2 className="w-4 h-4" /></button>
-                            <button className="text-[#6b7280] hover:text-red-600 transition-colors p-1"><Trash2 className="w-4 h-4" /></button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div>
+                <h3 className="font-black text-amber-900">Verificación Requerida</h3>
+                <p className="text-sm text-amber-700 mt-1 font-medium">Sube tus documentos para activar la publicación de productos.</p>
               </div>
             </div>
-
-            {/* PEDIDOS RECIENTES (1 columna) */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
-              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-                <h2 className="text-lg font-bold text-[#1a1a1a]">Últimos pedidos</h2>
-                <a href="#" className="text-sm font-semibold text-[#1D9E75] hover:underline">Ver todos →</a>
+            <button onClick={() => navigate('/dashboard/productor/perfil')} className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-amber-500/20 transition-all duration-300 hover:-translate-y-0.5">
+              Subir Ahora
+            </button>
+          </div>
+        )}
+        {(userData?.latitud == null || userData?.longitud == null) && (
+          <div className="card-elevated !border-slate-200 bg-slate-50/50 p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-slate-500 to-slate-700 rounded-2xl flex items-center justify-center shrink-0 shadow-lg">
+                <MapPin className="w-6 h-6 text-white" />
               </div>
-              <ul className="divide-y divide-gray-100 flex-1">
-                {pedidos.map(pedido => (
-                  <li key={pedido.id} className="px-6 py-4 hover:bg-gray-50/50 transition-colors">
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-[#6b7280] shrink-0">
-                        <ShoppingBag className="w-5 h-5" />
+              <div>
+                <h3 className="font-black text-slate-900">Ubicación de Finca</h3>
+                <p className="text-sm text-slate-600 mt-1 font-medium">Registra tu ubicación exacta para que los compradores te encuentren.</p>
+              </div>
+            </div>
+            <button onClick={() => navigate('/dashboard/productor/finca')} className="w-full sm:w-auto px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-sm font-bold shadow-lg transition-all duration-300 hover:-translate-y-0.5">
+              Configurar Mapa
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* BI DASHBOARD */}
+      <div className="animate-slide-up" style={{ animationDelay: '0.15s' }}>
+        <DashboardVentasProductor />
+      </div>
+
+      {/* METRICS */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 stagger-children">
+        {metricCards.map((m, idx) => {
+          const Icon = m.icon;
+          return (
+            <div key={idx} className="card-elevated p-6 group">
+              <div className="flex justify-between items-start mb-5">
+                <div className={`w-12 h-12 bg-gradient-to-br ${m.gradient} rounded-2xl flex items-center justify-center shadow-lg transition-all duration-500 group-hover:scale-110 group-hover:rotate-3`}>
+                  <Icon className="w-6 h-6 text-white" />
+                </div>
+                <span className={`text-[11px] font-black px-2.5 py-1 rounded-lg ${m.bgLight} ${m.trendColor} uppercase tracking-wider`}>
+                  {m.trend}
+                </span>
+              </div>
+              <h3 className="text-3xl font-black text-slate-900 tracking-tight mb-1">{m.value}</h3>
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.15em]">{m.label}</p>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* MAIN DATA SECTION */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        
+        {/* PRODUCTOS TABLE */}
+        <div className="xl:col-span-2 card-elevated overflow-hidden animate-slide-up" style={{ animationDelay: '0.2s' }}>
+          <div className="px-7 py-5 border-b border-slate-100 flex items-center justify-between">
+            <h2 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+              <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center">
+                <TrendingUp className="w-4 h-4 text-emerald-600" />
+              </div>
+              Mis Productos
+            </h2>
+            <Link to="/dashboard/productor/cosechas" className="text-[11px] font-black text-emerald-600 hover:text-emerald-700 uppercase tracking-[0.1em] flex items-center gap-1 group">
+              Ver Catálogo <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-slate-50/80 text-slate-400 text-[10px] uppercase font-black tracking-[0.15em]">
+                  <th className="px-7 py-4">Producto</th>
+                  <th className="px-5 py-4 text-center">Precio</th>
+                  <th className="px-5 py-4 text-center">Stock</th>
+                  <th className="px-5 py-4 text-center">Estado</th>
+                  <th className="px-7 py-4 text-right"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {productos.map(prod => (
+                  <tr key={prod.id} className="table-row-hover group">
+                    <td className="px-7 py-5">
+                      <div className="flex items-center gap-4">
+                        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center text-emerald-500 border border-emerald-100 shrink-0 group-hover:shadow-md transition-all duration-300">
+                           <Sprout className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-900 text-sm">{prod.nombre}</p>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">{prod.categoria}</p>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-[#1a1a1a] truncate">{pedido.comprador}</p>
-                        <p className="text-sm text-[#6b7280] truncate">{pedido.producto}</p>
-                        <p className="text-xs text-[#6b7280] mt-1">{pedido.fecha}</p>
+                    </td>
+                    <td className="px-5 py-5 text-center">
+                      <span className="font-black text-slate-900 text-sm">Bs. {prod.precio}</span>
+                    </td>
+                    <td className="px-5 py-5 text-center">
+                      <span className="font-bold text-slate-500 text-sm">{prod.stock} qq</span>
+                    </td>
+                    <td className="px-5 py-5 text-center">{renderBadge(prod.estado)}</td>
+                    <td className="px-7 py-5 text-right">
+                      <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                        <button className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all duration-300"><Edit2 className="w-4 h-4" /></button>
+                        <button className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all duration-300"><Trash2 className="w-4 h-4" /></button>
                       </div>
-                      <div className="text-right shrink-0">
-                        <p className="font-bold text-[#1D9E75]">{pedido.monto}</p>
-                        <div className="mt-1">{renderBadge(pedido.estado)}</div>
-                      </div>
-                    </div>
-                  </li>
+                    </td>
+                  </tr>
                 ))}
-              </ul>
-            </div>
-
+              </tbody>
+            </table>
           </div>
+        </div>
 
-        </main>
+        {/* PEDIDOS SIDEBAR */}
+        <div className="card-elevated overflow-hidden flex flex-col animate-slide-in-right" style={{ animationDelay: '0.25s' }}>
+          <div className="px-7 py-5 border-b border-slate-100 flex items-center justify-between">
+            <h2 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+              <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                <Clock className="w-4 h-4 text-blue-600" />
+              </div>
+              Pedidos
+            </h2>
+            <Link to="/dashboard/productor/pedidos" className="text-[11px] font-black text-blue-600 hover:text-blue-700 uppercase tracking-[0.1em] flex items-center gap-1 group">
+              Gestionar <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+          </div>
+          <div className="p-4 flex-1 space-y-3">
+            {pedidos.map(pedido => (
+              <div key={pedido.id} className="p-5 rounded-2xl bg-slate-50/70 border border-slate-100 hover:border-emerald-200 hover:bg-emerald-50/30 hover:shadow-sm transition-all duration-300 cursor-pointer group">
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-slate-400 border border-slate-100 group-hover:border-emerald-200 transition-colors duration-300">
+                      <ShoppingBag className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-900 text-sm leading-tight">{pedido.comprador}</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase mt-0.5 tracking-wider">{pedido.fecha}</p>
+                    </div>
+                  </div>
+                  <p className="font-black text-emerald-600">Bs. {pedido.monto}</p>
+                </div>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium text-slate-500 truncate pr-4">{pedido.producto}</p>
+                  {renderBadge(pedido.estado)}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="p-5 bg-slate-50/50 border-t border-slate-100">
+            <button 
+              onClick={() => navigate('/dashboard/productor/pedidos')}
+              className="w-full py-3 bg-white border border-slate-200 text-slate-600 font-bold text-sm rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all duration-300 shadow-sm hover:shadow"
+            >
+              Ver todos los pedidos
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

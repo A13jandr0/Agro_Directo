@@ -1,5 +1,5 @@
 // ============================================================
-// Middleware: Verificación de Rol
+// Middleware: Verificación de Rol y Estado
 // ============================================================
 
 /**
@@ -24,4 +24,22 @@ const checkRole = (requiredRoles) => {
     };
 };
 
-module.exports = { checkRole };
+/**
+ * Valida que el usuario tenga estado 'VERIFICADO'.
+ * (Excepto compradores, que no requieren verificación documental para operar).
+ */
+const checkVerified = (req, res, next) => {
+    if (!req.user) {
+        return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    if (req.user.rol !== 'COMPRADOR' && req.user.estado !== 'VERIFICADO') {
+        return res.status(403).json({ 
+            error: 'Su cuenta aún no ha sido verificada. No puede realizar esta operación.' 
+        });
+    }
+
+    next();
+};
+
+module.exports = { checkRole, checkVerified };

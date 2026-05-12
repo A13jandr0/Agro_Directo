@@ -55,7 +55,7 @@ CREATE TABLE usuarios (
     CONSTRAINT CHK_usuarios_password_hash_length CHECK (LEN(password_hash) >= 8),
 
     -- Restricción de roles permitidos
-    CONSTRAINT CHK_usuarios_rol CHECK (rol IN ('PRODUCTOR', 'COMPRADOR', 'TRANSPORTISTA')),
+    CONSTRAINT CHK_usuarios_rol CHECK (rol IN ('PRODUCTOR', 'COMPRADOR', 'TRANSPORTISTA', 'ADMINISTRADOR')),
 
     -- Restricción de estados permitidos
     CONSTRAINT CHK_usuarios_estado CHECK (estado IN ('REGISTRADO', 'PENDIENTE_VERIFICACION', 'VERIFICADO', 'RECHAZADO')),
@@ -102,6 +102,7 @@ BEGIN
         rol,
         CASE
             WHEN rol = 'COMPRADOR' THEN 'REGISTRADO'
+            WHEN rol = 'ADMINISTRADOR' THEN 'VERIFICADO'
             ELSE 'PENDIENTE_VERIFICACION'
         END,
         ISNULL(acepto_terminos, 1),
@@ -246,3 +247,95 @@ GO
 -- ============================================================
 -- FIN DEL DDL — Épica 1: Gestión de Identidad y Roles
 -- ============================================================
+
+
+-- =================================================================
+-- ÉPICA 2: CATÁLOGO E INVENTARIO DINÁMICO
+-- =================================================================
+
+-- 1. Tabla: Cosechas (US05 y US06)
+CREATE TABLE Cosechas (
+    id UNIQUEIDENTIFIER DEFAULT NEWID() PRIMARY KEY,
+    
+    productor_id UNIQUEIDENTIFIER NOT NULL, 
+    
+    nombre_producto VARCHAR(150) NOT NULL,
+    descripcion TEXT NULL,
+    foto_url VARCHAR(500) NULL,
+    
+    cantidad_disponible DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    unidad_medida VARCHAR(50) NOT NULL,
+    precio_unitario DECIMAL(10, 2) NOT NULL,
+    fecha_disponibilidad DATE NOT NULL,
+    estado_publicacion VARCHAR(50) NOT NULL DEFAULT 'Activo',
+    
+    -- Regla de Negocio (US06): Columna calculada para determinar si es Preventa
+    -- Si la fecha de disponibilidad es mayor a la fecha actual, será 1 (Preventa), caso contrario 0.
+    es_preventa AS (CASE WHEN fecha_disponibilidad > CAST(GETDATE() AS DATE) THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END),
+
+    -- Restricciones
+    CONSTRAINT FK_Cosechas_Productor FOREIGN KEY (productor_id) 
+        REFERENCES perfil_productor(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+        
+    CONSTRAINT CHK_Cosechas_UnidadMedida CHECK (unidad_medida IN ('Quintal', 'Arroba')),
+    
+    CONSTRAINT CHK_Cosechas_EstadoPublicacion CHECK (estado_publicacion IN ('Activo', 'Pausado', 'Agotado'))
+);
+GO
+
+-- 2. Tabla: Precios_Mercado_Abasto (US09)
+CREATE TABLE Precios_Mercado_Abasto (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    nombre_producto VARCHAR(150) NOT NULL,
+    precio_promedio_bs DECIMAL(10, 2) NOT NULL,
+    fecha_actualizacion DATE NOT NULL DEFAULT CAST(GETDATE() AS DATE)
+);
+GO
+
+-- Índices recomendados para optimizar las consultas de catálogos y reportes
+CREATE NONCLUSTERED INDEX IX_Cosechas_Productor ON Cosechas(productor_id);
+CREATE NONCLUSTERED INDEX IX_Cosechas_Estado_Fecha ON Cosechas(estado_publicacion, fecha_disponibilidad);
+CREATE NONCLUSTERED INDEX IX_PreciosMercado_Nombre_Fecha ON Precios_Mercado_Abasto(nombre_producto, fecha_actualizacion);
+GO
+
+-- =================================================================
+-- ÉPICA 3: GESTIÓN DE PEDIDOS (US10, US11)
+-- =================================================================
+
+-- 1. Tabla: Pedidos
+CREATE TABLE Pedidos (
+    id UNIQUEIDENTIFIER DEFAULT NEWID() PRIMARY KEY,
+    comprador_id UNIQUEIDENTIFIER NOT NULL,
+    estado VARCHAR(30) NOT NULL DEFAULT 'PENDIENTE',
+    fecha_pedido DATETIME NOT NULL DEFAULT GETDATE(),
+    notas TEXT NULL,
+
+    CONSTRAINT FK_Pedidos_Comprador FOREIGN KEY (comprador_id)
+        REFERENCES usuarios(id),
+
+    CONSTRAINT CHK_Pedidos_Estado CHECK (estado IN ('PENDIENTE','CONFIRMADO','RECHAZADO','ENVIADO','ENTREGADO','CANCELADO'))
+);
+GO
+
+-- 2. Tabla: Detalle_Pedidos
+CREATE TABLE Detalle_Pedidos (
+    id UNIQUEIDENTIFIER DEFAULT NEWID() PRIMARY KEY,
+    pedido_id UNIQUEIDENTIFIER NOT NULL,
+    cosecha_id UNIQUEIDENTIFIER NOT NULL,
+    cantidad DECIMAL(10, 2) NOT NULL,
+    precio_unitario DECIMAL(10, 2) NOT NULL,
+
+    CONSTRAINT FK_Detalle_Pedido FOREIGN KEY (pedido_id)
+        REFERENCES Pedidos(id) ON DELETE CASCADE,
+
+    CONSTRAINT FK_Detalle_Cosecha FOREIGN KEY (cosecha_id)
+        REFERENCES Cosechas(id)
+);
+GO
+
+CREATE NONCLUSTERED INDEX IX_Pedidos_Comprador ON Pedidos(comprador_id);
+CREATE NONCLUSTERED INDEX IX_Pedidos_Estado ON Pedidos(estado);
+CREATE NONCLUSTERED INDEX IX_DetallePedidos_Pedido ON Detalle_Pedidos(pedido_id);
+GO

@@ -12,8 +12,8 @@ const { sql, getPool } = require('../db');
 // -------------------------------------------------------
 exports.uploadDocument = async (req, res) => {
     try {
-        if (!req.file) {
-            return res.status(400).json({ error: 'No se subió ningún archivo' });
+        if (!req.files || (!req.files.documento_ci && !req.files.documento_rau && !req.files.documento)) {
+            return res.status(400).json({ error: 'No se subieron documentos' });
         }
 
         const userId = req.user.id;
@@ -28,7 +28,15 @@ exports.uploadDocument = async (req, res) => {
             });
         }
 
-        const filePath = `/uploads/${req.file.filename}`;
+        let filePath = '';
+        const paths = [];
+        
+        if (req.files.documento_ci) paths.push(`/documentos/${req.files.documento_ci[0].filename}`);
+        if (req.files.documento_rau) paths.push(`/documentos/${req.files.documento_rau[0].filename}`);
+        if (req.files.documento) paths.push(`/documentos/${req.files.documento[0].filename}`); // fallback for transportista if they still use "documento"
+
+        filePath = paths.join(',');
+
         const pool = await getPool();
 
         if (userRol === 'PRODUCTOR') {
@@ -58,8 +66,8 @@ exports.uploadDocument = async (req, res) => {
         }
 
         res.json({
-            mensaje: 'Documento subido correctamente',
-            archivo: filePath
+            mensaje: 'Documentos subidos correctamente',
+            archivos: paths
         });
 
     } catch (error) {

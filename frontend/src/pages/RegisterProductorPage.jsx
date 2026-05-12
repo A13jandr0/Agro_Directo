@@ -102,7 +102,24 @@ const RegisterProductorPage = () => {
 
     try {
       // 1. Registrar usuario
-      const payload = { ...formData, rol: 'Productor' };
+      const payload = { 
+        nombre_completo: formData.nombreCompleto,
+        correo: formData.correo,
+        contrasena: formData.contrasena,
+        celular: formData.celular,
+        rol: 'PRODUCTOR',
+        acepto_terminos: formData.aceptaTerminos,
+        acepto_privacidad: formData.aceptaPrivacidad,
+        // Perfil
+        tipo_productor: formData.tipoProductor,
+        nombre_finca: formData.nombreFinca,
+        municipio: formData.municipio,
+        provincia: formData.provincia,
+        departamento: formData.departamento,
+        anios_experiencia: parseInt(formData.aniosExperiencia),
+        tipo_documento: formData.tipoDocumento,
+        numero_documento: formData.numeroDocumento
+      };
       const res = await axios.post('http://localhost:5000/api/auth/register', payload);
       
       const token = res.data.token;
