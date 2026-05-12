@@ -57,14 +57,22 @@ exports.crearCosecha = async (req, res) => {
 
         const foto_url = req.file ? `/uploads/${req.file.filename}` : null;
 
+        // Robust parsing of numeric inputs coming as strings from FormData
+        const numCantidad = parseFloat(cantidad_disponible);
+        const numPrecio = parseFloat(precio_unitario);
+
+        if (isNaN(numCantidad) || isNaN(numPrecio)) {
+             return res.status(400).json({ message: 'Cantidad y Precio deben ser números válidos.' });
+        }
+
         await pool.request()
             .input('productor_id', sql.UniqueIdentifier, productor_id)
             .input('nombre_producto', sql.VarChar(150), nombre_producto)
             .input('descripcion', sql.Text, descripcion || null)
             .input('foto_url', sql.VarChar(500), foto_url)
-            .input('cantidad_disponible', sql.Decimal(10, 2), cantidad_disponible)
+            .input('cantidad_disponible', sql.Decimal(10, 2), numCantidad)
             .input('unidad_medida', sql.VarChar(50), unidad_medida)
-            .input('precio_unitario', sql.Decimal(10, 2), precio_unitario)
+            .input('precio_unitario', sql.Decimal(10, 2), numPrecio)
             .input('fecha_disponibilidad', sql.Date, fecha_disponibilidad)
             .query(`
                 INSERT INTO Cosechas (
@@ -79,7 +87,10 @@ exports.crearCosecha = async (req, res) => {
         res.status(201).json({ mensaje: 'Cosecha publicada exitosamente.' });
     } catch (error) {
         console.error('Crear Cosecha Error:', error);
-        res.status(500).json({ message: 'Error interno al publicar la cosecha.' });
+        res.status(500).json({ 
+            message: 'Error interno al publicar la cosecha.', 
+            error: error.message 
+        });
     }
 };
 
