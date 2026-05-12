@@ -121,18 +121,44 @@ exports.miCatalogo = async (req, res) => {
 exports.actualizarCosecha = async (req, res) => {
     try {
         const id = req.params.id;
-        const { cantidad_disponible, precio_unitario, estado_publicacion } = req.body;
+        const { 
+            nombre_producto,
+            descripcion,
+            cantidad_disponible,
+            unidad_medida,
+            precio_unitario,
+            fecha_disponibilidad,
+            estado_publicacion 
+        } = req.body;
+
         const pool = await getPool();
+        let foto_url = null;
+        if (req.file) {
+             foto_url = `/uploads/${req.file.filename}`;
+        }
+
+        const numCantidad = cantidad_disponible ? parseFloat(cantidad_disponible) : null;
+        const numPrecio = precio_unitario ? parseFloat(precio_unitario) : null;
 
         await pool.request()
             .input('id', sql.UniqueIdentifier, id)
-            .input('cantidad_disponible', sql.Decimal(10, 2), cantidad_disponible)
-            .input('precio_unitario', sql.Decimal(10, 2), precio_unitario)
-            .input('estado_publicacion', sql.VarChar(50), estado_publicacion)
+            .input('nombre_producto', sql.VarChar(150), nombre_producto || null)
+            .input('descripcion', sql.Text, descripcion || null)
+            .input('foto_url', sql.VarChar(500), foto_url)
+            .input('cantidad_disponible', sql.Decimal(10, 2), numCantidad)
+            .input('unidad_medida', sql.VarChar(50), unidad_medida || null)
+            .input('precio_unitario', sql.Decimal(10, 2), numPrecio)
+            .input('fecha_disponibilidad', sql.Date, fecha_disponibilidad || null)
+            .input('estado_publicacion', sql.VarChar(50), estado_publicacion || null)
             .query(`
                 UPDATE Cosechas
-                SET cantidad_disponible = COALESCE(@cantidad_disponible, cantidad_disponible),
+                SET nombre_producto = COALESCE(@nombre_producto, nombre_producto),
+                    descripcion = COALESCE(@descripcion, descripcion),
+                    foto_url = COALESCE(@foto_url, foto_url),
+                    cantidad_disponible = COALESCE(@cantidad_disponible, cantidad_disponible),
+                    unidad_medida = COALESCE(@unidad_medida, unidad_medida),
                     precio_unitario = COALESCE(@precio_unitario, precio_unitario),
+                    fecha_disponibilidad = COALESCE(@fecha_disponibilidad, fecha_disponibilidad),
                     estado_publicacion = COALESCE(@estado_publicacion, estado_publicacion)
                 WHERE id = @id
             `);
@@ -140,7 +166,7 @@ exports.actualizarCosecha = async (req, res) => {
         res.json({ mensaje: 'Cosecha actualizada exitosamente.' });
     } catch (error) {
         console.error('Actualizar Cosecha Error:', error);
-        res.status(500).json({ error: 'Error interno al actualizar la cosecha.' });
+        res.status(500).json({ error: 'Error interno al actualizar la cosecha.', errorDetail: error.message });
     }
 };
 

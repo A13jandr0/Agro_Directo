@@ -49,6 +49,8 @@ const MisCosechasPage = () => {
   const [foto, setFoto] = useState(null);
   const [preview, setPreview] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingId, setEditingId] = useState(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -76,6 +78,7 @@ const MisCosechasPage = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       const formattedData = res.data.map(item => ({
+        ...item,
         id: item.id,
         nombre: item.nombre_producto,
         categoria: 'General', 
@@ -123,31 +126,57 @@ const MisCosechasPage = () => {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.post('http://localhost:5000/api/cosechas', data, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${token}`
-        }
-      });
-      
-      toast.success('¡Cosecha publicada con éxito!', {
-        icon: '🚀',
-        style: {
-          borderRadius: '16px',
-          background: '#0F172A',
-          color: '#fff',
-          fontWeight: 'bold'
-        },
-      });
+      if (isEditing && editingId) {
+        await axios.put(`http://localhost:5000/api/cosechas/${editingId}`, data, {
+          headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` }
+        });
+        toast.success('Cosecha actualizada.');
+      } else {
+        await axios.post('http://localhost:5000/api/cosechas', data, {
+          headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` }
+        });
+        toast.success('Cosecha publicada con éxito!', { icon: '🚀' });
+      }
 
       setIsModalOpen(false);
       resetForm();
       fetchMisCosechas();
     } catch (error) {
-      const msg = error.response?.data?.message || 'Error al publicar cosecha';
+      const msg = error.response?.data?.message || 'Error al procesar cosecha';
       toast.error(msg);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleEditOpen = (prod) => {
+    setEditingId(prod.id);
+    setIsEditing(true);
+    setFormData({
+      nombre_producto: prod.nombre_producto || '',
+      categoria: 'General',
+      unidad_medida: prod.unidad_medida || '',
+      precio_unitario: prod.precio_unitario || '',
+      cantidad_disponible: prod.cantidad_disponible || '',
+      descripcion: prod.descripcion || '',
+      fecha_disponibilidad: prod.fecha_disponibilidad ? prod.fecha_disponibilidad.split('T')[0] : new Date().toISOString().split('T')[0]
+    });
+    setIsPreventa(prod.es_preventa ? true : false);
+    setPreview(prod.foto_url ? `http://localhost:5000${prod.foto_url}` : null);
+    setIsModalOpen(true);
+  };
+
+  const handleEliminar = async (id) => {
+    if (!window.confirm('¿Estás seguro que deseas eliminar esta cosecha? Esta acción no se puede deshacer.')) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`http://localhost:5000/api/cosechas/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Cosecha eliminada');
+      fetchMisCosechas();
+    } catch (error) {
+      toast.error('No se pudo eliminar la cosecha');
     }
   };
 
@@ -164,6 +193,8 @@ const MisCosechasPage = () => {
     setFoto(null);
     setPreview(null);
     setIsPreventa(false);
+    setIsEditing(false);
+    setEditingId(null);
   };
 
   const renderBadge = (estado) => {
@@ -207,7 +238,7 @@ const MisCosechasPage = () => {
         </div>
         
         <button 
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => { resetForm(); setIsModalOpen(true); }}
           className="bg-slate-900 hover:bg-slate-800 text-white py-3 px-6 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all shadow-xl shadow-slate-900/20 whitespace-nowrap active:scale-95"
         >
           <PlusCircle className="w-5 h-5" />
@@ -321,8 +352,8 @@ const MisCosechasPage = () => {
                     </div>
                   </div>
                   <div className="flex gap-1">
-                    <button className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"><Edit2 className="w-4 h-4" /></button>
-                    <button className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => handleEditOpen(prod)} className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"><Edit2 className="w-4 h-4" /></button>
+                    <button onClick={() => handleEliminar(prod.id)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 </div>
               </div>
@@ -375,8 +406,8 @@ const MisCosechasPage = () => {
                     </td>
                     <td className="px-8 py-5 text-right">
                       <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"><Edit2 className="w-4 h-4" /></button>
-                        <button className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"><Trash2 className="w-4 h-4" /></button>
+                        <button onClick={() => handleEditOpen(prod)} className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"><Edit2 className="w-4 h-4" /></button>
+                        <button onClick={() => handleEliminar(prod.id)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </td>
                   </tr>
@@ -398,8 +429,8 @@ const MisCosechasPage = () => {
                   <Sprout className="w-6 h-6" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-black text-slate-900 tracking-tight">Nueva Cosecha</h2>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Formulario de publicación</p>
+                  <h2 className="text-xl font-black text-slate-900 tracking-tight">{isEditing ? 'Editar Cosecha' : 'Nueva Cosecha'}</h2>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{isEditing ? 'Actualizar publicación' : 'Formulario de publicación'}</p>
                 </div>
               </div>
               <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:bg-slate-100 p-2 rounded-2xl transition-colors">
@@ -522,7 +553,7 @@ const MisCosechasPage = () => {
                 onClick={handleSubmit} 
                 className="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-sm shadow-xl shadow-emerald-600/20 transition-all active:scale-95 disabled:opacity-50"
               >
-                {isSubmitting ? 'Publicando...' : 'Publicar Ahora'}
+                {isSubmitting ? 'Procesando...' : (isEditing ? 'Guardar Cambios' : 'Publicar Ahora')}
               </button>
             </div>
 

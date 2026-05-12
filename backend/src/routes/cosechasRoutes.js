@@ -7,7 +7,7 @@ const uploadImage = require('../middlewares/uploadImageMiddleware');
 
 router.post('/', verifyToken, checkRole(['PRODUCTOR']), checkVerified, uploadImage.single('foto'), cosechasController.crearCosecha);
 router.get('/mi-catalogo', verifyToken, checkRole(['PRODUCTOR']), cosechasController.miCatalogo);
-router.put('/:id', verifyToken, checkRole(['PRODUCTOR']), checkVerified, cosechasController.actualizarCosecha);
+router.put('/:id', verifyToken, checkRole(['PRODUCTOR']), checkVerified, uploadImage.single('foto'), cosechasController.actualizarCosecha);
 router.delete('/:id', verifyToken, checkRole(['PRODUCTOR']), checkVerified, cosechasController.eliminarCosecha);
 router.get('/:id', verifyToken, cosechasController.getCosechaById);
 
