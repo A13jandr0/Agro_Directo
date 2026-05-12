@@ -1,18 +1,29 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import RegisterWizardPage from './pages/RegisterWizardPage';
 import FincaMap from './components/FincaMap';
 import ProducerProfile from './components/ProducerProfile';
-import AdminVerification from './pages/AdminVerification';
+import PanelAdminPage from './pages/PanelAdminPage';
 import LoginPage from './pages/LoginPage';
 import DashboardProductorPage from './pages/DashboardProductorPage';
 import DashboardCompradorPage from './pages/DashboardCompradorPage';
 import DashboardTransportistaPage from './pages/DashboardTransportistaPage';
 import MisCosechasPage from './pages/MisCosechasPage';
 import MiFincaPage from './pages/MiFincaPage';
-import MisPedidosProductorPage from './pages/MisPedidosProductorPage';
+import PedidosProductorPage from './pages/PedidosProductorPage';
 import MisIngresosPage from './pages/MisIngresosPage';
 import MiPerfilProductorPage from './pages/MiPerfilProductorPage';
+import MarketplacePage from './pages/MarketplacePage';
+import ProductoDetallePage from './pages/ProductoDetallePage';
+import MainLayout from './components/MainLayout';
+import { CartProvider } from './context/CartContext';
+import CarritoPage from './pages/CarritoPage';
+import MisPedidosPage from './pages/MisPedidosPage';
+import HojaDeRutaPage from './pages/HojaDeRutaPage';
+import BolsaCargaPage from './pages/BolsaCargaPage';
+import PerfilTransportistaPage from './pages/PerfilTransportistaPage';
+import HistorialTransaccionesPage from './pages/HistorialTransaccionesPage';
 
 // Rutas donde NO se muestra el navbar global
 const HIDDEN_NAVBAR_ROUTES = [
@@ -20,18 +31,27 @@ const HIDDEN_NAVBAR_ROUTES = [
   '/dashboard/productor', '/dashboard/comprador', '/dashboard/transportista',
   '/dashboard/productor/cosechas', '/dashboard/productor/finca',
   '/dashboard/productor/pedidos', '/dashboard/productor/ingresos',
-  '/dashboard/productor/perfil'
+  '/dashboard/productor/perfil', '/admin/verificaciones', '/marketplace',
+  '/carrito', '/dashboard/comprador/mis-pedidos', '/dashboard/transportista/bolsa',
+  '/dashboard/transportista/hoja-de-ruta'
 ];
 
 const NavbarWrapper = () => {
   const location = useLocation();
-  if (HIDDEN_NAVBAR_ROUTES.includes(location.pathname)) return null;
+  
+  // Ocultar en rutas específicas o que empiecen con /producto o /dashboard
+  const isHidden = HIDDEN_NAVBAR_ROUTES.includes(location.pathname) || 
+                   location.pathname.startsWith('/producto/') ||
+                   location.pathname.startsWith('/dashboard/');
+
+  if (isHidden) return null;
 
   return (
     <nav className="text-white shadow-md z-50 relative bg-emerald-700">
       <div className="container mx-auto px-6 py-4 flex justify-between items-center">
         <Link to="/" className="text-xl font-bold tracking-wider flex items-center gap-2">
-          🌱 AgroDirecto
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.9C15.5 4.9 17 3.5 19 1c1 2 2 4.5 2 8 0 5.5-4.78 11-10 11Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>
+          AgroDirecto
         </Link>
         <ul className="flex space-x-6 text-sm font-medium items-center">
           <li><Link to="/registro" className="hover:opacity-80 transition-opacity">Registro</Link></li>
@@ -50,7 +70,6 @@ const NavbarWrapper = () => {
 };
 
 function App() {
-  // Mock Data para Perfil de Confianza (US03)
   const mockProducer = {
     id: 1,
     nombreCompleto: 'Juan Pérez Mamani',
@@ -74,37 +93,48 @@ function App() {
   ];
 
   return (
-    <Router>
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <NavbarWrapper />
+    <CartProvider>
+      <Router>
+        <div className="min-h-screen bg-[#fafbfc] flex flex-col">
+          <Toaster position="top-right" reverseOrder={false} />
+          <NavbarWrapper />
 
-        <main className="flex-grow flex flex-col">
-          <Routes>
-            {/* Sprint 1 — Flujos Principales */}
-            <Route path="/" element={<RegisterWizardPage />} />
-            <Route path="/registro" element={<RegisterWizardPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/mapa" element={<div className="container mx-auto p-4 md:p-8"><FincaMap /></div>} />
-            <Route path="/perfil" element={<div className="container mx-auto p-4 md:p-8"><ProducerProfile producer={mockProducer} products={mockProducts} /></div>} />
-            <Route path="/admin" element={<div className="container mx-auto p-4 md:p-8"><AdminVerification /></div>} />
+          <main className="flex-grow flex flex-col">
+            <Routes>
+              <Route path="/" element={<RegisterWizardPage />} />
+              <Route path="/registro" element={<RegisterWizardPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/mapa" element={<div className="container mx-auto p-4 md:p-8"><FincaMap /></div>} />
+              <Route path="/perfil" element={<div className="container mx-auto p-4 md:p-8"><ProducerProfile producer={mockProducer} products={mockProducts} /></div>} />
+              <Route path="/admin/verificaciones" element={<PanelAdminPage />} />
 
-            {/* Dashboards existentes */}
-            <Route path="/dashboard/productor" element={<DashboardProductorPage />} />
-            <Route path="/dashboard/productor/cosechas" element={<MisCosechasPage />} />
-            <Route path="/dashboard/productor/finca" element={<MiFincaPage />} />
-            <Route path="/dashboard/productor/pedidos" element={<MisPedidosProductorPage />} />
-            <Route path="/dashboard/productor/ingresos" element={<MisIngresosPage />} />
-            <Route path="/dashboard/productor/perfil" element={<MiPerfilProductorPage />} />
-            <Route path="/dashboard/comprador" element={<DashboardCompradorPage />} />
-            <Route path="/dashboard/transportista" element={<DashboardTransportistaPage />} />
-          </Routes>
-        </main>
+              <Route element={<MainLayout />}>
+                <Route path="/dashboard/productor" element={<DashboardProductorPage />} />
+                <Route path="/dashboard/productor/cosechas" element={<MisCosechasPage />} />
+                <Route path="/dashboard/productor/finca" element={<MiFincaPage />} />
+                <Route path="/dashboard/productor/pedidos" element={<PedidosProductorPage />} />
+                <Route path="/dashboard/productor/ingresos" element={<MisIngresosPage />} />
+                <Route path="/dashboard/productor/perfil" element={<MiPerfilProductorPage />} />
+                <Route path="/dashboard/comprador" element={<DashboardCompradorPage />} />
+                <Route path="/dashboard/transportista" element={<DashboardTransportistaPage />} />
+                <Route path="/marketplace" element={<MarketplacePage />} />
+                <Route path="/producto/:id" element={<ProductoDetallePage />} />
+                <Route path="/carrito" element={<CarritoPage />} />
+                <Route path="/dashboard/comprador/mis-pedidos" element={<MisPedidosPage />} />
+                <Route path="/dashboard/transportista/perfil" element={<PerfilTransportistaPage />} />
+                <Route path="/dashboard/transportista/bolsa" element={<BolsaCargaPage />} />
+                <Route path="/dashboard/transportista/hoja-de-ruta" element={<HojaDeRutaPage />} />
+                <Route path="/dashboard/historial" element={<HistorialTransaccionesPage />} />
+              </Route>
+            </Routes>
+          </main>
 
-        <footer className="bg-gray-800 text-gray-400 text-center py-4 text-xs mt-auto">
-          AgroDirecto Santa Cruz © 2026 - Sprint 1
-        </footer>
-      </div>
-    </Router>
+          <footer className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-slate-500 text-center py-5 text-xs mt-auto font-medium tracking-wide">
+            <span className="text-slate-400 font-bold">AgroDirecto</span> Santa Cruz &copy; 2026 — Plataforma Agropecuaria Digital
+          </footer>
+        </div>
+      </Router>
+    </CartProvider>
   );
 }
 

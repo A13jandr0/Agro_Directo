@@ -293,7 +293,7 @@ exports.getPerfil = async (req, res) => {
                 .input('uid', sql.UniqueIdentifier, userId)
                 .query(`
                     SELECT tipo_productor, nombre_finca, municipio, provincia, departamento,
-                           anios_experiencia, tipo_documento, numero_documento,
+                           anios_experiencia, tipo_documento, numero_documento, url_documento,
                            ubicacion_gps.STAsText() AS ubicacion_wkt
                     FROM perfil_productor WHERE usuario_id = @uid
                 `);
@@ -323,7 +323,7 @@ exports.getPerfil = async (req, res) => {
                 .input('uid', sql.UniqueIdentifier, userId)
                 .query(`
                     SELECT tipo_transporte, capacidad_carga_kg, zona_operacion,
-                           numero_licencia, placa_vehiculo, tipo_documento_subido
+                           numero_licencia, placa_vehiculo, tipo_documento_subido, url_documento
                     FROM perfil_transportista WHERE usuario_id = @uid
                 `);
             perfil = r.recordset[0] || {};

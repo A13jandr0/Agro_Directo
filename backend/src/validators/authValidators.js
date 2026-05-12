@@ -33,9 +33,9 @@ const baseSchema = z.object({
         .min(7, 'El celular debe tener al menos 7 dígitos')
         .max(20),
 
-    rol: z.enum(['PRODUCTOR', 'COMPRADOR', 'TRANSPORTISTA'], {
+    rol: z.enum(['PRODUCTOR', 'COMPRADOR', 'TRANSPORTISTA', 'ADMINISTRADOR'], {
         required_error: 'El rol es obligatorio',
-        invalid_type_error: 'Rol inválido. Debe ser PRODUCTOR, COMPRADOR o TRANSPORTISTA'
+        invalid_type_error: 'Rol inválido. Debe ser PRODUCTOR, COMPRADOR, TRANSPORTISTA o ADMINISTRADOR'
     }),
 
     acepto_terminos: z

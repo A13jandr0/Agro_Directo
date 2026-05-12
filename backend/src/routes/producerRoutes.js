@@ -16,4 +16,8 @@ router.get('/perfil', verifyToken, checkRole('PRODUCTOR'), producerController.ge
 // PUT /api/productor/perfil — Actualizar perfil del productor
 router.put('/perfil', verifyToken, checkRole('PRODUCTOR'), producerController.updateProfile);
 
+// PUT /api/productor/perfil/qr — Subir código QR de pago (US12)
+const upload = require('../middlewares/uploadDocsMiddleware');
+router.put('/perfil/qr', verifyToken, checkRole('PRODUCTOR'), upload.single('qr_image'), producerController.updateQR);
+
 module.exports = router;

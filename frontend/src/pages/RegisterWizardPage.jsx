@@ -1,38 +1,77 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Eye, EyeOff, ChevronRight, ChevronLeft, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
+import {
+  Eye, EyeOff, ChevronRight, ChevronLeft, CheckCircle2,
+  Loader2, AlertCircle, Leaf, ShoppingCart, Truck, ShieldCheck,
+  Check
+} from 'lucide-react';
 
 const API = 'http://localhost:5000/api';
 
 // ── Paso 1: Selección de Rol ──────────────────────────
 const Step1Role = ({ formData, setFormData }) => {
   const roles = [
-    { id: 'PRODUCTOR', icon: '🌱', title: 'Soy Productor', desc: 'Vendo mis cosechas directamente', color: '#1D9E75', bg: 'bg-emerald-50 border-emerald-500', benefits: ['Publica tus productos', 'Recibe pagos directos', 'Gestiona tu inventario'] },
-    { id: 'COMPRADOR', icon: '🛒', title: 'Soy Comprador', desc: 'Compro productos del campo', color: '#378ADD', bg: 'bg-blue-50 border-blue-500', benefits: ['Precios sin intermediarios', 'Productos frescos', 'Seguimiento de pedidos'] },
-    { id: 'TRANSPORTISTA', icon: '🚚', title: 'Soy Transportista', desc: 'Transporto del campo a la ciudad', color: '#BA7517', bg: 'bg-amber-50 border-amber-500', benefits: ['Rutas disponibles', 'Gestiona entregas', 'Ingresos por flete'] },
+    {
+      id: 'PRODUCTOR', Icon: Leaf, title: 'Soy Productor',
+      desc: 'Vendo mis cosechas directamente',
+      color: '#1D9E75', bgSelected: 'bg-emerald-50 border-emerald-500',
+      iconBg: 'bg-emerald-100 text-emerald-600',
+      benefits: ['Publica tus productos', 'Recibe pagos directos', 'Gestiona tu inventario']
+    },
+    {
+      id: 'COMPRADOR', Icon: ShoppingCart, title: 'Soy Comprador',
+      desc: 'Compro productos del campo',
+      color: '#378ADD', bgSelected: 'bg-blue-50 border-blue-500',
+      iconBg: 'bg-blue-100 text-blue-600',
+      benefits: ['Precios sin intermediarios', 'Productos frescos', 'Seguimiento de pedidos']
+    },
+    {
+      id: 'TRANSPORTISTA', Icon: Truck, title: 'Soy Transportista',
+      desc: 'Transporto del campo a la ciudad',
+      color: '#BA7517', bgSelected: 'bg-amber-50 border-amber-500',
+      iconBg: 'bg-amber-100 text-amber-600',
+      benefits: ['Rutas disponibles', 'Gestiona entregas', 'Ingresos por flete']
+    },
+    {
+      id: 'ADMINISTRADOR', Icon: ShieldCheck, title: 'Soy Administrador',
+      desc: 'Gestiono usuarios y apruebo',
+      color: '#4B5563', bgSelected: 'bg-gray-100 border-gray-500',
+      iconBg: 'bg-gray-200 text-gray-600',
+      benefits: ['Aprobar perfiles', 'Moderación', 'Acceso total']
+    },
   ];
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-gray-800 mb-2 text-center">¿Cómo usarás AgroDirecto?</h2>
-      <p className="text-gray-500 text-center mb-8">Selecciona tu rol para personalizar tu experiencia</p>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <h2 className="text-2xl font-black text-slate-900 mb-2 text-center tracking-tight">
+        ¿Cómo usarás AgroDirecto?
+      </h2>
+      <p className="text-gray-500 text-sm text-center mb-8">Selecciona tu rol para personalizar tu experiencia</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {roles.map(r => {
           const sel = formData.rol === r.id;
+          const RoleIcon = r.Icon;
           return (
-            <div key={r.id} onClick={() => setFormData(p => ({ ...p, rol: r.id }))}
-              className={`relative p-6 rounded-2xl border-2 cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-lg ${sel ? `${r.bg} shadow-lg border-2` : 'border-gray-200 bg-white'}`}>
-              {sel && <CheckCircle2 className="absolute top-3 right-3 w-6 h-6" style={{ color: r.color }} />}
-              <div className="text-5xl mb-4 text-center">{r.icon}</div>
-              <h3 className="text-xl font-bold text-gray-800 mb-2 text-center">{r.title}</h3>
-              <p className="text-gray-500 text-sm text-center mb-4">{r.desc}</p>
-              <div className="border-t pt-4">
+            <div
+              key={r.id}
+              onClick={() => setFormData(p => ({ ...p, rol: r.id }))}
+              className={`relative p-5 rounded-2xl border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                sel ? `${r.bgSelected} shadow-md` : 'border-gray-200 bg-white hover:border-gray-300'
+              }`}
+            >
+              {sel && <CheckCircle2 className="absolute top-3 right-3 w-5 h-5" style={{ color: r.color }} />}
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 ${r.iconBg}`}>
+                <RoleIcon className="w-7 h-7" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900 mb-1 text-center">{r.title}</h3>
+              <p className="text-gray-500 text-xs text-center mb-4">{r.desc}</p>
+              <div className="border-t border-gray-100 pt-3">
                 <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-2">Beneficios</p>
                 <ul className="space-y-1.5">
                   {r.benefits.map((b, i) => (
-                    <li key={i} className="flex items-center text-sm text-gray-600">
-                      <CheckCircle2 className="w-4 h-4 mr-2 flex-shrink-0" style={{ color: r.color }} />{b}
+                    <li key={i} className="flex items-center text-xs text-gray-600">
+                      <CheckCircle2 className="w-3.5 h-3.5 mr-1.5 flex-shrink-0" style={{ color: r.color }} />{b}
                     </li>
                   ))}
                 </ul>
@@ -52,7 +91,7 @@ const Step2Common = ({ formData, setFormData, errors }) => {
 
   return (
     <div className="max-w-lg mx-auto">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Información Personal</h2>
+      <h2 className="text-2xl font-black text-slate-900 mb-6 text-center tracking-tight">Información Personal</h2>
       <div className="space-y-4">
         <Field label="Nombre completo" error={errors.nombre_completo}>
           <input type="text" value={formData.nombre_completo} onChange={e => set('nombre_completo', e.target.value)}
@@ -65,7 +104,7 @@ const Step2Common = ({ formData, setFormData, errors }) => {
         <Field label="Contraseña" hint="Mín. 8 caracteres, 1 mayúscula, 1 número" error={errors.contrasena}>
           <div className="relative">
             <input type={showPass ? 'text' : 'password'} value={formData.contrasena} onChange={e => set('contrasena', e.target.value)}
-              className="input-field pr-10" placeholder="••••••••" />
+              className="input-field pr-10" placeholder="Tu contraseña segura" />
             <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
               {showPass ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
@@ -100,10 +139,10 @@ const Step3Profile = ({ formData, setFormData, errors }) => {
 
   return (
     <div className="max-w-lg mx-auto">
-      <h2 className="text-2xl font-bold text-gray-800 mb-2 text-center">
-        Datos de {rol === 'PRODUCTOR' ? 'Productor' : rol === 'COMPRADOR' ? 'Comprador' : 'Transportista'}
+      <h2 className="text-2xl font-black text-slate-900 mb-2 text-center tracking-tight">
+        Datos de {rol === 'PRODUCTOR' ? 'Productor' : rol === 'COMPRADOR' ? 'Comprador' : rol === 'TRANSPORTISTA' ? 'Transportista' : 'Administrador'}
       </h2>
-      <p className="text-gray-500 text-center mb-6">Completa tu perfil según tu rol</p>
+      <p className="text-gray-500 text-sm text-center mb-6">Completa tu perfil según tu rol</p>
       <div className="space-y-4">
         {rol === 'PRODUCTOR' && (<>
           <Field label="Tipo de productor" error={errors.tipo_productor}>
@@ -187,6 +226,16 @@ const Step3Profile = ({ formData, setFormData, errors }) => {
             </select>
           </Field>
         </>)}
+
+        {rol === 'ADMINISTRADOR' && (
+          <div className="text-center py-8">
+            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <ShieldCheck className="w-8 h-8 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900">No se requieren más datos</h3>
+            <p className="text-gray-500 text-sm mt-2 max-w-sm mx-auto">El perfil de administrador no necesita información adicional. Puedes finalizar tu registro.</p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -195,7 +244,7 @@ const Step3Profile = ({ formData, setFormData, errors }) => {
 // ── Componente de campo reutilizable ──────────────────
 const Field = ({ label, hint, error, children }) => (
   <div>
-    <label className="block text-sm font-semibold text-gray-700 mb-1">
+    <label className="block text-sm font-semibold text-gray-700 mb-1.5">
       {label}
       {hint && <span className="text-xs text-gray-400 font-normal ml-1">({hint})</span>}
     </label>
@@ -217,9 +266,8 @@ const RegisterWizardPage = () => {
   });
 
   const stepLabels = ['Elige tu Rol', 'Datos Personales', 'Perfil Específico'];
-  const rolColor = formData.rol === 'PRODUCTOR' ? '#1D9E75' : formData.rol === 'COMPRADOR' ? '#378ADD' : formData.rol === 'TRANSPORTISTA' ? '#BA7517' : '#1D9E75';
+  const rolColor = formData.rol === 'PRODUCTOR' ? '#1D9E75' : formData.rol === 'COMPRADOR' ? '#378ADD' : formData.rol === 'TRANSPORTISTA' ? '#BA7517' : formData.rol === 'ADMINISTRADOR' ? '#4B5563' : '#1D9E75';
 
-  // Validaciones locales por paso
   const validateStep = () => {
     const e = {};
     if (step === 1) {
@@ -273,7 +321,7 @@ const RegisterWizardPage = () => {
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify(res.data.usuario));
       const rol = res.data.usuario.rol;
-      navigate(rol === 'PRODUCTOR' ? '/mapa' : rol === 'COMPRADOR' ? '/dashboard/comprador' : '/dashboard/transportista');
+      navigate(rol === 'PRODUCTOR' ? '/dashboard/productor' : rol === 'COMPRADOR' ? '/dashboard/comprador' : rol === 'TRANSPORTISTA' ? '/dashboard/transportista' : '/admin/verificaciones');
     } catch (err) {
       const data = err.response?.data;
       if (data?.detalles) {
@@ -288,15 +336,23 @@ const RegisterWizardPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white relative flex flex-col items-center justify-center py-8 px-4"
-      style={{ backgroundImage: 'radial-gradient(#1D9E75 0.5px, transparent 0.5px)', backgroundSize: '24px 24px' }}>
-      <div className="absolute inset-0 bg-white/90 z-0" />
-      <div className="relative z-10 w-full max-w-4xl">
+    <div className="min-h-screen bg-[#fafbfc] relative flex flex-col items-center justify-center py-8 px-4 font-sans">
+      {/* Background effects */}
+      <div className="absolute inset-0 dot-pattern opacity-30" />
+      <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-emerald-100/30 rounded-full blur-[120px] -translate-x-1/3 -translate-y-1/3" />
+      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-blue-100/20 rounded-full blur-[100px] translate-x-1/4 translate-y-1/4" />
+
+      <div className="relative z-10 w-full max-w-4xl animate-slide-up">
         {/* Logo */}
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center gap-2 mb-2">
-            <span className="text-3xl">🌱</span>
-            <span className="text-2xl font-black text-gray-800 tracking-wider uppercase">AgroDirecto</span>
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-3 mb-2">
+            <div className="w-11 h-11 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
+              <Leaf className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-left">
+              <span className="text-2xl font-black text-slate-900 tracking-tight block leading-tight">AgroDirecto</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em]">Santa Cruz</span>
+            </div>
           </div>
         </div>
 
@@ -308,13 +364,17 @@ const RegisterWizardPage = () => {
             const done = step > num;
             return (
               <React.Fragment key={i}>
-                {i > 0 && <div className={`h-0.5 w-12 mx-1 transition-colors ${done ? 'bg-emerald-500' : 'bg-gray-300'}`} />}
-                <div className="flex items-center gap-2">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${done ? 'bg-emerald-500 text-white' : active ? 'text-white' : 'bg-gray-200 text-gray-500'}`}
-                    style={active ? { backgroundColor: rolColor } : {}}>
-                    {done ? '✓' : num}
+                {i > 0 && <div className={`h-0.5 w-16 mx-1 rounded-full transition-all duration-500 ${done ? 'bg-emerald-500' : 'bg-slate-200'}`} />}
+                <div className="flex items-center gap-2.5">
+                  <div
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black transition-all duration-500 ${
+                      done ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' : active ? 'text-white shadow-lg' : 'bg-slate-100 text-slate-400'
+                    }`}
+                    style={active ? { backgroundColor: rolColor, boxShadow: `0 8px 16px ${rolColor}33` } : {}}
+                  >
+                    {done ? <Check className="w-4 h-4" /> : num}
                   </div>
-                  <span className={`text-sm font-medium hidden sm:inline ${active ? 'text-gray-800' : 'text-gray-400'}`}>{label}</span>
+                  <span className={`text-sm font-bold hidden sm:inline transition-colors duration-300 ${active ? 'text-slate-900' : 'text-slate-400'}`}>{label}</span>
                 </div>
               </React.Fragment>
             );
@@ -322,43 +382,47 @@ const RegisterWizardPage = () => {
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 md:p-10">
+        <div className="bg-white rounded-3xl shadow-xl shadow-slate-900/[0.04] border border-slate-200/60 p-6 md:p-10">
           {apiError && (
-            <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2 text-sm">
-              <AlertCircle className="w-5 h-5 flex-shrink-0" />{apiError}
+            <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3.5 rounded-xl flex items-center gap-3 text-sm font-medium animate-scale-bounce">
+              <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center shrink-0">
+                <AlertCircle className="w-4 h-4" />
+              </div>
+              {apiError}
             </div>
           )}
 
-          {step === 1 && <Step1Role formData={formData} setFormData={setFormData} />}
-          {step === 2 && <Step2Common formData={formData} setFormData={setFormData} errors={errors} />}
-          {step === 3 && <Step3Profile formData={formData} setFormData={setFormData} errors={errors} />}
+          <div className="animate-fade-in">
+            {step === 1 && <Step1Role formData={formData} setFormData={setFormData} />}
+            {step === 2 && <Step2Common formData={formData} setFormData={setFormData} errors={errors} />}
+            {step === 3 && <Step3Profile formData={formData} setFormData={setFormData} errors={errors} />}
+          </div>
 
-          {/* Navegación */}
-          <div className="flex justify-between mt-8 pt-6 border-t border-gray-100">
+          {/* Navigation */}
+          <div className="flex justify-between mt-8 pt-6 border-t border-slate-100">
             {step > 1 ? (
-              <button onClick={prev} className="flex items-center gap-2 px-6 py-3 border border-gray-300 rounded-xl text-gray-600 font-medium hover:bg-gray-50 transition">
-                <ChevronLeft className="w-5 h-5" />Anterior
+              <button onClick={prev} className="flex items-center gap-2 px-6 py-3 border border-slate-200 rounded-xl text-slate-600 font-bold text-sm hover:bg-slate-50 hover:border-slate-300 transition-all duration-300 group">
+                <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />Anterior
               </button>
             ) : <div />}
 
             {step < 3 ? (
-              <button onClick={next} className="flex items-center gap-2 px-8 py-3 rounded-xl text-white font-bold shadow-lg hover:opacity-90 transition"
-                style={{ backgroundColor: rolColor }}>
-                Siguiente<ChevronRight className="w-5 h-5" />
+              <button onClick={next} className="flex items-center gap-2 px-7 py-3 rounded-xl text-white font-bold text-sm shadow-lg transition-all duration-500 hover:-translate-y-0.5 hover:shadow-xl group"
+                style={{ backgroundColor: rolColor, boxShadow: `0 8px 24px ${rolColor}33` }}>
+                Siguiente<ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
               </button>
             ) : (
               <button onClick={handleSubmit} disabled={loading}
-                className="flex items-center gap-2 px-8 py-3 rounded-xl text-white font-bold shadow-lg hover:opacity-90 transition disabled:opacity-50"
-                style={{ backgroundColor: rolColor }}>
-                {loading ? <><Loader2 className="w-5 h-5 animate-spin" />Registrando...</> : <><CheckCircle2 className="w-5 h-5" />Crear Cuenta</>}
+                className="flex items-center gap-2 px-7 py-3 rounded-xl text-white font-bold text-sm shadow-lg transition-all duration-500 hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-50 disabled:hover:translate-y-0"
+                style={{ backgroundColor: rolColor, boxShadow: `0 8px 24px ${rolColor}33` }}>
+                {loading ? <><Loader2 className="w-4 h-4 animate-spin" />Registrando...</> : <><CheckCircle2 className="w-4 h-4" />Crear Cuenta</>}
               </button>
             )}
           </div>
         </div>
 
-        {/* Link Login */}
-        <p className="text-center mt-6 text-gray-500 text-sm">
-          ¿Ya tienes cuenta? <a href="/login" className="font-bold underline" style={{ color: rolColor }}>Inicia sesión</a>
+        <p className="text-center mt-8 text-slate-500 text-sm font-medium animate-fade-in" style={{ animationDelay: '0.3s' }}>
+          ¿Ya tienes cuenta? <a href="/login" className="font-black hover:underline transition-colors" style={{ color: rolColor }}>Inicia sesión</a>
         </p>
       </div>
     </div>

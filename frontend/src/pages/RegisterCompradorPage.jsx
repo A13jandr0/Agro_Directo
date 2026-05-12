@@ -98,7 +98,19 @@ const RegisterCompradorPage = () => {
     setServerError('');
 
     try {
-      const payload = { ...formData, rol: 'Comprador' };
+      const payload = { 
+        nombre_completo: formData.nombreCompleto,
+        correo: formData.correo,
+        contrasena: formData.contrasena,
+        celular: formData.celular,
+        rol: 'COMPRADOR',
+        acepto_terminos: formData.aceptaTerminos,
+        acepto_privacidad: formData.aceptaPrivacidad,
+        // Perfil
+        tipo_comprador: formData.tipoComprador === 'Persona' ? 'Persona natural' : formData.tipoComprador,
+        nombre_negocio: formData.nombreNegocio || null,
+        ciudad_principal: formData.ciudadPrincipal
+      };
       const res = await axios.post('http://localhost:5000/api/auth/register', payload);
       
       const token = res.data.token;

@@ -182,3 +182,32 @@ exports.updateProfile = async (req, res) => {
         res.status(500).json({ error: 'Error al actualizar el perfil' });
     }
 };
+
+// -------------------------------------------------------
+// PUT /api/productor/perfil/qr
+// -------------------------------------------------------
+exports.updateQR = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'Debe subir una imagen del código QR' });
+        }
+
+        const userId = req.user.id;
+        const qrUrl = `/uploads/${req.file.filename}`;
+        const pool = await getPool();
+
+        await pool.request()
+            .input('usuario_id', sql.UniqueIdentifier, userId)
+            .input('qr_url', sql.VarChar(500), qrUrl)
+            .query(`
+                UPDATE perfil_productor 
+                SET qr_pago_ruta = @qr_url, fecha_actualizacion = GETDATE()
+                WHERE usuario_id = @usuario_id
+            `);
+
+        res.json({ mensaje: 'Código QR de pago actualizado', qr_url: qrUrl });
+    } catch (error) {
+        console.error('Update QR Error:', error);
+        res.status(500).json({ error: 'Error al actualizar el código QR' });
+    }
+};

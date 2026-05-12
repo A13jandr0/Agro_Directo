@@ -7,7 +7,7 @@ const uploadController = require('../controllers/uploadController');
 const authController = require('../controllers/authController');
 const { verifyToken } = require('../middlewares/authMiddleware');
 const { checkRole } = require('../middlewares/roleMiddleware');
-const upload = require('../middlewares/uploadMiddleware');
+const uploadDocs = require('../middlewares/uploadDocsMiddleware');
 
 // GET /api/usuarios/mi-perfil — Perfil completo del usuario autenticado (cualquier rol)
 router.get('/mi-perfil', verifyToken, authController.getPerfil);
@@ -18,7 +18,10 @@ router.post(
     '/documentos',
     verifyToken,
     checkRole(['PRODUCTOR', 'TRANSPORTISTA']),
-    upload.single('documento'),
+    uploadDocs.fields([
+        { name: 'documento_ci', maxCount: 1 },
+        { name: 'documento_rau', maxCount: 1 }
+    ]),
     uploadController.uploadDocument
 );
 
