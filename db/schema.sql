@@ -279,7 +279,7 @@ CREATE TABLE Cosechas (
         ON DELETE CASCADE
         ON UPDATE CASCADE,
         
-    CONSTRAINT CHK_Cosechas_UnidadMedida CHECK (unidad_medida IN ('Quintal', 'Arroba')),
+    CONSTRAINT CHK_Cosechas_UnidadMedida CHECK (unidad_medida IN ('Quintal', 'Arroba', 'Kilogramo', 'Unidad', 'Caja')),
     
     CONSTRAINT CHK_Cosechas_EstadoPublicacion CHECK (estado_publicacion IN ('Activo', 'Pausado', 'Agotado'))
 );
