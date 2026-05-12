@@ -33,13 +33,6 @@ const Step1Role = ({ formData, setFormData }) => {
       iconBg: 'bg-amber-100 text-amber-600',
       benefits: ['Rutas disponibles', 'Gestiona entregas', 'Ingresos por flete']
     },
-    {
-      id: 'ADMINISTRADOR', Icon: ShieldCheck, title: 'Soy Administrador',
-      desc: 'Gestiono usuarios y apruebo',
-      color: '#4B5563', bgSelected: 'bg-gray-100 border-gray-500',
-      iconBg: 'bg-gray-200 text-gray-600',
-      benefits: ['Aprobar perfiles', 'Moderación', 'Acceso total']
-    },
   ];
 
   return (
@@ -48,7 +41,7 @@ const Step1Role = ({ formData, setFormData }) => {
         ¿Cómo usarás AgroDirecto?
       </h2>
       <p className="text-gray-500 text-sm text-center mb-8">Selecciona tu rol para personalizar tu experiencia</p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-4xl mx-auto">
         {roles.map(r => {
           const sel = formData.rol === r.id;
           const RoleIcon = r.Icon;
