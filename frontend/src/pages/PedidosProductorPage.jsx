@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -89,7 +89,7 @@ const PedidosProductorPage = () => {
       case 'RECHAZADO':
         return { label: 'Rechazado', color: 'bg-red-100 text-red-700', icon: XCircle };
       case 'ENVIADO':
-        return { label: 'Enviado', color: 'bg-blue-100 text-blue-700', icon: Truck };
+        return { label: 'Enviado', color: 'bg-emerald-100 text-emerald-700', icon: Truck };
       case 'ENTREGADO':
         return { label: 'Entregado', color: 'bg-emerald-100 text-emerald-700', icon: ShieldCheck };
       default:

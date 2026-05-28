@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Leaf, LayoutDashboard, Sprout, PlusCircle, ShoppingBag, MapPin, BarChart2, User, Settings, LogOut, 
@@ -117,7 +117,7 @@ const MisPedidosProductorPage = () => {
   const getStatusColor = (estado) => {
     switch(estado) {
       case 'Pendiente': return 'bg-yellow-100 text-yellow-700';
-      case 'Confirmado': return 'bg-blue-100 text-blue-700';
+      case 'Confirmado': return 'bg-emerald-100 text-emerald-700';
       case 'Enviado': return 'bg-orange-100 text-orange-700';
       case 'Entregado': return 'bg-green-100 text-green-700';
       case 'Cancelado': return 'bg-red-100 text-red-700';
@@ -254,7 +254,7 @@ const MisPedidosProductorPage = () => {
             {[
               { id: 'Todos', label: 'Todos', count: pedidos.length, badgeClass: 'bg-gray-100 text-gray-600' },
               { id: 'Pendientes', label: 'Pendientes', count: pendientesCount, badgeClass: 'bg-yellow-100 text-yellow-700' },
-              { id: 'Confirmados', label: 'Confirmados', count: countByStatus('Confirmado'), badgeClass: 'bg-blue-100 text-blue-700' },
+              { id: 'Confirmados', label: 'Confirmados', count: countByStatus('Confirmado'), badgeClass: 'bg-emerald-100 text-emerald-700' },
               { id: 'Enviados', label: 'Enviados', count: countByStatus('Enviado'), badgeClass: 'bg-orange-100 text-orange-700' },
               { id: 'Entregados', label: 'Entregados', count: countByStatus('Entregado'), badgeClass: 'bg-green-100 text-green-700' },
               { id: 'Cancelados', label: 'Cancelados', count: countByStatus('Cancelado'), badgeClass: 'bg-red-100 text-red-700' },
@@ -402,7 +402,7 @@ const MisPedidosProductorPage = () => {
                                 <button onClick={() => handleAction(pedido.id, 'Enviado')} className="w-full bg-orange-500 text-white py-2 rounded-lg text-sm font-semibold hover:bg-orange-600 transition-colors shadow-sm">Marcar como Enviado</button>
                               )}
                               {pedido.estado === 'Enviado' && (
-                                <button onClick={() => handleAction(pedido.id, 'Entregado')} className="w-full bg-blue-500 text-white py-2 rounded-lg text-sm font-semibold hover:bg-blue-600 transition-colors shadow-sm">Marcar como Entregado</button>
+                                <button onClick={() => handleAction(pedido.id, 'Entregado')} className="w-full bg-emerald-500 text-white py-2 rounded-lg text-sm font-semibold hover:bg-emerald-600 transition-colors shadow-sm">Marcar como Entregado</button>
                               )}
                               {pedido.estado === 'Entregado' && (
                                 <div className="flex items-center gap-2 text-green-600 font-bold justify-center py-2 bg-green-50 rounded-lg">

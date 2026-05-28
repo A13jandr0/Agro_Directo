@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, LayersControl } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Map as MapIcon, Home, ShoppingCart, Info } from 'lucide-react';
@@ -47,7 +47,7 @@ const MapaCalorSponsor = () => {
             <div className="flex items-center justify-between mb-6">
                 <div>
                     <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                        <MapIcon className="text-blue-600" /> Mapa de Flujo Comercial AgroDirecto
+                        <MapIcon className="text-emerald-600" /> Mapa de Flujo Comercial AgroDirecto
                     </h2>
                     <p className="text-gray-500 text-sm">Visualización de origen de producción vs. demanda en ciudades</p>
                 </div>

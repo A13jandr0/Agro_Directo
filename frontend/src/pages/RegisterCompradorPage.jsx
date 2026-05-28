@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
@@ -48,7 +48,7 @@ const RegisterCompradorPage = () => {
     return score;
   };
   const strength = getPasswordStrength();
-  const strengthColors = ['bg-gray-200', 'bg-red-500', 'bg-yellow-400', 'bg-blue-500']; // Azul en lugar de verde
+  const strengthColors = ['bg-gray-200', 'bg-red-500', 'bg-yellow-400', 'bg-emerald-500']; // Azul en lugar de verde
 
   // Contador de campos
   const countCompletedFields = () => {
@@ -133,7 +133,7 @@ const RegisterCompradorPage = () => {
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(white 1px, transparent 1px)', backgroundSize: '16px 16px' }}></div>
         <div className="relative z-10">
           <h2 className="text-3xl font-black tracking-tight mb-2">Regístrate en menos de 2 minutos</h2>
-          <p className="text-blue-100">Accede a cientos de productores locales sin intermediarios.</p>
+          <p className="text-emerald-100">Accede a cientos de productores locales sin intermediarios.</p>
         </div>
       </div>
 
@@ -193,9 +193,9 @@ const RegisterCompradorPage = () => {
                   <div className={`h-full transition-all duration-300 ${strengthColors[strength]}`} style={{ width: `${(strength / 3) * 100}%` }}></div>
                 </div>
                 <div className="flex gap-2 mt-1 text-[10px] sm:text-xs">
-                  <span className={hasMinLen ? "text-blue-600 font-medium" : "text-gray-400"}>✓ 8 caracteres</span>
-                  <span className={hasUpper ? "text-blue-600 font-medium" : "text-gray-400"}>✓ 1 mayúscula</span>
-                  <span className={hasNumber ? "text-blue-600 font-medium" : "text-gray-400"}>✓ 1 número</span>
+                  <span className={hasMinLen ? "text-emerald-600 font-medium" : "text-gray-400"}>✓ 8 caracteres</span>
+                  <span className={hasUpper ? "text-emerald-600 font-medium" : "text-gray-400"}>✓ 1 mayúscula</span>
+                  <span className={hasNumber ? "text-emerald-600 font-medium" : "text-gray-400"}>✓ 1 número</span>
                 </div>
               </div>
               <div>
@@ -206,7 +206,7 @@ const RegisterCompradorPage = () => {
             </div>
             
             <div className="pt-4 flex justify-end">
-              <button onClick={handleNext} className="px-8 py-3 bg-[#378ADD] text-white font-bold rounded-lg shadow hover:bg-blue-600 transition-colors">
+              <button onClick={handleNext} className="px-8 py-3 bg-[#378ADD] text-white font-bold rounded-lg shadow hover:bg-emerald-600 transition-colors">
                 Continuar a Preferencias →
               </button>
             </div>
@@ -218,9 +218,9 @@ const RegisterCompradorPage = () => {
           <div className="animate-fade-in space-y-6">
             
             {/* VENTAJA VISIBLE */}
-            <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg flex items-center gap-3">
+            <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-lg flex items-center gap-3">
               <span className="text-[#378ADD] text-2xl">✓</span>
-              <p className="text-blue-800 text-sm font-medium">Los compradores tienen acceso inmediato a la plataforma. No necesitas esperar ningún proceso de verificación.</p>
+              <p className="text-emerald-800 text-sm font-medium">Los compradores tienen acceso inmediato a la plataforma. No necesitas esperar ningún proceso de verificación.</p>
             </div>
 
             <div>
@@ -234,7 +234,7 @@ const RegisterCompradorPage = () => {
                   <div 
                     key={tipo.id}
                     onClick={() => { setFormData(p => ({...p, tipoComprador: tipo.id})); setErrors(p => ({...p, tipoComprador: ''})) }}
-                    className={`border-2 p-4 rounded-xl cursor-pointer text-center transition-all ${formData.tipoComprador === tipo.id ? 'border-[#378ADD] bg-blue-50 shadow-sm' : 'border-gray-200 hover:border-blue-300'}`}
+                    className={`border-2 p-4 rounded-xl cursor-pointer text-center transition-all ${formData.tipoComprador === tipo.id ? 'border-[#378ADD] bg-emerald-50 shadow-sm' : 'border-gray-200 hover:border-emerald-300'}`}
                   >
                     <div className="text-3xl mb-2">{tipo.icon}</div>
                     <div className="font-bold text-gray-800">{tipo.label}</div>
@@ -302,7 +302,7 @@ const RegisterCompradorPage = () => {
                 ← Volver
               </button>
               
-              <button onClick={handleSubmit} disabled={isSubmitting} className="px-8 py-3 bg-[#378ADD] text-white font-bold rounded-lg shadow-lg hover:bg-blue-600 transition-colors disabled:opacity-70 flex items-center gap-2">
+              <button onClick={handleSubmit} disabled={isSubmitting} className="px-8 py-3 bg-[#378ADD] text-white font-bold rounded-lg shadow-lg hover:bg-emerald-600 transition-colors disabled:opacity-70 flex items-center gap-2">
                 {isSubmitting ? 'Creando...' : '¡Empezar a comprar! 🚀'}
               </button>
             </div>

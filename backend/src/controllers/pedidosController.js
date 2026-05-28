@@ -186,6 +186,23 @@ exports.crearPedido = async (req, res) => {
 
         await transaction.begin();
 
+        // Validar stock antes de crear pedido
+        for (const item of items) {
+            const stockCheck = await new sql.Request(transaction)
+                .input('cosecha_id', sql.UniqueIdentifier, item.cosecha_id)
+                .query('SELECT cantidad_disponible, nombre_producto FROM Cosechas WHERE id = @cosecha_id');
+            
+            if (stockCheck.recordset.length > 0) {
+                const stockItem = stockCheck.recordset[0];
+                if (item.cantidad > stockItem.cantidad_disponible) {
+                    await transaction.rollback();
+                    return res.status(400).json({
+                        error: `Stock insuficiente para "${stockItem.nombre_producto}". Disponible: ${stockItem.cantidad_disponible}, Solicitado: ${item.cantidad}.`
+                    });
+                }
+            }
+        }
+
         // Crear el pedido con comprobante
         const pedidoResult = await new sql.Request(transaction)
             .input('comprador_id', sql.UniqueIdentifier, compradorId)
@@ -229,7 +246,7 @@ exports.getPedidosComprador = async (req, res) => {
         const result = await pool.request()
             .input('usuario_id', sql.UniqueIdentifier, userId)
             .query(`
-                SELECT p.*, d.cantidad, d.precio_unitario, c.nombre_producto, c.foto_url
+                SELECT p.*, d.cantidad, d.precio_unitario, c.nombre_producto, c.foto_url, c.es_preventa, c.fecha_disponibilidad
                 FROM Pedidos p
                 INNER JOIN Detalle_Pedidos d ON d.pedido_id = p.id
                 INNER JOIN Cosechas c ON d.cosecha_id = c.id
@@ -247,7 +264,9 @@ exports.getPedidosComprador = async (req, res) => {
                 nombre_producto: row.nombre_producto,
                 foto_url: row.foto_url,
                 cantidad: row.cantidad,
-                precio_unitario: row.precio_unitario
+                precio_unitario: row.precio_unitario,
+                es_preventa: row.es_preventa,
+                fecha_disponibilidad: row.fecha_disponibilidad
             });
         });
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Search, Filter, CheckCircle, XCircle, FileText, Eye, X, Loader2, AlertCircle, Users, Clock } from 'lucide-react';
 
@@ -82,7 +82,7 @@ const AdminVerification = () => {
   const getRoleBadge = (rol) => {
     const styles = {
       PRODUCTOR: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-      TRANSPORTISTA: 'bg-blue-100 text-blue-800 border-blue-200',
+      TRANSPORTISTA: 'bg-emerald-100 text-emerald-800 border-emerald-200',
       COMPRADOR: 'bg-purple-100 text-purple-800 border-purple-200',
     };
     return (
@@ -223,7 +223,7 @@ const AdminVerification = () => {
                     <img src={`http://localhost:5000${selectedUser.documento.url}`} alt="Documento" className="max-h-48 object-contain rounded-lg" />
                   ) : (
                     <a href={`http://localhost:5000${selectedUser.documento.url}`} target="_blank" rel="noreferrer"
-                      className="text-blue-600 hover:underline flex flex-col items-center gap-2">
+                      className="text-emerald-600 hover:underline flex flex-col items-center gap-2">
                       <FileText className="w-10 h-10" />Ver Documento
                     </a>
                   )}

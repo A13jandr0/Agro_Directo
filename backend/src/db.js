@@ -7,7 +7,7 @@ const dbConfig = {
     user: 'sa',
     password: 'pumari14',
     server: 'localhost',
-    database: 'AgroDirecto_Santa_Cruz',
+    database: 'AgroDirecto_Santa_Cruz_1',
     options: {
         encrypt: false,
         trustServerCertificate: true,

@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 
 const TrustProfile = ({ producer }) => {
     // producer prop mock: { name: 'Juan Perez', rating: 4.5, experience: 5, sales: 10, status: 'Verificado' }
@@ -40,7 +40,7 @@ const TrustProfile = ({ producer }) => {
                         <div className="bg-gray-50 p-3 rounded">
                             <p className="text-xs text-gray-500 uppercase">Ventas Exitosas</p>
                             {producer.sales === 0 ? (
-                                <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded">Productor nuevo</span>
+                                <span className="bg-emerald-100 text-emerald-800 text-xs font-medium px-2 py-1 rounded">Productor nuevo</span>
                             ) : (
                                 <p className="font-semibold text-gray-800">{producer.sales}</p>
                             )}

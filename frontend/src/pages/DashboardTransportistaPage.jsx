@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Truck, ClipboardList, MapPin, Package, DollarSign, Clock,
@@ -103,7 +103,7 @@ const DashboardTransportistaPage = () => {
       {/* STATS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
         {[
-          { label: 'Entregas mes', value: transporterState.entregasMes, icon: Truck, gradient: 'from-blue-500 to-indigo-600' },
+          { label: 'Entregas mes', value: transporterState.entregasMes, icon: Truck, gradient: 'from-emerald-500 to-indigo-600' },
           { label: 'Ingresos mes', value: `Bs. ${transporterState.ingresosMes}`, icon: DollarSign, gradient: 'from-emerald-500 to-teal-600' },
           { label: 'Calificación', value: transporterState.calificacion, icon: Star, gradient: 'from-amber-500 to-orange-600' },
           { label: 'Tiempo prom.', value: `${transporterState.tiempoPromedio} hrs`, icon: Clock, gradient: 'from-violet-500 to-purple-600' }
@@ -154,9 +154,9 @@ const DashboardTransportistaPage = () => {
                     </div>
                     {/* Route visualization */}
                     <div className="relative pl-7 space-y-4 mb-4">
-                      <div className="absolute top-2 bottom-2 left-[10px] w-0.5 bg-gradient-to-b from-blue-400 to-amber-500" />
+                      <div className="absolute top-2 bottom-2 left-[10px] w-0.5 bg-gradient-to-b from-emerald-400 to-amber-500" />
                       <div className="relative">
-                        <div className="absolute -left-[28px] top-1 w-3.5 h-3.5 bg-blue-500 rounded-full border-2 border-white shadow-md z-10" />
+                        <div className="absolute -left-[28px] top-1 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white shadow-md z-10" />
                         <p className="font-bold text-slate-900 text-sm">{carga.origen}</p>
                         <p className="text-[10px] text-slate-400 font-bold uppercase">Origen</p>
                       </div>
@@ -211,7 +211,7 @@ const DashboardTransportistaPage = () => {
               <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
                 <path d="M 20 20 Q 80 50 150 100 T 280 80" fill="transparent" stroke="#d97706" strokeWidth="2.5" strokeDasharray="6,4" />
               </svg>
-              <div className="absolute top-4 left-4 w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-lg animate-pulse" />
+              <div className="absolute top-4 left-4 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white shadow-lg animate-pulse" />
               <div className="absolute bottom-4 right-6 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center border-2 border-white shadow-lg">
                 <Navigation className="w-2.5 h-2.5 text-white" />
               </div>

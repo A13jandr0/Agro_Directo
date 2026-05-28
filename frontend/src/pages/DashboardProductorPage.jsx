@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
   Sprout, PlusCircle, ShoppingBag, MapPin, AlertTriangle, DollarSign, Package, 
@@ -79,7 +79,7 @@ const DashboardProductorPage = () => {
 
   const metricCards = [
     { label: 'Ingresos del Mes', value: `Bs. ${metricas.ingresosMes}`, icon: DollarSign, gradient: 'from-emerald-500 to-teal-600', bgLight: 'bg-emerald-50', trend: '+12.5%', trendColor: 'text-emerald-600' },
-    { label: 'Pedidos Activos', value: metricas.pedidosActivos, icon: Package, gradient: 'from-blue-500 to-indigo-600', bgLight: 'bg-blue-50', trend: 'Hoy', trendColor: 'text-blue-600' },
+    { label: 'Pedidos Activos', value: metricas.pedidosActivos, icon: Package, gradient: 'from-emerald-500 to-indigo-600', bgLight: 'bg-emerald-50', trend: 'Hoy', trendColor: 'text-emerald-600' },
     { label: 'Cosechas Online', value: metricas.productosPublicados, icon: Sprout, gradient: 'from-violet-500 to-purple-600', bgLight: 'bg-violet-50', trend: 'Catálogo', trendColor: 'text-violet-600' },
     { label: 'Reputación', value: metricas.calificacionPromedio, icon: Star, gradient: 'from-amber-500 to-orange-600', bgLight: 'bg-amber-50', trend: 'Excelente', trendColor: 'text-amber-600' }
   ];
@@ -264,12 +264,12 @@ const DashboardProductorPage = () => {
         <div className="card-elevated overflow-hidden flex flex-col animate-slide-in-right" style={{ animationDelay: '0.25s' }}>
           <div className="px-7 py-5 border-b border-slate-100 flex items-center justify-between">
             <h2 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2.5">
-              <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
-                <Clock className="w-4 h-4 text-blue-600" />
+              <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center">
+                <Clock className="w-4 h-4 text-emerald-600" />
               </div>
               Pedidos
             </h2>
-            <Link to="/dashboard/productor/pedidos" className="text-[11px] font-black text-blue-600 hover:text-blue-700 uppercase tracking-[0.1em] flex items-center gap-1 group">
+            <Link to="/dashboard/productor/pedidos" className="text-[11px] font-black text-emerald-600 hover:text-emerald-700 uppercase tracking-[0.1em] flex items-center gap-1 group">
               Gestionar <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
             </Link>
           </div>

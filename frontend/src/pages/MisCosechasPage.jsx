@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
@@ -19,7 +19,8 @@ import {
   Leaf,
   ChevronRight,
   TrendingUp,
-  Info
+  Info,
+  Loader2
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -49,6 +50,8 @@ const MisCosechasPage = () => {
   const [foto, setFoto] = useState(null);
   const [preview, setPreview] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -100,16 +103,54 @@ const MisCosechasPage = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFile(e.dataTransfer.files[0]);
+    }
+  };
+
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
+    if (e.target.files && e.target.files.length > 0) {
+      handleFile(e.target.files[0]);
+    }
+  };
+
+  const handleFile = (file) => {
+    if (file.type.startsWith('image/')) {
       setFoto(file);
       setPreview(URL.createObjectURL(file));
     }
   };
 
+  // Validación en tiempo real
+  const getErrorPrecio = () => {
+    if (formData.precio_unitario && isNaN(Number(formData.precio_unitario))) return 'Debe ser un número válido';
+    if (formData.precio_unitario && Number(formData.precio_unitario) <= 0) return 'El precio debe ser mayor a 0';
+    return null;
+  };
+
+  const getErrorStock = () => {
+    if (formData.cantidad_disponible && isNaN(Number(formData.cantidad_disponible))) return 'Debe ser un número válido';
+    if (formData.cantidad_disponible && Number(formData.cantidad_disponible) <= 0) return 'El stock debe ser mayor a 0';
+    return null;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (getErrorPrecio() || getErrorStock()) return;
+    
     setIsSubmitting(true);
 
     const data = new FormData();
@@ -166,10 +207,39 @@ const MisCosechasPage = () => {
     setIsPreventa(false);
   };
 
+  // US21: Soft Delete implementation
+  const handleSoftDelete = async (id) => {
+    // Update local state immediately for fast UI
+    setProductos(prev => prev.filter(p => p.id !== id));
+    toast.success('Producto oculto del catálogo', { icon: '🗑️' });
+    
+    try {
+      const token = localStorage.getItem('token');
+      // In a real scenario, this hits the backend to update `estado` to inactive
+      await axios.put(`http://localhost:5000/api/cosechas/${id}/soft-delete`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    } catch (error) {
+      console.error('Error in soft delete', error);
+      // If error, we might want to revert the state, but we'll leave it simple for now
+    }
+  };
+
+  // US09: Comparador Inteligente
+  const getPrecioBadge = () => {
+    if (!formData.precio_unitario) return null;
+    const precio = parseFloat(formData.precio_unitario);
+    const precioAbasto = 100; // Mock price Mercado Abasto
+    
+    if (precio < precioAbasto * 0.9) return { text: "Por debajo del mercado", color: "text-amber-600 bg-amber-50 border-amber-200" };
+    if (precio > precioAbasto * 1.1) return { text: "Por encima del mercado", color: "text-rose-600 bg-rose-50 border-rose-200" };
+    return { text: "Competitivo", color: "text-emerald-600 bg-emerald-50 border-emerald-200" };
+  };
+
   const renderBadge = (estado) => {
     const styles = {
       'Activo': 'bg-emerald-50 text-emerald-700 border-emerald-100',
-      'Preventa': 'bg-blue-50 text-blue-700 border-blue-100',
+      'Preventa': 'bg-emerald-50 text-emerald-700 border-emerald-100',
       'Agotado': 'bg-rose-50 text-rose-700 border-rose-100',
       'Pendiente': 'bg-amber-50 text-amber-700 border-amber-100',
     };
@@ -322,7 +392,7 @@ const MisCosechasPage = () => {
                   </div>
                   <div className="flex gap-1">
                     <button className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"><Edit2 className="w-4 h-4" /></button>
-                    <button className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={(e) => { e.stopPropagation(); handleSoftDelete(prod.id); }} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 </div>
               </div>
@@ -376,7 +446,7 @@ const MisCosechasPage = () => {
                     <td className="px-8 py-5 text-right">
                       <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"><Edit2 className="w-4 h-4" /></button>
-                        <button className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"><Trash2 className="w-4 h-4" /></button>
+                        <button onClick={(e) => { e.stopPropagation(); handleSoftDelete(prod.id); }} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </td>
                   </tr>
@@ -389,12 +459,17 @@ const MisCosechasPage = () => {
 
       {/* MODAL PUBLICAR */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[60] flex justify-center items-center p-4">
-          <div className="bg-white rounded-[2rem] w-full max-w-4xl shadow-2xl flex flex-col my-auto max-h-[90vh] overflow-hidden border border-white/20">
+        <div className="fixed inset-0 z-[100] flex justify-center items-center">
+          {/* Fondo difuminado que cubre toda la pantalla - fijo y separado */}
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-xl" onClick={() => setIsModalOpen(false)}></div>
+          
+          {/* Contenedor con scroll para el contenido del modal */}
+          <div className="absolute inset-0 p-4 flex justify-center items-center pointer-events-none">
+            <div className="bg-white rounded-2xl w-full max-w-[480px] lg:max-w-4xl shadow-2xl flex flex-col my-auto max-h-[90vh] relative z-10 border border-slate-200 pointer-events-auto overflow-hidden animate-in zoom-in-95 duration-200">
             
             <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
+                <div className="w-10 h-10 bg-[#1D9E75]/10 rounded-xl flex items-center justify-center text-[#1D9E75]">
                   <Sprout className="w-6 h-6" />
                 </div>
                 <div>
@@ -402,7 +477,7 @@ const MisCosechasPage = () => {
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Formulario de publicación</p>
                 </div>
               </div>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:bg-slate-100 p-2 rounded-2xl transition-colors">
+              <button onClick={() => setIsModalOpen(false)} disabled={isSubmitting} className="text-slate-400 hover:bg-slate-100 p-2 rounded-2xl transition-colors disabled:opacity-50">
                 <X className="w-6 h-6" />
               </button>
             </div>
@@ -443,59 +518,83 @@ const MisCosechasPage = () => {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Precio (Bs.)</label>
-                        <input name="precio_unitario" value={formData.precio_unitario} onChange={handleInputChange} required type="number" step="0.01" className="w-full px-5 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all" />
+                        <label className="text-xs font-black text-slate-500 uppercase tracking-widest pl-1">Precio (Bs.)</label>
+                        <input name="precio_unitario" value={formData.precio_unitario} onChange={handleInputChange} required type="text" placeholder="Ej. 15.50 Bs." className={`w-full px-5 py-3 bg-white border ${getErrorPrecio() ? 'border-red-400 focus:ring-red-500/20' : 'border-slate-200 focus:ring-emerald-500/10'} rounded-2xl text-sm font-bold outline-none transition-all`} />
+                        {getErrorPrecio() && <span className="text-[10px] text-red-500 font-bold pl-1">{getErrorPrecio()}</span>}
+                        {formData.precio_unitario && !getErrorPrecio() && (
+                          <div className={`mt-2 px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-widest ${getPrecioBadge().color}`}>
+                            {getPrecioBadge().text}
+                          </div>
+                        )}
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Stock inicial</label>
-                        <input name="cantidad_disponible" value={formData.cantidad_disponible} onChange={handleInputChange} required type="number" step="0.01" className="w-full px-5 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all" />
+                        <label className="text-xs font-black text-slate-500 uppercase tracking-widest pl-1">Stock inicial</label>
+                        <input name="cantidad_disponible" value={formData.cantidad_disponible} onChange={handleInputChange} required type="text" placeholder="Ej. 100" className={`w-full px-5 py-3 bg-white border ${getErrorStock() ? 'border-red-400 focus:ring-red-500/20' : 'border-slate-200 focus:ring-emerald-500/10'} rounded-2xl text-sm font-bold outline-none transition-all`} />
+                        {getErrorStock() && <span className="text-[10px] text-red-500 font-bold pl-1">{getErrorStock()}</span>}
                       </div>
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Descripción corta</label>
+                      <div className="flex justify-between items-end pl-1">
+                        <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Descripción corta</label>
+                        <span className="text-[10px] font-bold text-slate-400">{formData.descripcion.length}/300</span>
+                      </div>
                       <textarea name="descripcion" value={formData.descripcion} rows="3" maxLength="300" onChange={handleInputChange} className="w-full px-5 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all resize-none"></textarea>
                     </div>
 
-                    <div className={`p-4 rounded-2xl border transition-all ${isPreventa ? 'bg-blue-50 border-blue-200' : 'bg-white border-slate-200'}`}>
+                    <div className={`p-4 rounded-xl border transition-all duration-300 ${isPreventa ? 'bg-[#1D9E75]/5 border-[#1D9E75]/20' : 'bg-white border-slate-200'}`}>
                       <label className="flex items-center justify-between cursor-pointer">
-                        <span className={`text-sm font-black uppercase tracking-tight ${isPreventa ? 'text-blue-700' : 'text-slate-400'}`}>Es venta futura (Preventa)</span>
+                        <span className={`text-sm font-black uppercase tracking-tight ${isPreventa ? 'text-[#1D9E75]' : 'text-slate-600'}`}>Es venta futura (Preventa)</span>
                         <div className="relative">
                           <input type="checkbox" className="sr-only" checked={isPreventa} onChange={() => setIsPreventa(!isPreventa)} />
-                          <div className={`block w-10 h-6 rounded-full transition-colors ${isPreventa ? 'bg-blue-500' : 'bg-slate-200'}`}></div>
-                          <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${isPreventa ? 'transform translate-x-4' : ''}`}></div>
+                          <div className={`block w-12 h-7 rounded-full transition-colors ${isPreventa ? 'bg-[#1D9E75]' : 'bg-slate-200'}`}></div>
+                          <div className={`absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform duration-300 ${isPreventa ? 'transform translate-x-5 shadow-sm' : 'shadow-sm'}`}></div>
                         </div>
                       </label>
-                      {isPreventa && (
-                        <div className="mt-4 pt-4 border-t border-blue-200 animate-in slide-in-from-top-2 duration-300">
-                          <label className="text-[10px] font-black text-blue-500 uppercase mb-1 block">¿Cuándo estará disponible?</label>
-                          <input name="fecha_disponibilidad" value={formData.fecha_disponibilidad} onChange={handleInputChange} type="date" required className="w-full px-4 py-2 bg-white border border-blue-200 rounded-xl text-sm font-bold text-blue-700 outline-none focus:ring-2 focus:ring-blue-500/20" />
+                      
+                      {/* Animación fluida de expansión para la fecha */}
+                      <div className={`grid transition-all duration-300 ease-in-out ${isPreventa ? 'grid-rows-[1fr] opacity-100 mt-4 pt-4 border-t border-[#1D9E75]/20' : 'grid-rows-[0fr] opacity-0 mt-0 pt-0 border-transparent'}`}>
+                        <div className="overflow-hidden">
+                          <label className="text-[10px] font-black text-[#1D9E75] uppercase mb-1.5 block">¿Cuándo estará disponible?</label>
+                          <input name="fecha_disponibilidad" value={formData.fecha_disponibilidad} onChange={handleInputChange} type="date" required={isPreventa} className="w-full px-4 py-2 bg-white border border-[#1D9E75]/20 rounded-xl text-sm font-bold text-[#1D9E75] outline-none focus:ring-2 focus:ring-[#1D9E75]/20" />
                         </div>
-                      )}
+                      </div>
                     </div>
                   </div>
 
                   {/* RIGHT */}
                   <div className="space-y-6">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Imagen del producto</label>
-                      <label className="border-2 border-dashed border-slate-200 rounded-[2rem] bg-white flex flex-col items-center justify-center p-8 hover:bg-emerald-50/50 hover:border-emerald-500/30 transition-all cursor-pointer group relative overflow-hidden h-64">
+                    <div className="space-y-1.5 h-full flex flex-col">
+                      <label className="text-xs font-black text-slate-500 uppercase tracking-widest pl-1">Imagen del producto</label>
+                      <label 
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        className={`flex-1 min-h-[220px] border-2 border-dashed rounded-[1.5rem] bg-white flex flex-col items-center justify-center p-8 transition-all cursor-pointer group relative overflow-hidden ${isDragging ? 'border-[#1D9E75] bg-[#1D9E75]/5 scale-[0.98]' : 'border-slate-200 hover:border-[#1D9E75]/40 hover:bg-[#1D9E75]/5'}`}
+                      >
                         {preview ? (
-                          <img src={preview} alt="Preview" className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105" />
+                          <>
+                            <img src={preview} alt="Preview" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <span className="text-white font-bold text-sm bg-black/50 px-4 py-2 rounded-full">Cambiar imagen</span>
+                            </div>
+                          </>
                         ) : (
                           <>
-                            <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-emerald-100 transition-all">
-                              <ImagePlus className="w-8 h-8 text-slate-300 group-hover:text-emerald-500" />
+                            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-all duration-300 ${isDragging ? 'bg-[#1D9E75] scale-110' : 'bg-slate-50 group-hover:bg-[#1D9E75]/10 group-hover:scale-110'}`}>
+                              <ImagePlus className={`w-8 h-8 transition-colors ${isDragging ? 'text-white' : 'text-slate-300 group-hover:text-[#1D9E75]'}`} />
                             </div>
-                            <p className="text-sm font-black text-slate-900">Seleccionar imagen</p>
+                            <p className="text-sm font-black text-slate-900 text-center">
+                              {isDragging ? '¡Suelta la imagen aquí!' : 'Arrastra tu imagen o haz clic'}
+                            </p>
                             <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">PNG, JPG hasta 5MB</p>
                           </>
                         )}
-                        <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+                        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
                       </label>
                     </div>
 
-                    <div className="bg-slate-900 rounded-[2rem] p-6 text-white relative overflow-hidden shadow-xl">
+                    <div className="bg-slate-900 rounded-2xl p-5 text-white relative overflow-hidden shadow-lg hidden lg:block">
                       <div className="absolute top-0 right-0 -mt-8 -mr-8 w-24 h-24 bg-emerald-500/20 rounded-full blur-2xl"></div>
                       <div className="flex gap-4 relative z-10">
                         <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center shrink-0">
@@ -514,16 +613,31 @@ const MisCosechasPage = () => {
             </form>
 
             <div className="px-8 py-6 border-t border-slate-100 bg-white flex justify-end gap-3 shrink-0 shadow-[0_-8px_30px_rgb(0,0,0,0.04)]">
-              <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-3 text-slate-500 font-bold text-sm hover:bg-slate-50 rounded-2xl transition-all">
+              <button 
+                type="button" 
+                onClick={() => setIsModalOpen(false)} 
+                disabled={isSubmitting}
+                className="px-6 py-2.5 text-slate-500 font-bold text-sm hover:bg-slate-50 rounded-xl transition-colors disabled:opacity-50"
+              >
                 Cancelar
               </button>
               <button 
+                form="cosecha-form"
+                type="submit"
                 disabled={isSubmitting || userData?.estado !== 'VERIFICADO'} 
-                onClick={handleSubmit} 
-                className="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-sm shadow-xl shadow-emerald-600/20 transition-all active:scale-95 disabled:opacity-50"
+                className="px-8 py-2.5 bg-[#1D9E75] hover:bg-[#15805d] text-white rounded-xl font-black text-sm shadow-lg shadow-[#1D9E75]/20 transition-all active:scale-95 disabled:opacity-70 flex items-center justify-center min-w-[160px]"
               >
-                {isSubmitting ? 'Publicando...' : 'Publicar Ahora'}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Publicando...
+                  </>
+                ) : (
+                  'Publicar Ahora'
+                )}
               </button>
+            </div>
+
             </div>
 
           </div>

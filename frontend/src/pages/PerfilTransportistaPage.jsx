@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Truck, CreditCard, ShieldCheck, Save, AlertCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -52,7 +52,7 @@ const PerfilTransportistaPage = () => {
         }
     };
 
-    if (loading) return <div className="p-10 text-center text-blue-600 font-bold">Cargando tu perfil...</div>;
+    if (loading) return <div className="p-10 text-center text-emerald-600 font-bold">Cargando tu perfil...</div>;
 
     if (userData?.estado !== 'VERIFICADO') {
         return (
@@ -70,7 +70,7 @@ const PerfilTransportistaPage = () => {
         <div className="p-6 sm:p-10 max-w-4xl mx-auto space-y-8">
             <div>
                 <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                    <Truck className="text-blue-600" /> Mi Perfil de Transportista
+                    <Truck className="text-emerald-600" /> Mi Perfil de Transportista
                 </h1>
                 <p className="text-slate-500 font-medium">Mantén actualizada la información de tu vehículo para calificar a mejores rutas.</p>
             </div>
@@ -91,7 +91,7 @@ const PerfilTransportistaPage = () => {
                                     name="tipo_transporte" 
                                     value={formData.tipo_transporte} 
                                     onChange={handleChange}
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 >
                                     <option value="Camión">Camión</option>
                                     <option value="Camioneta">Camioneta</option>
@@ -106,7 +106,7 @@ const PerfilTransportistaPage = () => {
                                     name="placa_vehiculo" 
                                     value={formData.placa_vehiculo} 
                                     onChange={handleChange}
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 />
                             </div>
                             <div>
@@ -116,7 +116,7 @@ const PerfilTransportistaPage = () => {
                                     name="capacidad_carga_kg" 
                                     value={formData.capacidad_carga_kg} 
                                     onChange={handleChange}
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 />
                             </div>
                         </div>
@@ -135,7 +135,7 @@ const PerfilTransportistaPage = () => {
                                     name="numero_licencia" 
                                     value={formData.numero_licencia} 
                                     onChange={handleChange}
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 />
                             </div>
                             <div>
@@ -144,7 +144,7 @@ const PerfilTransportistaPage = () => {
                                     name="zona_operacion" 
                                     value={formData.zona_operacion} 
                                     onChange={handleChange}
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 >
                                     <option value="Local">Local</option>
                                     <option value="Regional">Regional</option>
@@ -153,9 +153,9 @@ const PerfilTransportistaPage = () => {
                             </div>
                         </div>
 
-                        <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 mt-6 flex items-start gap-4">
-                            <AlertCircle className="text-blue-600 mt-1 shrink-0" size={20} />
-                            <p className="text-xs text-blue-800 font-medium">
+                        <div className="bg-emerald-50 p-6 rounded-2xl border border-emerald-100 mt-6 flex items-start gap-4">
+                            <AlertCircle className="text-emerald-600 mt-1 shrink-0" size={20} />
+                            <p className="text-xs text-emerald-800 font-medium">
                                 Asegúrese de que sus documentos (Licencia y SOAT) coincidan con esta información. Un perfil verificado tiene prioridad en la bolsa de carga.
                             </p>
                         </div>

@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Shield, ShieldAlert, Clock, Star, MapPin, Phone, Mail, TrendingUp, Award, MessageCircle } from 'lucide-react';
 
 const ProducerProfile = ({ producer, products = [] }) => {
@@ -112,7 +112,7 @@ const ProducerProfile = ({ producer, products = [] }) => {
             <div className="mb-5">
               <span className="block text-xs text-gray-500 uppercase font-semibold mb-2">Calificación</span>
               {esProductorNuevo ? (
-                <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1.5 rounded-full">
+                <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1.5 rounded-full">
                   🌟 Productor Nuevo
                 </span>
               ) : (

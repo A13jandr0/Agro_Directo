@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 // Nota: Instalar leaflet y react-leaflet: npm install leaflet react-leaflet
 // import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 // import 'leaflet/dist/leaflet.css';
@@ -34,21 +34,21 @@ const InteractiveMap = ({ onSave }) => {
             <p className="text-sm text-gray-600 mb-4">Haz clic en el mapa para marcar la ubicación exacta de tu predio.</p>
             
             {/* Contenedor del Mapa (Mockup) */}
-            <div className="h-64 bg-blue-100 border-2 border-blue-300 flex items-center justify-center rounded mb-4">
+            <div className="h-64 bg-emerald-100 border-2 border-emerald-300 flex items-center justify-center rounded mb-4">
                 {/* 
                 <MapContainer center={[-17.7833, -63.1833]} zoom={12} style={{ height: '100%', width: '100%' }}>
                     <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                     <LocationMarker setPosition={setPosition} />
                 </MapContainer>
                 */}
-                <span className="text-blue-500 font-semibold">[Mapa Interactivo Leaflet - Centro en Santa Cruz]</span>
+                <span className="text-emerald-500 font-semibold">[Mapa Interactivo Leaflet - Centro en Santa Cruz]</span>
             </div>
 
             <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-700">
                     {position ? `Lat: ${position.lat.toFixed(4)}, Lng: ${position.lng.toFixed(4)}` : 'Sin seleccionar'}
                 </span>
-                <button onClick={handleSave} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                <button onClick={handleSave} className="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700">
                     Guardar Ubicación
                 </button>
             </div>

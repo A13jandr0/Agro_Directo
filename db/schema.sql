@@ -10,17 +10,17 @@ USE master;
 GO
 
 -- Recrear la base de datos (comentar si no se quiere borrar datos)
-IF EXISTS (SELECT name FROM sys.databases WHERE name = N'AgroDirecto_Santa_Cruz')
+IF EXISTS (SELECT name FROM sys.databases WHERE name = N'AgroDirecto_Santa_Cruz_1')
 BEGIN
-    ALTER DATABASE AgroDirecto_Santa_Cruz SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-    DROP DATABASE AgroDirecto_Santa_Cruz;
+    ALTER DATABASE AgroDirecto_Santa_Cruz_1 SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    DROP DATABASE AgroDirecto_Santa_Cruz_1;
 END
 GO
 
-CREATE DATABASE AgroDirecto_Santa_Cruz;
+CREATE DATABASE AgroDirecto_Santa_Cruz_1;
 GO
 
-USE AgroDirecto_Santa_Cruz;
+USE AgroDirecto_Santa_Cruz_1;
 GO
 
 

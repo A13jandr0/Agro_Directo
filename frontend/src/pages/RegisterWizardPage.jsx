@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -22,8 +22,8 @@ const Step1Role = ({ formData, setFormData }) => {
     {
       id: 'COMPRADOR', Icon: ShoppingCart, title: 'Soy Comprador',
       desc: 'Compro productos del campo',
-      color: '#378ADD', bgSelected: 'bg-blue-50 border-blue-500',
-      iconBg: 'bg-blue-100 text-blue-600',
+      color: '#378ADD', bgSelected: 'bg-emerald-50 border-emerald-500',
+      iconBg: 'bg-emerald-100 text-emerald-600',
       benefits: ['Precios sin intermediarios', 'Productos frescos', 'Seguimiento de pedidos']
     },
     {
@@ -340,7 +340,7 @@ const RegisterWizardPage = () => {
       {/* Background effects */}
       <div className="absolute inset-0 dot-pattern opacity-30" />
       <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-emerald-100/30 rounded-full blur-[120px] -translate-x-1/3 -translate-y-1/3" />
-      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-blue-100/20 rounded-full blur-[100px] translate-x-1/4 translate-y-1/4" />
+      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-emerald-100/20 rounded-full blur-[100px] translate-x-1/4 translate-y-1/4" />
 
       <div className="relative z-10 w-full max-w-4xl animate-slide-up">
         {/* Logo */}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+﻿import React, { useState, useEffect, useContext } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { 
@@ -86,7 +86,7 @@ const MainLayout = () => {
   };
 
   const getRoleColor = () => {
-    const colors = { 'PRODUCTOR': 'from-emerald-500 to-teal-600', 'COMPRADOR': 'from-blue-500 to-indigo-600', 'TRANSPORTISTA': 'from-amber-500 to-orange-600' };
+    const colors = { 'PRODUCTOR': 'from-emerald-500 to-teal-600', 'COMPRADOR': 'from-emerald-500 to-indigo-600', 'TRANSPORTISTA': 'from-amber-500 to-orange-600' };
     return colors[userData?.rol] || 'from-gray-500 to-gray-600';
   };
 

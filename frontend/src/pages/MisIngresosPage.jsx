@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   BarChart2, 
@@ -117,7 +117,7 @@ const MisIngresosPage = () => {
           const Icon = m.icon;
           const colors = {
             emerald: 'bg-emerald-50 text-emerald-600',
-            blue: 'bg-blue-50 text-blue-600',
+            blue: 'bg-emerald-50 text-emerald-600',
             indigo: 'bg-indigo-50 text-indigo-600',
             amber: 'bg-amber-50 text-amber-600',
           };

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell
@@ -68,7 +68,7 @@ const DashboardVentasProductor = () => {
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-xl font-semibold text-gray-700">Top 3 Productos (Volumen)</h2>
-                        <Package className="text-blue-500" />
+                        <Package className="text-emerald-500" />
                     </div>
                     <div className="h-[350px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
@@ -104,9 +104,9 @@ const DashboardVentasProductor = () => {
                         Bs. {data.tendencia.reduce((acc, curr) => acc + curr.ingresos, 0).toLocaleString()}
                     </p>
                 </div>
-                <div className="bg-blue-50 p-6 rounded-xl border border-blue-100">
-                    <p className="text-blue-600 font-medium text-sm">Producto Estrella</p>
-                    <p className="text-2xl font-bold text-blue-900">
+                <div className="bg-emerald-50 p-6 rounded-xl border border-emerald-100">
+                    <p className="text-emerald-600 font-medium text-sm">Producto Estrella</p>
+                    <p className="text-2xl font-bold text-emerald-900">
                         {data.topProductos[0]?.nombre_producto || 'Sin ventas'}
                     </p>
                 </div>

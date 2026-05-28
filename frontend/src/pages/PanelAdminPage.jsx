@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, User, Mail, Eye, CheckCircle2, XCircle, Search, AlertCircle, X, ShieldAlert, LogOut, Map as MapIcon } from 'lucide-react';
@@ -83,7 +83,7 @@ const PanelAdminPage = () => {
           const isImage = url.match(/\.(jpeg|jpg|gif|png|webp)$/) != null;
           return (
             <div key={i} className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-               <a href={`http://localhost:5000${url}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-blue-600 hover:underline mb-2 font-semibold">
+               <a href={`http://localhost:5000${url}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-emerald-600 hover:underline mb-2 font-semibold">
                  <Eye className="w-5 h-5" /> Abrir Documento {i + 1}
                </a>
                {isImage && (
@@ -187,7 +187,7 @@ const PanelAdminPage = () => {
                           {new Date(u.fecha_registro).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 text-center">
-                          <button onClick={() => handleOpenModal(u)} className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 hover:bg-blue-100 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 shadow-sm hover:shadow group">
+                          <button onClick={() => handleOpenModal(u)} className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 shadow-sm hover:shadow group">
                             <Eye className="w-4 h-4" /> Revisar
                           </button>
                         </td>

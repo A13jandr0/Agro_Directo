@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Leaf, LayoutDashboard, Sprout, PlusCircle, ShoppingBag, MapPin, BarChart2, User, Settings, LogOut, 
@@ -239,7 +239,7 @@ const MiPerfilProductorPage = () => {
                     <AlertCircle className="w-4 h-4" /> Rechazado
                   </div>
                 ) : (
-                  <div className="flex items-center gap-1.5 mt-1.5 mb-4 text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                  <div className="flex items-center gap-1.5 mt-1.5 mb-4 text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
                     <CheckCircle2 className="w-4 h-4" /> {formDataPersonal.estado || 'Registrado'}
                   </div>
                 )}
@@ -270,7 +270,7 @@ const MiPerfilProductorPage = () => {
                 <h3 className="text-sm font-bold text-[#1a1a1a] mb-4 uppercase tracking-wider text-gray-500">Resumen de Actividad</h3>
                 <ul className="space-y-4">
                   <li className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 shrink-0"><Package className="w-4 h-4" /></div>
+                    <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-500 shrink-0"><Package className="w-4 h-4" /></div>
                     <span className="text-sm text-[#1a1a1a] font-medium">34 ventas completadas</span>
                   </li>
                   <li className="flex items-center gap-3">
@@ -463,9 +463,9 @@ const MiPerfilProductorPage = () => {
                 {/* TAB: SEGURIDAD */}
                 {activeTab === 'Seguridad' && (
                   <div className="space-y-6 animate-fade-in max-w-md">
-                    <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex items-start gap-3">
-                      <Lock className="w-5 h-5 text-blue-500 mt-0.5" />
-                      <p className="text-xs text-blue-700 leading-relaxed font-medium">Recomendamos usar una contraseña fuerte que combine letras, números y símbolos para mayor seguridad.</p>
+                    <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 flex items-start gap-3">
+                      <Lock className="w-5 h-5 text-emerald-500 mt-0.5" />
+                      <p className="text-xs text-emerald-700 leading-relaxed font-medium">Recomendamos usar una contraseña fuerte que combine letras, números y símbolos para mayor seguridad.</p>
                     </div>
 
                     <div className="space-y-4">

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Leaf, ArrowRight, Sprout, ShoppingBag, Truck, ShieldCheck, Check, ArrowLeft } from 'lucide-react';
 
@@ -23,9 +23,9 @@ const RoleSelectionPage = () => {
       icon: ShoppingBag,
       title: 'Soy Comprador',
       desc: 'Compro productos frescos directo del campo',
-      gradient: 'from-blue-500 to-indigo-600',
-      bgGlow: 'bg-blue-500/10',
-      borderColor: 'border-blue-500',
+      gradient: 'from-emerald-500 to-indigo-600',
+      bgGlow: 'bg-emerald-500/10',
+      borderColor: 'border-emerald-500',
       benefits: ['Precios sin intermediarios', 'Productos frescos y de calidad', 'Seguimiento de tus pedidos']
     },
     {
@@ -62,7 +62,7 @@ const RoleSelectionPage = () => {
       {/* Background pattern */}
       <div className="absolute inset-0 dot-pattern opacity-40" />
       <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-emerald-100/40 rounded-full blur-[150px] -translate-x-1/2 -translate-y-1/2" />
-      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-blue-100/30 rounded-full blur-[120px] translate-x-1/3 translate-y-1/3" />
+      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-emerald-100/30 rounded-full blur-[120px] translate-x-1/3 translate-y-1/3" />
 
       {/* Header */}
       <header className="relative z-10 px-8 py-6 flex items-center justify-between animate-fade-in">

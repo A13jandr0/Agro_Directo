@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import {
   MapPin, Search, Filter, ShoppingCart, Leaf, CheckCircle2,
-  SlidersHorizontal, X, Sparkles, Star, Eye, ArrowUpRight
+  SlidersHorizontal, X, Sparkles, Star, Eye, ArrowUpRight, ArrowDownUp
 } from 'lucide-react';
 import CartContext from '../context/CartContext';
 
@@ -12,6 +12,7 @@ const MarketplacePage = () => {
   const [productos, setProductos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [radioKm, setRadioKm] = useState(50);
+  const [orden, setOrden] = useState('cercania');
   const [userData, setUserData] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -47,7 +48,7 @@ const MarketplacePage = () => {
       });
       setProductos(res.data);
     } catch (error) {
-      console.error('Error fetching products:', error);
+      console.error('Error al cargar productos:', error);
     } finally {
       setLoading(false);
     }
@@ -68,164 +69,194 @@ const MarketplacePage = () => {
     setTimeout(() => setToastMessage(''), 2500);
   };
 
-  const filteredProducts = productos.filter(p =>
-    p.nombre_producto.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredProducts = productos
+    .filter(p => p.nombre_producto.toLowerCase().includes(searchQuery.toLowerCase()))
+    .sort((a, b) => {
+      if (orden === 'cercania') return (a.distancia_km || 0) - (b.distancia_km || 0);
+      if (orden === 'precio_asc') return a.precio_unitario - b.precio_unitario;
+      if (orden === 'precio_desc') return b.precio_unitario - a.precio_unitario;
+      return 0;
+    });
 
   return (
-    <div className="p-5 sm:p-8 lg:p-10 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-5">
 
-      {/* SEASON BANNER (US08) */}
-      <div className="relative overflow-hidden rounded-3xl animate-slide-up">
-        <div className="absolute inset-0 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 animate-gradient" />
-        <div className="absolute top-[-50%] right-[-10%] w-[300px] h-[300px] bg-white/10 rounded-full blur-[60px] animate-float" />
-        <div className="absolute bottom-[-40%] left-[-5%] w-[200px] h-[200px] bg-yellow-300/10 rounded-full blur-[40px] animate-float" style={{ animationDelay: '2s' }} />
-        <div className="relative z-10 p-7 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-black mb-1.5 flex items-center gap-2 text-white">
-              <Sparkles className="w-6 h-6" />
-              Temporada de Achachairú
+      {/* BANNER DE TEMPORADA */}
+      <div className="relative overflow-hidden rounded-2xl">
+        <div className="absolute inset-0 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600" />
+        <div className="absolute top-[-50%] right-[-10%] w-[300px] h-[300px] bg-white/10 rounded-full blur-[60px]" />
+        <div className="relative z-10 p-5 sm:p-7 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="min-w-0">
+            <h2 className="text-xl sm:text-2xl font-black mb-1 flex items-center gap-2 text-white">
+              <Sparkles className="w-5 h-5 shrink-0" />
+              Temporada de Achachairu
             </h2>
-            <p className="text-orange-50/80 font-medium text-sm">
-              Los mejores frutos de Porongo y Buena Vista ya están disponibles. Aprovecha los precios de temporada.
+            <p className="text-orange-100/80 font-medium text-sm leading-relaxed">
+              Los mejores frutos de Porongo y Buena Vista ya disponibles a precio de temporada.
             </p>
           </div>
-          <button 
-            onClick={() => setSearchQuery('Achachairú')}
-            className="bg-white text-orange-600 px-7 py-3 rounded-2xl font-bold text-sm hover:bg-orange-50 transition-all duration-300 shadow-xl hover:-translate-y-0.5 shrink-0"
+          <button
+            onClick={() => setSearchQuery('Achachairu')}
+            className="bg-white text-orange-600 px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-orange-50 transition-all shadow-lg shrink-0"
           >
             Ver ofertas
           </button>
         </div>
       </div>
 
-      {/* TOAST */}
+      {/* NOTIFICACION AGREGADO AL CARRITO */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white pl-4 pr-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border border-slate-700 animate-slide-up">
-          <div className="w-9 h-9 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center shrink-0 shadow-lg">
+        <div className="fixed bottom-5 right-5 z-50 bg-slate-900 text-white pl-4 pr-5 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 border border-slate-700 animate-slide-up max-w-[90vw]">
+          <div className="w-9 h-9 bg-emerald-500 rounded-xl flex items-center justify-center shrink-0">
             <CheckCircle2 className="w-4 h-4 text-white" />
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Agregado al carrito</p>
-            <p className="text-sm font-bold text-white leading-tight">{toastMessage}</p>
+            <p className="text-sm font-bold text-white leading-tight truncate">{toastMessage}</p>
           </div>
         </div>
       )}
 
-      {/* HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-        <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Marketplace</h1>
-          <p className="text-sm text-slate-500 mt-1 font-medium">Productos frescos directos del campo cruceño</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1 sm:w-80">
-            <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Buscar producto..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all duration-300"
-            />
+      {/* ENCABEZADO Y BUSCADOR */}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Marketplace</h1>
+            <p className="text-sm text-slate-500 mt-0.5 font-medium">Productos frescos directo del campo</p>
           </div>
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`p-3 rounded-xl border transition-all duration-300 shrink-0 ${showFilters ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-600/20' : 'bg-white text-slate-500 border-slate-200 hover:border-blue-300 hover:text-blue-600'}`}
-          >
-            <SlidersHorizontal className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="relative flex-1 sm:w-72">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Buscar producto..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all"
+              />
+            </div>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`p-2.5 rounded-xl border transition-all shrink-0 ${showFilters ? 'bg-emerald-600 text-white border-emerald-600 shadow-lg shadow-emerald-600/20' : 'bg-white text-slate-500 border-slate-200 hover:border-emerald-300 hover:text-emerald-600'}`}
+            >
+              <SlidersHorizontal className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* FILTER PANEL */}
+      {/* PANEL DE FILTROS */}
       {showFilters && (
-        <div className="card-elevated p-6 animate-scale-bounce">
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
-                <Filter className="w-4 h-4 text-blue-600" />
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+          {/* Filtro de distancia */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center">
+                  <Filter className="w-4 h-4 text-emerald-600" />
+                </div>
+                <h3 className="font-bold text-slate-800 text-sm">Radio de busqueda</h3>
               </div>
-              <h3 className="font-black text-slate-900 text-sm">Filtro por cercanía</h3>
+              <span className="text-sm font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">{radioKm} km</span>
             </div>
-            <span className="text-sm font-black text-blue-600 bg-blue-50 px-4 py-1.5 rounded-xl">{radioKm} km</span>
+            <div className="flex flex-wrap gap-2">
+              {[10, 25, 50, 100].map(dist => (
+                <button
+                  key={dist}
+                  onClick={() => setRadioKm(dist)}
+                  className={`px-4 py-2 rounded-lg text-sm font-bold border transition-all ${radioKm === dist ? 'bg-emerald-600 text-white border-emerald-600 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300'}`}
+                >
+                  {dist} km
+                </button>
+              ))}
+            </div>
           </div>
-          <input
-            type="range" min="5" max="100" step="5"
-            value={radioKm}
-            onChange={e => setRadioKm(parseInt(e.target.value))}
-            className="w-full h-2 bg-slate-100 rounded-full appearance-none cursor-pointer accent-blue-600"
-          />
-          <div className="flex justify-between text-[11px] text-slate-400 mt-2 font-bold">
-            <span>5 km</span><span>50 km</span><span>100 km</span>
+
+          {/* Ordenamiento */}
+          <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+            <div className="flex items-center gap-2">
+              <ArrowDownUp className="w-4 h-4 text-emerald-600" />
+              <span className="text-sm font-bold text-slate-700">Ordenar por</span>
+            </div>
+            <select
+              value={orden}
+              onChange={(e) => setOrden(e.target.value)}
+              className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm text-slate-700 bg-white font-medium outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer"
+            >
+              <option value="cercania">Mas cercano primero</option>
+              <option value="precio_asc">Menor precio</option>
+              <option value="precio_desc">Mayor precio</option>
+            </select>
           </div>
-          <div className="mt-4 bg-blue-50 border border-blue-100 rounded-xl p-4 flex items-start gap-3">
-            <MapPin className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
-            <p className="text-xs text-blue-700 leading-relaxed font-medium">
-              Solo se muestran fincas ubicadas dentro de <span className="font-black">{radioKm} km</span> de distancia desde tu ubicación.
+
+          {/* Info */}
+          <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex items-start gap-2">
+            <MapPin className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+            <p className="text-xs text-emerald-700 leading-relaxed font-medium">
+              Solo se muestran fincas dentro de <span className="font-black">{radioKm} km</span> de tu ubicacion.
             </p>
           </div>
         </div>
       )}
 
-      {/* RESULTS COUNT */}
-      <div className="flex items-center gap-3 animate-fade-in">
+      {/* CONTADOR DE RESULTADOS */}
+      <div className="flex items-center gap-3">
         <p className="text-sm font-medium text-slate-500">
           {loading ? 'Buscando...' : `${filteredProducts.length} producto${filteredProducts.length !== 1 ? 's' : ''} encontrado${filteredProducts.length !== 1 ? 's' : ''}`}
         </p>
         {!showFilters && (
-          <span className="text-[11px] bg-slate-100 text-slate-500 px-3 py-1.5 rounded-full font-bold">
+          <span className="text-[11px] bg-slate-100 text-slate-500 px-3 py-1 rounded-full font-bold">
             Radio: {radioKm} km
           </span>
         )}
       </div>
 
-      {/* CONTENT */}
+      {/* CONTENIDO PRINCIPAL */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {[...Array(8)].map((_, i) => (
             <div key={i} className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
-              <div className="h-48 animate-shimmer" />
-              <div className="p-5 space-y-3">
+              <div className="h-44 animate-shimmer" />
+              <div className="p-4 space-y-3">
                 <div className="h-4 w-20 rounded animate-shimmer" />
                 <div className="h-5 w-3/4 rounded animate-shimmer" />
                 <div className="h-3 w-1/2 rounded animate-shimmer" />
-                <div className="h-8 w-full rounded animate-shimmer mt-4" />
+                <div className="h-9 w-full rounded animate-shimmer mt-3" />
               </div>
             </div>
           ))}
         </div>
       ) : filteredProducts.length === 0 ? (
-        <div className="card-elevated !border-dashed !border-2 py-20 flex flex-col items-center justify-center text-center px-6 animate-fade-in">
-          <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-5">
+        <div className="bg-white rounded-2xl border-2 border-dashed border-slate-200 py-16 flex flex-col items-center justify-center text-center px-6">
+          <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
             <Sparkles className="w-7 h-7 text-slate-300" />
           </div>
-          <h3 className="text-lg font-black text-slate-900 mb-2">No hay productos en este radio</h3>
-          <p className="text-sm text-slate-500 max-w-sm">Prueba ampliar el radio o buscar con otro término.</p>
+          <h3 className="text-lg font-black text-slate-900 mb-1">No hay productos en este radio</h3>
+          <p className="text-sm text-slate-500 max-w-sm">Intenta ampliar el radio de busqueda o usa otro termino.</p>
           <button
-            onClick={() => { setRadioKm(200); setSearchQuery(''); }}
-            className="mt-6 text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors"
+            onClick={() => { setRadioKm(100); setSearchQuery(''); }}
+            className="mt-5 text-sm font-bold text-emerald-600 hover:text-emerald-700 transition-colors"
           >
-            Ampliar a 200 km
+            Ampliar a 100 km
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 stagger-children">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredProducts.map(p => (
             <div
               key={p.cosecha_id}
-              className="card-elevated overflow-hidden group flex flex-col"
+              className="bg-white rounded-2xl border border-slate-100 overflow-hidden group flex flex-col hover:shadow-lg hover:shadow-slate-200/60 transition-all duration-300"
             >
-              {/* IMAGE */}
+              {/* IMAGEN */}
               <div
                 onClick={() => navigate('/producto/' + p.cosecha_id)}
-                className="h-48 bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center cursor-pointer overflow-hidden relative"
+                className="h-44 bg-slate-50 flex items-center justify-center cursor-pointer overflow-hidden relative"
               >
                 {p.foto_url ? (
                   <img
                     src={`http://localhost:5000${p.foto_url}`}
                     alt={p.nombre_producto}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 ) : (
                   <div className="flex flex-col items-center gap-2">
@@ -233,56 +264,64 @@ const MarketplacePage = () => {
                     <span className="text-[11px] text-slate-300 font-medium">Sin imagen</span>
                   </div>
                 )}
-                {/* Hover overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end justify-end p-3">
-                  <div className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-lg flex items-center justify-center shadow-lg">
+                {/* Overlay en hover */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-end p-3">
+                  <div className="w-8 h-8 bg-white/90 rounded-lg flex items-center justify-center shadow-lg">
                     <Eye className="w-4 h-4 text-slate-700" />
                   </div>
                 </div>
-              </div>
-
-              {/* INFO */}
-              <div className="p-5 flex-1 flex flex-col gap-2.5">
-                {/* Tags */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] font-black bg-slate-100 text-slate-500 px-2.5 py-1 rounded-lg flex items-center gap-1 uppercase tracking-wider">
-                    <MapPin className="w-3 h-3" /> {p.distancia_km.toFixed(0)} km
-                  </span>
+                {/* Badges de estado */}
+                <div className="absolute top-2.5 left-2.5 flex flex-col gap-1.5">
                   {p.es_preventa ? (
-                    <span className="text-[10px] font-black bg-violet-100 text-violet-700 px-2.5 py-1 rounded-lg uppercase tracking-wider">
+                    <span className="text-[10px] font-bold bg-violet-500 text-white px-2 py-0.5 rounded-md shadow-sm">
                       Preventa
                     </span>
                   ) : (
-                    <span className="text-[10px] font-black bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-lg uppercase tracking-wider">
+                    <span className="text-[10px] font-bold bg-emerald-500 text-white px-2 py-0.5 rounded-md shadow-sm">
                       Disponible
                     </span>
                   )}
+                  {p.cantidad_disponible < 5 && (
+                    <span className="text-[10px] font-bold bg-red-500 text-white px-2 py-0.5 rounded-md shadow-sm">
+                      Ultimas unidades
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* INFORMACION */}
+              <div className="p-4 flex-1 flex flex-col gap-2">
+                {/* Etiquetas */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md flex items-center gap-1">
+                    <MapPin className="w-3 h-3" /> {p.distancia_km ? p.distancia_km.toFixed(0) : '?'} km
+                  </span>
                 </div>
 
-                {/* Name */}
+                {/* Nombre */}
                 <h3
                   onClick={() => navigate('/producto/' + p.cosecha_id)}
-                  className="font-black text-slate-900 leading-snug cursor-pointer hover:text-blue-600 transition-colors duration-300 line-clamp-2"
+                  className="font-bold text-slate-900 leading-snug cursor-pointer hover:text-emerald-600 transition-colors line-clamp-2 text-sm"
                 >
                   {p.nombre_producto}
                 </h3>
 
-                {/* Origin */}
+                {/* Origen */}
                 <p className="text-[11px] text-slate-400 font-medium line-clamp-1">
                   {p.nombre_finca} — {p.municipio || 'Santa Cruz'}
                 </p>
 
-                {/* Price + Action */}
-                <div className="mt-auto pt-4 border-t border-slate-100 flex items-end justify-between gap-3">
+                {/* Precio y boton */}
+                <div className="mt-auto pt-3 border-t border-slate-100 flex items-end justify-between gap-2">
                   <div>
-                    <p className="text-2xl font-black text-slate-900 leading-none">
+                    <p className="text-xl font-black text-slate-900 leading-none">
                       Bs. {p.precio_unitario}
                     </p>
                     <p className="text-[11px] text-slate-400 mt-0.5 font-medium">por {p.unidad_medida}</p>
                   </div>
                   <button
                     onClick={(e) => handleAgregar(p, e)}
-                    className="w-11 h-11 bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl flex items-center justify-center transition-all duration-300 shadow-lg shadow-blue-500/20 hover:shadow-xl hover:-translate-y-0.5 shrink-0"
+                    className="w-10 h-10 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center justify-center transition-all shadow-lg shadow-emerald-600/20 hover:shadow-xl shrink-0"
                     title="Agregar al carrito"
                   >
                     <ShoppingCart className="w-4 h-4" />
