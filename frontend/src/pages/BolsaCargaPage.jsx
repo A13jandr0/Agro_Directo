@@ -1,26 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Truck, MapPin, Package, Navigation, ArrowRight, AlertCircle } from 'lucide-react';
-import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../context/ToastContext';
+import PollingIndicator from '../components/PollingIndicator';
+import { usePolling } from '../hooks/usePolling';
 
 const BolsaCargaPage = () => {
     const [pedidos, setPedidos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [userData, setUserData] = useState(null);
     const navigate = useNavigate();
+    const toast = useToast();
 
     useEffect(() => {
-        const user = JSON.parse(localStorage.getItem('user'));
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
         setUserData(user);
-        if (user.estado === 'VERIFICADO') {
-            fetchBolsa();
-        } else {
-            setLoading(false);
-        }
     }, []);
 
     const fetchBolsa = async () => {
+        if (userData?.estado !== 'VERIFICADO') {
+            setLoading(false);
+            return;
+        }
         try {
             const token = localStorage.getItem('token');
             const res = await axios.get('http://localhost:5000/api/pedidos/bolsa', {
@@ -28,11 +30,13 @@ const BolsaCargaPage = () => {
             });
             setPedidos(res.data);
         } catch (error) {
-            console.error("Error al cargar bolsa de carga:", error);
+            console.error('Error al cargar bolsa de carga:', error);
         } finally {
             setLoading(false);
         }
     };
+
+    const { segundosDesdeUpdate } = usePolling(fetchBolsa, 30000, [userData?.estado]);
 
     const handleAceptarRuta = async (id) => {
         try {
@@ -40,11 +44,11 @@ const BolsaCargaPage = () => {
             await axios.put(`http://localhost:5000/api/pedidos/${id}/aceptar-ruta`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            toast.success("Ruta aceptada. Dirigete a la finca para recoger la carga.");
+            toast.success('✅ Carga aceptada. Recogé la carga en la finca indicada.');
             navigate('/dashboard/transportista/hoja-de-ruta');
         } catch (error) {
-            console.error("Error al aceptar ruta:", error);
-            toast.error("Error al aceptar la ruta.");
+            console.error('Error al aceptar ruta:', error);
+            toast.error(error.response?.data?.error || 'Error al aceptar la ruta.');
         }
     };
 
@@ -72,7 +76,10 @@ const BolsaCargaPage = () => {
     return (
         <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
             {/* ENCABEZADO */}
-            <div className="relative overflow-hidden bg-emerald-800 rounded-2xl p-6 sm:p-8 text-white shadow-xl">
+            <div className="flex justify-end mb-2">
+                <PollingIndicator segundosDesdeUpdate={segundosDesdeUpdate} />
+            </div>
+            <div className="relative overflow-hidden bg-gradient-to-r from-[#f59e0b] to-[#d97706] rounded-2xl p-6 sm:p-8 text-white shadow-xl">
                 <div className="absolute top-0 right-0 -mt-16 -mr-16 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl"></div>
                 <div className="relative z-10">
                     <h1 className="text-2xl sm:text-3xl font-black mb-2 flex items-center gap-3">
@@ -101,8 +108,8 @@ const BolsaCargaPage = () => {
                                         <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Pedido #{p.id.substring(0, 8)}</p>
                                         <h2 className="text-xl sm:text-2xl font-black text-slate-900">{p.comprador}</h2>
                                     </div>
-                                    <div className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-lg text-xs font-bold uppercase border border-emerald-100 shrink-0">
-                                        Confirmado
+                                    <div className="bg-amber-100 text-amber-800 px-3 py-1 rounded-lg text-xs font-bold uppercase border border-amber-200 shrink-0">
+                                        Listo para envío
                                     </div>
                                 </div>
 

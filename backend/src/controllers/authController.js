@@ -179,6 +179,12 @@ exports.registro = async (req, res) => {
 
             await transaction.commit();
 
+            // US08: suscripción a categorías al registrarse como comprador
+            if (rol === 'COMPRADOR' && Array.isArray(req.body.categorias_interes) && req.body.categorias_interes.length > 0) {
+                const { guardarSuscripciones } = require('../services/notificacionesService');
+                await guardarSuscripciones(userId, req.body.categorias_interes, true);
+            }
+
             // ── 6. Generar JWT ────────────────────────────
             const token = jwt.sign(
                 { id: userId, nombre: nombre_completo, rol, estado },
@@ -278,7 +284,7 @@ exports.getPerfil = async (req, res) => {
         // Datos comunes del usuario
         const userResult = await pool.request()
             .input('id', sql.UniqueIdentifier, userId)
-            .query('SELECT id, nombre_completo, correo, celular, rol, estado, fecha_registro FROM usuarios WHERE id = @id');
+            .query('SELECT id, nombre_completo, correo, celular, rol, estado, motivo_rechazo, fecha_registro FROM usuarios WHERE id = @id');
 
         if (userResult.recordset.length === 0) {
             return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -286,20 +292,21 @@ exports.getPerfil = async (req, res) => {
 
         const usuario = userResult.recordset[0];
         let perfil = {};
+        let estadisticas = {};
 
         // Datos específicos según el rol
         if (usuario.rol === 'PRODUCTOR') {
             const r = await pool.request()
                 .input('uid', sql.UniqueIdentifier, userId)
                 .query(`
-                    SELECT tipo_productor, nombre_finca, municipio, provincia, departamento,
-                           anios_experiencia, tipo_documento, numero_documento, url_documento,
-                           ubicacion_gps.STAsText() AS ubicacion_wkt
-                    FROM perfil_productor WHERE usuario_id = @uid
+                    SELECT pp.tipo_productor, pp.nombre_finca, pp.municipio, pp.provincia, pp.departamento,
+                           pp.anios_experiencia, pp.tipo_documento, pp.numero_documento, pp.url_documento,
+                           pp.fecha_creacion, pp.fecha_actualizacion,
+                           pp.ubicacion_gps.STAsText() AS ubicacion_wkt
+                    FROM perfil_productor pp WHERE pp.usuario_id = @uid
                 `);
             const row = r.recordset[0] || {};
 
-            // Parsear WKT "POINT (longitud latitud)" → { latitud, longitud }
             let latitud = null;
             let longitud = null;
             if (row.ubicacion_wkt) {
@@ -311,25 +318,65 @@ exports.getPerfil = async (req, res) => {
             }
             delete row.ubicacion_wkt;
             perfil = { ...row, latitud, longitud };
+
+            const stats = await pool.request()
+                .input('uid', sql.UniqueIdentifier, userId)
+                .query(`
+                    SELECT
+                        (SELECT COUNT(*) FROM Cosechas c
+                         INNER JOIN perfil_productor p ON c.productor_id = p.id
+                         WHERE p.usuario_id = @uid AND c.estado_publicacion = 'Activo') AS productos_activos,
+                        (SELECT COUNT(*) FROM Cosechas c
+                         INNER JOIN perfil_productor p ON c.productor_id = p.id
+                         WHERE p.usuario_id = @uid) AS productos_totales
+                `);
+            estadisticas = stats.recordset[0] || {};
         }
         else if (usuario.rol === 'COMPRADOR') {
             const r = await pool.request()
                 .input('uid', sql.UniqueIdentifier, userId)
-                .query('SELECT tipo_comprador, nombre_negocio, ciudad_principal FROM perfil_comprador WHERE usuario_id = @uid');
+                .query(`
+                    SELECT tipo_comprador, nombre_negocio, ciudad_principal, notificaciones_activas,
+                           fecha_creacion, fecha_actualizacion
+                    FROM perfil_comprador WHERE usuario_id = @uid
+                `);
             perfil = r.recordset[0] || {};
+
+            const cats = await pool.request()
+                .input('uid', sql.UniqueIdentifier, userId)
+                .query(`
+                    SELECT categoria FROM suscripcion_categorias_comprador
+                    WHERE comprador_id = @uid
+                `);
+            perfil.categorias_suscritas = cats.recordset.map((x) => x.categoria).join(', ') || '—';
+
+            const ped = await pool.request()
+                .input('uid', sql.UniqueIdentifier, userId)
+                .query(`
+                    SELECT COUNT(*) AS pedidos_totales
+                    FROM Pedidos WHERE comprador_id = @uid
+                `);
+            estadisticas = { pedidos_realizados: ped.recordset[0]?.pedidos_totales ?? 0 };
         }
         else if (usuario.rol === 'TRANSPORTISTA') {
             const r = await pool.request()
                 .input('uid', sql.UniqueIdentifier, userId)
                 .query(`
                     SELECT tipo_transporte, capacidad_carga_kg, zona_operacion,
-                           numero_licencia, placa_vehiculo, tipo_documento_subido, url_documento
+                           numero_licencia, placa_vehiculo, tipo_documento_subido, url_documento,
+                           fecha_creacion, fecha_actualizacion
                     FROM perfil_transportista WHERE usuario_id = @uid
                 `);
             perfil = r.recordset[0] || {};
         }
 
-        res.json({ ...usuario, ...perfil });
+        res.json({
+            ...usuario,
+            ...perfil,
+            acepto_terminos: true,
+            acepto_privacidad: true,
+            estadisticas,
+        });
 
     } catch (error) {
         console.error('Get Perfil Error:', error);

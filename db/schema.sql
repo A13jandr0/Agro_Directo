@@ -42,6 +42,7 @@ CREATE TABLE usuarios (
     celular             VARCHAR(20)         NOT NULL,       -- Con código de país, ej: +591 77711122
     rol                 VARCHAR(50)         NOT NULL,
     estado              VARCHAR(50)         NOT NULL DEFAULT 'PENDIENTE_VERIFICACION',
+    motivo_rechazo      VARCHAR(500)        NULL,
     acepto_terminos     BIT                 NOT NULL DEFAULT 1,
     acepto_privacidad   BIT                 NOT NULL DEFAULT 1,
     fecha_registro      DATETIME            NOT NULL DEFAULT GETDATE(),
@@ -113,6 +114,17 @@ BEGIN
 END;
 GO
 
+-- ============================================================
+-- Datos iniciales de usuarios
+-- ============================================================
+INSERT INTO usuarios (nombre_completo, correo, password_hash, celular, rol, acepto_terminos, acepto_privacidad)
+VALUES
+    (N'Juan Pérez', 'juan.perez@mail.com', '$2a$12$A3EFDJa8QMJBucIcmZiDT.hRRxAkjXGr1fX/8LzJub4Bfe4S7oLZW', '+59177711122', 'COMPRADOR', 1, 1),
+    (N'María Quispe', 'maria.quispe@mail.com', '$2a$12$A3EFDJa8QMJBucIcmZiDT.hRRxAkjXGr1fX/8LzJub4Bfe4S7oLZW', '+59177722233', 'PRODUCTOR', 1, 1),
+    (N'Carlos Mamani', 'carlos.mamani@mail.com', '$2a$12$A3EFDJa8QMJBucIcmZiDT.hRRxAkjXGr1fX/8LzJub4Bfe4S7oLZW', '+59177733344', 'TRANSPORTISTA', 1, 1),
+    (N'Admin Agro', 'admin@agrodirecto.com', '$2a$12$A3EFDJa8QMJBucIcmZiDT.hRRxAkjXGr1fX/8LzJub4Bfe4S7oLZW', '+59177744455', 'ADMINISTRADOR', 1, 1);
+GO
+
 
 -- ============================================================
 -- 2. TABLA: PERFIL_PRODUCTOR (Relación 1:1 con Usuarios)
@@ -134,6 +146,7 @@ CREATE TABLE perfil_productor (
     numero_documento    VARCHAR(50)         NOT NULL,
     ubicacion_gps       GEOGRAPHY           NULL,       -- Tipo espacial nativo: Lat/Lng, inicialmente NULL
     url_documento       VARCHAR(500)        NULL,
+    qr_pago_ruta        VARCHAR(500)        NULL,
     fecha_creacion      DATETIME            NOT NULL DEFAULT GETDATE(),
     fecha_actualizacion DATETIME            NOT NULL DEFAULT GETDATE(),
 
@@ -178,6 +191,7 @@ CREATE TABLE perfil_comprador (
     tipo_comprador      VARCHAR(50)         NOT NULL,
     nombre_negocio      VARCHAR(150)        NULL,       -- NULL si tipo_comprador = 'Persona natural'
     ciudad_principal    VARCHAR(100)        NOT NULL,
+    notificaciones_activas BIT              NOT NULL DEFAULT 1,
     fecha_creacion      DATETIME            NOT NULL DEFAULT GETDATE(),
     fecha_actualizacion DATETIME            NOT NULL DEFAULT GETDATE(),
 
@@ -260,8 +274,9 @@ CREATE TABLE Cosechas (
     productor_id UNIQUEIDENTIFIER NOT NULL, 
     
     nombre_producto VARCHAR(150) NOT NULL,
-    descripcion TEXT NULL,
-    foto_url VARCHAR(500) NULL,
+    categoria VARCHAR(50) NOT NULL,
+    descripcion TEXT NOT NULL,
+    foto_url VARCHAR(500) NOT NULL,
     
     cantidad_disponible DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
     unidad_medida VARCHAR(50) NOT NULL,
@@ -279,9 +294,11 @@ CREATE TABLE Cosechas (
         ON DELETE CASCADE
         ON UPDATE CASCADE,
         
-    CONSTRAINT CHK_Cosechas_UnidadMedida CHECK (unidad_medida IN ('Quintal', 'Arroba')),
+    CONSTRAINT CHK_Cosechas_Categoria CHECK (categoria IN ('Verduras', 'Frutas', 'Granos', 'Tubérculos')),
+
+    CONSTRAINT CHK_Cosechas_UnidadMedida CHECK (unidad_medida IN ('Quintal', 'Arroba', 'Kg', 'Unidad', 'Caja', 'Bolsa', 'Litro')),
     
-    CONSTRAINT CHK_Cosechas_EstadoPublicacion CHECK (estado_publicacion IN ('Activo', 'Pausado', 'Agotado'))
+    CONSTRAINT CHK_Cosechas_EstadoPublicacion CHECK (estado_publicacion IN ('Activo', 'Pausado', 'Agotado', 'Inactivo'))
 );
 GO
 
@@ -300,32 +317,73 @@ CREATE NONCLUSTERED INDEX IX_Cosechas_Estado_Fecha ON Cosechas(estado_publicacio
 CREATE NONCLUSTERED INDEX IX_PreciosMercado_Nombre_Fecha ON Precios_Mercado_Abasto(nombre_producto, fecha_actualizacion);
 GO
 
+-- Datos mock Mercado Abasto (US09 — Sprint 2)
+INSERT INTO Precios_Mercado_Abasto (nombre_producto, precio_promedio_bs, fecha_actualizacion) VALUES
+(N'Tomate', 28.50, CAST(GETDATE() AS DATE)),
+(N'Papa', 18.00, CAST(GETDATE() AS DATE)),
+(N'Zanahoria', 15.50, CAST(GETDATE() AS DATE)),
+(N'Cebolla', 22.00, CAST(GETDATE() AS DATE)),
+(N'Lechuga', 12.00, CAST(GETDATE() AS DATE)),
+(N'Plátano', 20.00, CAST(GETDATE() AS DATE)),
+(N'Banana', 18.50, CAST(GETDATE() AS DATE)),
+(N'Maíz', 95.00, CAST(GETDATE() AS DATE)),
+(N'Soya', 120.00, CAST(GETDATE() AS DATE)),
+(N'Achachairú', 35.00, CAST(GETDATE() AS DATE)),
+(N'Mandarina', 25.00, CAST(GETDATE() AS DATE)),
+(N'Yuca', 14.00, CAST(GETDATE() AS DATE));
+GO
+
 -- =================================================================
 -- ÉPICA 3: GESTIÓN DE PEDIDOS (US10, US11)
 -- =================================================================
 
--- 1. Tabla: Pedidos
+-- 1. Tabla: Pedidos (US10, US11 + US06 pagos preventa)
 CREATE TABLE Pedidos (
     id UNIQUEIDENTIFIER DEFAULT NEWID() PRIMARY KEY,
     comprador_id UNIQUEIDENTIFIER NOT NULL,
     estado VARCHAR(30) NOT NULL DEFAULT 'PENDIENTE',
     fecha_pedido DATETIME NOT NULL DEFAULT GETDATE(),
     notas TEXT NULL,
+    comprobante_url VARCHAR(500) NULL,
+    comprobante_saldo_url VARCHAR(500) NULL,
+    monto_total DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    monto_pagado_anticipo DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    monto_saldo_pendiente DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    saldo_pagado BIT NOT NULL DEFAULT 0,
+    notificado_saldo_disponible BIT NOT NULL DEFAULT 0,
 
     CONSTRAINT FK_Pedidos_Comprador FOREIGN KEY (comprador_id)
         REFERENCES usuarios(id),
 
-    CONSTRAINT CHK_Pedidos_Estado CHECK (estado IN ('PENDIENTE','CONFIRMADO','RECHAZADO','ENVIADO','ENTREGADO','CANCELADO'))
+    modalidad_entrega VARCHAR(30) NULL,
+    direccion_entrega VARCHAR(300) NULL,
+    transportista_id UNIQUEIDENTIFIER NULL,
+    firma_comprador_url VARCHAR(500) NULL,
+    motivo_rechazo_pago VARCHAR(500) NULL,
+    fecha_pago DATETIME NULL,
+    fecha_actualizacion DATETIME NOT NULL DEFAULT GETDATE(),
+
+    CONSTRAINT CHK_Pedidos_Estado CHECK (estado IN (
+        'PENDIENTE_CONFIRMACION','PENDIENTE','COMPROBANTE_ENVIADO','PAGADO',
+        'LISTO_PARA_DESPACHO','CONFIRMADO','RECHAZADO','EN_CAMINO','ENVIADO',
+        'ENTREGADO','CANCELADO','PENDIENTE_SALDO'
+    ))
 );
 GO
 
--- 2. Tabla: Detalle_Pedidos
+-- 2. Tabla: Detalle_Pedidos (US06: snapshot preventa por línea)
 CREATE TABLE Detalle_Pedidos (
     id UNIQUEIDENTIFIER DEFAULT NEWID() PRIMARY KEY,
     pedido_id UNIQUEIDENTIFIER NOT NULL,
     cosecha_id UNIQUEIDENTIFIER NOT NULL,
     cantidad DECIMAL(10, 2) NOT NULL,
     precio_unitario DECIMAL(10, 2) NOT NULL,
+    es_preventa BIT NOT NULL DEFAULT 0,
+    fecha_disponibilidad DATE NULL,
+    subtotal_linea DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    monto_anticipo DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    monto_saldo DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    saldo_pagado BIT NOT NULL DEFAULT 0,
 
     CONSTRAINT FK_Detalle_Pedido FOREIGN KEY (pedido_id)
         REFERENCES Pedidos(id) ON DELETE CASCADE,
@@ -338,4 +396,41 @@ GO
 CREATE NONCLUSTERED INDEX IX_Pedidos_Comprador ON Pedidos(comprador_id);
 CREATE NONCLUSTERED INDEX IX_Pedidos_Estado ON Pedidos(estado);
 CREATE NONCLUSTERED INDEX IX_DetallePedidos_Pedido ON Detalle_Pedidos(pedido_id);
+GO
+
+-- =================================================================
+-- ÉPICA 2.1: ALERTAS DE ESTACIONALIDAD (US08)
+-- =================================================================
+
+CREATE TABLE suscripcion_categorias_comprador (
+    comprador_id    UNIQUEIDENTIFIER    NOT NULL,
+    categoria       VARCHAR(50)         NOT NULL,
+
+    CONSTRAINT PK_suscripcion_categorias PRIMARY KEY (comprador_id, categoria),
+    CONSTRAINT FK_suscripcion_comprador FOREIGN KEY (comprador_id)
+        REFERENCES usuarios(id) ON DELETE CASCADE,
+    CONSTRAINT CHK_suscripcion_categoria CHECK (categoria IN ('Verduras', 'Frutas', 'Granos', 'Tubérculos'))
+);
+GO
+
+CREATE TABLE notificaciones_app (
+    id              UNIQUEIDENTIFIER    NOT NULL DEFAULT NEWID() PRIMARY KEY,
+    usuario_id      UNIQUEIDENTIFIER    NOT NULL,
+    tipo            VARCHAR(50)         NOT NULL DEFAULT 'NUEVO_PRODUCTO_TEMPORADA',
+    titulo          VARCHAR(200)        NOT NULL,
+    mensaje         VARCHAR(500)        NOT NULL,
+    cosecha_id      UNIQUEIDENTIFIER    NULL,
+    pedido_id       UNIQUEIDENTIFIER    NULL,
+    leida           BIT                 NOT NULL DEFAULT 0,
+    fecha_creacion  DATETIME            NOT NULL DEFAULT GETDATE(),
+
+    CONSTRAINT FK_notificaciones_usuario FOREIGN KEY (usuario_id)
+        REFERENCES usuarios(id) ON DELETE NO ACTION,
+    CONSTRAINT FK_notificaciones_cosecha FOREIGN KEY (cosecha_id)
+        REFERENCES Cosechas(id) ON DELETE NO ACTION
+);
+GO
+
+CREATE NONCLUSTERED INDEX IX_notificaciones_usuario_leida ON notificaciones_app(usuario_id, leida);
+CREATE NONCLUSTERED INDEX IX_suscripcion_categoria ON suscripcion_categorias_comprador(categoria);
 GO

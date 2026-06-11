@@ -20,12 +20,10 @@ const RegisterCompradorPage = () => {
 
   // Lista de categorías
   const categoriasDisponibles = [
-    { id: 'Verduras', label: '🍅 Verduras' },
+    { id: 'Verduras', label: '🥬 Verduras' },
     { id: 'Frutas', label: '🍎 Frutas' },
     { id: 'Granos', label: '🌽 Granos' },
-    { id: 'Carne', label: '🥩 Carne' },
-    { id: 'Lacteos', label: '🥛 Lácteos' },
-    { id: 'Hierbas', label: '🌿 Hierbas' }
+    { id: 'Tubérculos', label: '🥔 Tubérculos' },
   ];
 
   const handleCategoriaToggle = (id) => {
@@ -109,9 +107,10 @@ const RegisterCompradorPage = () => {
         // Perfil
         tipo_comprador: formData.tipoComprador === 'Persona' ? 'Persona natural' : formData.tipoComprador,
         nombre_negocio: formData.nombreNegocio || null,
-        ciudad_principal: formData.ciudadPrincipal
+        ciudad_principal: formData.ciudadPrincipal,
+        categorias_interes: categorias
       };
-      const res = await axios.post('http://localhost:5000/api/auth/register', payload);
+      const res = await axios.post('http://localhost:5000/api/auth/registro', payload);
       
       const token = res.data.token;
       localStorage.setItem('token', token);

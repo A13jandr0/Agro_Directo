@@ -1,538 +1,531 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Leaf, LayoutDashboard, Sprout, PlusCircle, ShoppingBag, MapPin, BarChart2, User, Settings, LogOut, 
-  Menu, Bell, CheckCircle2, AlertCircle, Camera, Star, Package, Calendar, TrendingUp, FileText, Upload,
-  Mail, Phone, Lock, Save, X, Eye, EyeOff
-} from 'lucide-react';
 import axios from 'axios';
-import { toast } from 'react-hot-toast';
+import { 
+  User, CheckCircle2, AlertCircle, Camera, FileText, Upload, 
+  Mail, Phone, Lock, Save, X, Eye, EyeOff, Loader2, Sparkles, CreditCard, Clock
+} from 'lucide-react';
+import { useToast } from '../context/ToastContext';
+import PageShell from '../components/ui/PageShell';
 
 const MiPerfilProductorPage = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('Personal');
+  const toast = useToast();
   
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  // Estados para Documentos
-  const [fileCI, setFileCI] = useState(null);
-  const [fileRAU, setFileRAU] = useState(null);
-  const [hasCI, setHasCI] = useState(false);
-  const [hasRAU, setHasRAU] = useState(false);
   const [isUploadingDocs, setIsUploadingDocs] = useState(false);
 
-  // Estados de Formulario - Personal
-  const [formDataPersonal, setFormDataPersonal] = useState({
-    nombreCompleto: '',
+  // File Upload State
+  const [fileCI, setFileCI] = useState(null);
+  const [fileRAU, setFileRAU] = useState(null);
+
+  // QR State
+  const [banco, setBanco] = useState('BNB');
+  const [titular, setTitular] = useState('');
+  const [qrImagePreview, setQrImagePreview] = useState(null);
+
+  // Form States
+  const [formData, setFormData] = useState({
+    nombre_completo: '',
     correo: '',
     celular: '',
-    tipoProductor: 'Individual',
-    aniosExperiencia: 0,
-    tipoDocumento: 'CI',
-    numeroDocumento: '',
-    estado: 'Pendiente_Verificacion',
-    fechaRegistro: ''
-  });
-
-  // Estados de Formulario - Finca
-  const [formDataFinca, setFormDataFinca] = useState({
-    nombreFinca: '',
-    departamento: 'Santa Cruz',
-    provincia: '',
+    bio: 'Terreno de 50 hectáreas dedicado a la agricultura sostenible y producción orgánica de granos y hortalizas.',
+    nombre_finca: '',
     municipio: '',
-    descripcionFinca: 'Terreno de 50 hectáreas dedicado a la agricultura sostenible y producción orgánica de granos y hortalizas.'
-  });
-
-  // Estados de Formulario - Seguridad
-  const [formDataSeguridad, setFormDataSeguridad] = useState({
-    passwordActual: '',
-    nuevaPassword: '',
-    confirmarPassword: ''
-  });
-
-  const [showPassword, setShowPassword] = useState({
-    actual: false,
-    nueva: false,
-    confirmar: false
+    provincia: '',
+    departamento: 'Santa Cruz'
   });
 
   const fetchProfile = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return navigate('/login');
     try {
-      const token = localStorage.getItem('token');
-      if (!token) return navigate('/login');
       const res = await axios.get('http://localhost:5000/api/usuarios/mi-perfil', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      const data = res.data;
-      
-      setFormDataPersonal({
-        nombreCompleto: data.nombre_completo || '',
-        correo: data.correo || '',
-        celular: data.celular || '',
-        tipoProductor: data.tipo_productor || 'Individual',
-        aniosExperiencia: data.anios_experiencia || 0,
-        tipoDocumento: data.tipo_documento || 'CI',
-        numeroDocumento: data.numero_documento || '',
-        estado: data.estado || 'Pendiente_Verificacion',
-        fechaRegistro: data.fecha_registro ? new Date(data.fecha_registro).toLocaleDateString() : 'N/A'
+      setUserData(res.data);
+      setFormData({
+        nombre_completo: res.data.nombre_completo || '',
+        correo: res.data.correo || '',
+        celular: res.data.celular || '',
+        bio: res.data.bio || 'Centro de producción familiar con compromiso en calidad y frescura directa.',
+        nombre_finca: res.data.nombre_finca || '',
+        municipio: res.data.municipio || '',
+        provincia: res.data.provincia || '',
+        departamento: res.data.departamento || 'Santa Cruz'
       });
-
-      setFormDataFinca({
-        nombreFinca: data.nombre_finca || '',
-        departamento: data.departamento || 'Santa Cruz',
-        provincia: data.provincia || '',
-        municipio: data.municipio || '',
-        descripcionFinca: 'Terreno dedicado a la agricultura sostenible y producción de granos y hortalizas.'
-      });
-
-      if (data.url_documento) {
-        if (data.url_documento.includes('documento_ci')) setHasCI(true);
-        if (data.url_documento.includes('documento_rau')) setHasRAU(true);
-      }
-    } catch (error) {
-      console.error("Error fetching profile", error);
-      if (error.response?.status === 401) {
-        navigate('/login');
-      } else {
-        toast.error("Error al cargar los datos del perfil");
-      }
+    } catch (err) {
+      console.error(err);
+      toast.error('No se pudieron cargar los datos de tu perfil');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchProfile();
+    const savedQR = JSON.parse(localStorage.getItem('productorQR'));
+    if (savedQR) {
+      setBanco(savedQR.banco || 'BNB');
+      setTitular(savedQR.titular || '');
+      setQrImagePreview(savedQR.qrImageUrl || null);
+    }
   }, [navigate]);
 
-  // Cálculo de fortaleza de contraseña
-  const getPasswordStrength = (pass) => {
-    let strength = 0;
-    if (pass.length >= 8) strength++;
-    if (/[A-Z]/.test(pass)) strength++;
-    if (/[0-9]/.test(pass)) strength++;
-    return strength; 
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
-  const passStrength = getPasswordStrength(formDataSeguridad.nuevaPassword);
-  const strengthColors = ['bg-gray-200', 'bg-red-500', 'bg-yellow-500', 'bg-green-500'];
 
-  const handleSave = async () => {
+  const handleFileUpload = (file, field) => {
+    if (!file) return;
+
+    if (field === 'ci') {
+      setFileCI(file);
+    } else if (field === 'rau') {
+      setFileRAU(file);
+    }
+  };
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
     setIsSaving(true);
-    const loadingToast = toast.loading('Guardando cambios...');
     try {
       const token = localStorage.getItem('token');
       await axios.put('http://localhost:5000/api/productor/perfil', {
-        nombre_completo: formDataPersonal.nombreCompleto,
-        celular: formDataPersonal.celular,
-        tipo_productor: formDataPersonal.tipoProductor,
-        anios_experiencia: formDataPersonal.aniosExperiencia,
-        tipo_documento: formDataPersonal.tipoDocumento,
-        numero_documento: formDataPersonal.numeroDocumento,
-        nombre_finca: formDataFinca.nombreFinca,
-        municipio: formDataFinca.municipio,
-        provincia: formDataFinca.provincia,
-        departamento: formDataFinca.departamento
+        nombre_completo: formData.nombre_completo,
+        celular: formData.celular,
+        tipo_productor: userData?.tipo_productor || 'Individual',
+        anios_experiencia: userData?.anios_experiencia || 5,
+        tipo_documento: userData?.tipo_documento || 'CI',
+        numero_documento: userData?.numero_documento || '1234567',
+        nombre_finca: formData.nombre_finca,
+        municipio: formData.municipio,
+        provincia: formData.provincia,
+        departamento: formData.departamento
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      toast.success('Perfil actualizado correctamente', { id: loadingToast });
-    } catch (error) {
-      console.error(error);
-      toast.error('Error al guardar el perfil', { id: loadingToast });
+      toast.success('Perfil guardado correctamente');
+      fetchProfile();
+    } catch (err) {
+      toast.error('Error al guardar el perfil');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleUploadDocumentos = async () => {
+  const handleUploadDocs = async () => {
     if (!fileCI && !fileRAU) return;
     setIsUploadingDocs(true);
-    const loadingToast = toast.loading('Subiendo documentos...');
     try {
       const token = localStorage.getItem('token');
-      const formData = new FormData();
-      if (fileCI) formData.append('documento_ci', fileCI);
-      if (fileRAU) formData.append('documento_rau', fileRAU);
+      const data = new FormData();
+      if (fileCI) data.append('documento_ci', fileCI);
+      if (fileRAU) data.append('documento_rau', fileRAU);
 
-      await axios.post('http://localhost:5000/api/usuarios/documentos', formData, {
-        headers: { 
+      await axios.post('http://localhost:5000/api/usuarios/documentos', data, {
+        headers: {
           'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${token}` 
+          Authorization: `Bearer ${token}`
         }
       });
-      toast.success('Documentos enviados correctamente', { id: loadingToast });
+      toast.success('Documentos de acreditación subidos para revisión');
       setFileCI(null);
       setFileRAU(null);
-      await fetchProfile();
-    } catch (error) {
-      console.error(error);
-      toast.error('Error al subir los documentos', { id: loadingToast });
+      fetchProfile();
+    } catch (err) {
+      toast.error('Error al subir los documentos');
     } finally {
       setIsUploadingDocs(false);
     }
   };
 
-  const getInitials = (name) => {
-    if (!name) return 'U';
-    const parts = name.trim().split(' ');
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
+  const handleQRUpload = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => setQrImagePreview(e.target.result);
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveQR = () => {
+    if (!titular || !qrImagePreview) {
+      toast.error('Completá el nombre del titular y subí la imagen de tu QR');
+      return;
     }
+    localStorage.setItem('productorQR', JSON.stringify({
+      banco, titular, qrImageUrl: qrImagePreview
+    }));
+    toast.success('Datos de cobro guardados exitosamente');
+  };
+
+  const getInitials = (name) => {
+    if (!name) return 'P';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
     return name.substring(0, 2).toUpperCase();
   };
 
-  if (isLoading) {
+  if (loading) {
     return (
-      <div className="flex h-full items-center justify-center p-20">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin"></div>
-          <p className="text-slate-500 font-bold animate-pulse">Cargando perfil...</p>
-        </div>
+      <div className="py-24 text-center">
+        <Loader2 className="w-10 h-10 animate-spin text-emerald-600 mx-auto" />
       </div>
     );
   }
 
+  const estado = userData?.estado || 'PENDIENTE_VERIFICACION';
+  const isVerified = estado === 'VERIFICADO';
+  const isRejected = estado === 'RECHAZADO';
+  const isPending = estado === 'PENDIENTE_VERIFICACION' || estado === 'PENDIENTE';
+
   return (
-    <div className="p-6 sm:p-8 lg:p-10 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
-      
-      {/* HEADER SECTION */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-2">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-xl shadow-emerald-500/20 shrink-0">
-            <User className="w-8 h-8" />
+    <PageShell>
+      {/* Header Perfil */}
+      <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 flex flex-col md:flex-row items-center gap-6">
+        <div className="relative group shrink-0">
+          <div className="w-24 h-24 rounded-full bg-emerald-600 text-white flex items-center justify-center text-3xl font-black border-4 border-emerald-50 shadow-md">
+            {getInitials(formData.nombre_completo)}
           </div>
-          <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Mi Perfil</h1>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Configuración de Cuenta y Seguridad</p>
+          <button 
+            type="button" 
+            className="absolute bottom-0 right-0 bg-white border border-slate-200 p-1.5 rounded-full text-slate-600 hover:text-emerald-600 shadow-md transition-colors"
+            title="Cambiar foto de perfil"
+          >
+            <Camera className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="text-center md:text-left flex-1 min-w-0">
+          <div className="flex flex-col md:flex-row md:items-center gap-2">
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight">{formData.nombre_completo}</h2>
+            {isVerified ? (
+              <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border-emerald-200 px-3 py-1 rounded-full text-xs font-bold w-fit mx-auto md:mx-0">
+                <CheckCircle2 className="w-3.5 h-3.5" /> Verificado
+              </span>
+            ) : isRejected ? (
+              <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 border-rose-200 px-3 py-1 rounded-full text-xs font-bold w-fit mx-auto md:mx-0">
+                <AlertCircle className="w-3.5 h-3.5" /> Rechazado
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border-amber-200 px-3 py-1 rounded-full text-xs font-bold w-fit mx-auto md:mx-0">
+                <Clock className="w-3.5 h-3.5 animate-pulse" /> Pendiente Verificación
+              </span>
+            )}
           </div>
+          <p className="text-sm text-slate-400 mt-1">Finca: {formData.nombre_finca || 'Sin Finca Registrada'} — {formData.municipio}, {formData.departamento}</p>
         </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* COLUMNA IZQUIERDA (320px) */}
-        <div className="w-full lg:w-[320px] flex flex-col gap-6 shrink-0">
-              
-              {/* Card de Perfil */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col items-center text-center">
-                <div className="relative mb-4">
-                  <div className="w-[120px] h-[120px] rounded-full bg-[#1D9E75] text-white flex items-center justify-center text-4xl font-bold border-4 border-[#E1F5EE]">
-                    {getInitials(formDataPersonal.nombreCompleto)}
+        {/* Sección 1: Información Personal (Col Span 2) */}
+        <div className="lg:col-span-2 bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-sm space-y-6">
+          <div className="border-b border-slate-100 pb-4">
+            <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">Información personal</h3>
+            <p className="text-xs text-slate-400 mt-1">Editá tus datos de contacto e información de tu finca</p>
+          </div>
+
+          <form onSubmit={handleSaveProfile} className="space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1.5">Nombre completo</label>
+                <input
+                  type="text"
+                  value={formData.nombre_completo}
+                  onChange={(e) => handleInputChange('nombre_completo', e.target.value)}
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-slate-200 rounded-xl text-sm font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1.5">Correo electrónico (No editable)</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <Mail className="w-4 h-4" />
                   </div>
-                  <button className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 bg-white border border-gray-200 text-[#1a1a1a] rounded-full px-3 py-1.5 flex items-center gap-1.5 text-xs font-semibold hover:bg-gray-50 shadow-sm whitespace-nowrap">
-                    <Camera className="w-3.5 h-3.5" /> Cambiar foto
-                  </button>
-                </div>
-                
-                <h2 className="text-xl font-bold text-[#1a1a1a] mt-4">{formDataPersonal.nombreCompleto}</h2>
-                {formDataPersonal.estado === 'VERIFICADO' ? (
-                  <div className="flex items-center gap-1.5 mt-1.5 mb-4 text-[#1D9E75] bg-[#E1F5EE] px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
-                    <CheckCircle2 className="w-4 h-4" /> Verificado
-                  </div>
-                ) : formDataPersonal.estado === 'PENDIENTE_VERIFICACION' ? (
-                  <div className="flex items-center gap-1.5 mt-1.5 mb-4 text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
-                    <AlertCircle className="w-4 h-4" /> Pendiente de Verificación
-                  </div>
-                ) : formDataPersonal.estado === 'RECHAZADO' ? (
-                  <div className="flex items-center gap-1.5 mt-1.5 mb-4 text-red-700 bg-red-50 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
-                    <AlertCircle className="w-4 h-4" /> Rechazado
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1.5 mt-1.5 mb-4 text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
-                    <CheckCircle2 className="w-4 h-4" /> {formDataPersonal.estado || 'Registrado'}
-                  </div>
-                )}
-                
-                <div className="w-full space-y-2 text-sm text-[#6b7280] bg-gray-50 p-3 rounded-lg text-left">
-                  <div className="flex items-center gap-2">
-                    <Leaf className="w-4 h-4 text-gray-400" /> <span className="truncate">{formDataFinca.nombreFinca}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-gray-400" /> <span className="truncate">{formDataFinca.municipio}, {formDataFinca.departamento}</span>
-                  </div>
+                  <input
+                    type="email"
+                    value={formData.correo}
+                    disabled
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-sm font-semibold text-slate-500 cursor-not-allowed"
+                  />
                 </div>
               </div>
 
-              {/* Card de Calificación */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col items-center text-center">
-                <div className="flex gap-1 mb-2 text-[#F59E0B]">
-                  {[1, 2, 3, 4, 5].map(star => (
-                    <Star key={star} className={`w-6 h-6 ${star === 5 ? 'fill-gray-200 text-gray-200' : 'fill-current'}`} />
-                  ))}
-                </div>
-                <h3 className="text-3xl font-bold text-[#1a1a1a]">4.8 <span className="text-lg text-gray-400 font-medium">/ 5.0</span></h3>
-                <p className="text-xs text-[#6b7280] mt-1">Basado en 18 calificaciones</p>
-              </div>
-
-              {/* Estadísticas Rápidas */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <h3 className="text-sm font-bold text-[#1a1a1a] mb-4 uppercase tracking-wider text-gray-500">Resumen de Actividad</h3>
-                <ul className="space-y-4">
-                  <li className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-500 shrink-0"><Package className="w-4 h-4" /></div>
-                    <span className="text-sm text-[#1a1a1a] font-medium">34 ventas completadas</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center text-purple-500 shrink-0"><Calendar className="w-4 h-4" /></div>
-                    <span className="text-sm text-[#1a1a1a] font-medium">Miembro desde marzo 2024</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center text-green-500 shrink-0"><Sprout className="w-4 h-4" /></div>
-                    <span className="text-sm text-[#1a1a1a] font-medium">7 productos activos</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center text-orange-500 shrink-0"><TrendingUp className="w-4 h-4" /></div>
-                    <span className="text-sm text-[#1a1a1a] font-medium">Bs. 8,450 en ventas totales</span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Card de Documentos */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <FileText className="w-5 h-5 text-[#1D9E75]" />
-                  <h3 className="text-sm font-bold text-[#1a1a1a] uppercase tracking-wider text-gray-500">Mis documentos</h3>
-                </div>
-                
-                {hasCI && hasRAU ? (
-                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-start gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 shrink-0" />
-                    <div>
-                      <h4 className="text-emerald-800 font-bold text-sm">Documentos enviados</h4>
-                      <p className="text-emerald-700 text-xs mt-1">Tus documentos han sido subidos y están en revisión por el administrador.</p>
-                    </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1.5">Celular / Teléfono</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <Phone className="w-4 h-4" />
                   </div>
-                ) : (
-                  <>
-                    <div className="space-y-3 mb-4">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center justify-between p-2.5 bg-gray-50 border border-gray-100 rounded-lg">
-                          <span className="text-xs font-semibold text-[#1a1a1a]">Carnet de Identidad</span>
-                          {fileCI || hasCI ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <AlertCircle className="w-4 h-4 text-yellow-500" />}
-                        </div>
-                        {!hasCI && (
-                          <label className="flex items-center gap-2 p-2 border-2 border-dashed border-gray-200 rounded-lg cursor-pointer hover:border-emerald-500 transition-colors">
-                            <Upload className="w-4 h-4 text-gray-400" />
-                            <span className="text-[10px] text-gray-500 font-medium truncate">{fileCI ? fileCI.name : 'Subir CI (.pdf/.jpg)'}</span>
-                            <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={e => setFileCI(e.target.files[0])} />
-                          </label>
-                        )}
-                      </div>
-
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center justify-between p-2.5 bg-gray-50 border border-gray-100 rounded-lg">
-                          <span className="text-xs font-semibold text-[#1a1a1a]">RAU (Registro Agropecuario)</span>
-                          {fileRAU || hasRAU ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <AlertCircle className="w-4 h-4 text-yellow-500" />}
-                        </div>
-                        {!hasRAU && (
-                          <label className="flex items-center gap-2 p-2 border-2 border-dashed border-gray-200 rounded-lg cursor-pointer hover:border-emerald-500 transition-colors">
-                            <Upload className="w-4 h-4 text-gray-400" />
-                            <span className="text-[10px] text-gray-500 font-medium truncate">{fileRAU ? fileRAU.name : 'Subir RAU (.pdf/.jpg)'}</span>
-                            <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={e => setFileRAU(e.target.files[0])} />
-                          </label>
-                        )}
-                      </div>
-                    </div>
-
-                    <button 
-                      onClick={handleUploadDocumentos}
-                      disabled={isUploadingDocs || (!fileCI && !fileRAU)}
-                      className="w-full bg-[#1a1a1a] border border-gray-200 text-white py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-black transition-colors text-sm shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
-                      {isUploadingDocs ? 'Subiendo...' : <><Upload className="w-4 h-4" /> Enviar documentos</>}
-                    </button>
-                  </>
-                )}
+                  <input
+                    type="tel"
+                    value={formData.celular}
+                    onChange={(e) => handleInputChange('celular', e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-slate-200 rounded-xl text-sm font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                  />
+                </div>
               </div>
 
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1.5">Nombre de la Finca</label>
+                <input
+                  type="text"
+                  value={formData.nombre_finca}
+                  onChange={(e) => handleInputChange('nombre_finca', e.target.value)}
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-slate-200 rounded-xl text-sm font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                />
+              </div>
             </div>
 
-            {/* COLUMNA DERECHA (Formulario de edición) */}
-            <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-max">
-              
-              {/* TABS DE EDICIÓN */}
-              <div className="flex border-b border-gray-100 bg-gray-50/50 overflow-x-auto hide-scrollbar shrink-0">
-                {['Personal', 'Finca', 'Seguridad'].map(tab => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`whitespace-nowrap px-6 py-4 text-sm font-bold transition-colors border-b-2 ${
-                      activeTab === tab 
-                        ? 'border-[#1D9E75] text-[#1D9E75] bg-white' 
-                        : 'border-transparent text-[#6b7280] hover:text-[#1a1a1a] hover:bg-gray-100/50'
-                    }`}
-                  >
-                    {tab === 'Personal' && 'Información personal'}
-                    {tab === 'Finca' && 'Información de la finca'}
-                    {tab === 'Seguridad' && 'Seguridad'}
-                  </button>
-                ))}
+            <div>
+              <label className="block text-xs font-bold text-slate-600 mb-1.5">Biografía / Presentación de la Finca</label>
+              <textarea
+                value={formData.bio}
+                onChange={(e) => handleInputChange('bio', e.target.value)}
+                rows="3"
+                className="w-full px-4 py-3 bg-gray-50 border border-slate-200 rounded-xl text-sm font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none"
+              />
+            </div>
+
+            <div className="pt-4 border-t border-slate-100 flex justify-end">
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-md transition-all disabled:opacity-50"
+              >
+                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Guardar cambios
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* Sección 2: Documentos de Verificación */}
+        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-6">
+          <div className="border-b border-slate-100 pb-4">
+            <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">Verificación</h3>
+            <p className="text-xs text-slate-400 mt-1">Subí tus acreditaciones comerciales</p>
+          </div>
+
+          {/* Banners informativos según estado */}
+          {isPending && (
+            <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl p-4 space-y-1.5">
+              <h4 className="text-xs font-bold flex items-center gap-1.5">
+                <Clock className="w-4 h-4 animate-pulse" /> Documentación pendiente de revisión
+              </h4>
+              <p className="text-[11px] text-amber-800/80 leading-normal font-semibold">
+                Tus credenciales están siendo revisadas. Puedes subir nuevos archivos si faltaba alguno.
+              </p>
+            </div>
+          )}
+
+          {isVerified && (
+            <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl p-4 flex items-start gap-3">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 shrink-0" />
+              <div>
+                <h4 className="text-xs font-bold">✓ Cuenta verificada</h4>
+                <p className="text-[11px] text-emerald-800/80 leading-normal font-semibold mt-1">
+                  Tu acreditación está completada. Puedes publicar y vender en el marketplace de AgroDirecto.
+                </p>
               </div>
+            </div>
+          )}
 
-              {/* CONTENIDO DEL TAB */}
-              <div className="p-6 md:p-8 flex-1">
-                
-                {/* TAB: PERSONAL */}
-                {activeTab === 'Personal' && (
-                  <div className="space-y-6 animate-fade-in">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-semibold text-[#1a1a1a] mb-1.5 flex items-center gap-2"><User className="w-4 h-4 text-gray-400"/> Nombre completo</label>
-                        <input type="text" value={formDataPersonal.nombreCompleto} onChange={e => setFormDataPersonal({...formDataPersonal, nombreCompleto: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/20 focus:border-[#1D9E75]" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-[#1a1a1a] mb-1.5 flex items-center gap-2 justify-between">
-                          <span className="flex items-center gap-2"><Mail className="w-4 h-4 text-gray-400"/> Correo electrónico</span>
-                          <span className="bg-gray-100 text-gray-500 text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">No editable</span>
-                        </label>
-                        <input type="email" value={formDataPersonal.correo} disabled className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-500 cursor-not-allowed" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-[#1a1a1a] mb-1.5 flex items-center gap-2"><Phone className="w-4 h-4 text-gray-400"/> Número de celular</label>
-                        <input type="text" value={formDataPersonal.celular} onChange={e => setFormDataPersonal({...formDataPersonal, celular: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/20 focus:border-[#1D9E75]" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-[#1a1a1a] mb-1.5">Tipo de productor</label>
-                        <select value={formDataPersonal.tipoProductor} onChange={e => setFormDataPersonal({...formDataPersonal, tipoProductor: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/20 focus:border-[#1D9E75] bg-white">
-                          <option>Individual</option>
-                          <option>Asociación</option>
-                          <option>Cooperativa</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-[#1a1a1a] mb-1.5">Años de experiencia</label>
-                        <input type="number" value={formDataPersonal.aniosExperiencia} onChange={e => setFormDataPersonal({...formDataPersonal, aniosExperiencia: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/20 focus:border-[#1D9E75]" />
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-sm font-semibold text-[#1a1a1a] mb-1.5">Tipo doc.</label>
-                          <select value={formDataPersonal.tipoDocumento} onChange={e => setFormDataPersonal({...formDataPersonal, tipoDocumento: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/20 focus:border-[#1D9E75] bg-white">
-                            <option>CI</option>
-                            <option>NIT</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-semibold text-[#1a1a1a] mb-1.5">Número doc.</label>
-                          <input type="text" value={formDataPersonal.numeroDocumento} onChange={e => setFormDataPersonal({...formDataPersonal, numeroDocumento: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/20 focus:border-[#1D9E75]" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
+          {isRejected && (
+            <div className="bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl p-4 space-y-2">
+              <h4 className="text-xs font-bold flex items-center gap-1.5">
+                <AlertCircle className="w-4 h-4" /> Solicitud rechazada
+              </h4>
+              <p className="text-[11px] text-rose-800/80 leading-normal font-semibold">
+                Motivo: {userData?.motivo_rechazo || 'Acreditaciones inválidas o borrosas. Por favor, subí nuevamente.'}
+              </p>
+            </div>
+          )}
 
-                {/* TAB: FINCA */}
-                {activeTab === 'Finca' && (
-                  <div className="space-y-6 animate-fade-in">
-                    <div>
-                      <label className="block text-sm font-semibold text-[#1a1a1a] mb-1.5 flex items-center gap-2"><Leaf className="w-4 h-4 text-gray-400"/> Nombre de la finca</label>
-                      <input type="text" value={formDataFinca.nombreFinca} onChange={e => setFormDataFinca({...formDataFinca, nombreFinca: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/20 focus:border-[#1D9E75]" />
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-sm font-semibold text-[#1a1a1a] mb-1.5">Departamento</label>
-                        <select value={formDataFinca.departamento} onChange={e => setFormDataFinca({...formDataFinca, departamento: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/20 focus:border-[#1D9E75] bg-white">
-                          <option>Santa Cruz</option>
-                          <option>La Paz</option>
-                          <option>Cochabamba</option>
-                          <option>Beni</option>
-                          <option>Pando</option>
-                          <option>Oruro</option>
-                          <option>Potosí</option>
-                          <option>Tarija</option>
-                          <option>Chuquisaca</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-[#1a1a1a] mb-1.5">Provincia</label>
-                        <input type="text" value={formDataFinca.provincia} onChange={e => setFormDataFinca({...formDataFinca, provincia: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/20 focus:border-[#1D9E75]" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-[#1a1a1a] mb-1.5">Municipio</label>
-                        <input type="text" value={formDataFinca.municipio} onChange={e => setFormDataFinca({...formDataFinca, municipio: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/20 focus:border-[#1D9E75]" />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold text-[#1a1a1a] mb-1.5">Descripción de la finca</label>
-                      <textarea rows="4" value={formDataFinca.descripcionFinca} onChange={e => setFormDataFinca({...formDataFinca, descripcionFinca: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/20 focus:border-[#1D9E75] resize-none" placeholder="Cuéntanos más sobre tu producción..." />
-                    </div>
-                  </div>
-                )}
-
-                {/* TAB: SEGURIDAD */}
-                {activeTab === 'Seguridad' && (
-                  <div className="space-y-6 animate-fade-in max-w-md">
-                    <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 flex items-start gap-3">
-                      <Lock className="w-5 h-5 text-emerald-500 mt-0.5" />
-                      <p className="text-xs text-emerald-700 leading-relaxed font-medium">Recomendamos usar una contraseña fuerte que combine letras, números y símbolos para mayor seguridad.</p>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div className="relative">
-                        <label className="block text-sm font-semibold text-[#1a1a1a] mb-1.5">Contraseña actual</label>
-                        <input type={showPassword.actual ? "text" : "password"} value={formDataSeguridad.passwordActual} onChange={e => setFormDataSeguridad({...formDataSeguridad, passwordActual: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/20 focus:border-[#1D9E75]" />
-                        <button type="button" onClick={() => setShowPassword({...showPassword, actual: !showPassword.actual})} className="absolute right-3 top-[38px] text-gray-400 hover:text-gray-600">
-                          {showPassword.actual ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                      </div>
-
-                      <div className="relative">
-                        <label className="block text-sm font-semibold text-[#1a1a1a] mb-1.5">Nueva contraseña</label>
-                        <input type={showPassword.nueva ? "text" : "password"} value={formDataSeguridad.nuevaPassword} onChange={e => setFormDataSeguridad({...formDataSeguridad, nuevaPassword: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/20 focus:border-[#1D9E75]" />
-                        <button type="button" onClick={() => setShowPassword({...showPassword, nueva: !showPassword.nueva})} className="absolute right-3 top-[38px] text-gray-400 hover:text-gray-600">
-                          {showPassword.nueva ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                        
-                        {/* Indicador de fuerza */}
-                        <div className="mt-2 flex gap-1 h-1">
-                          {[1, 2, 3].map(i => (
-                            <div key={i} className={`flex-1 rounded-full ${i <= passStrength ? strengthColors[passStrength] : 'bg-gray-100'}`}></div>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="relative">
-                        <label className="block text-sm font-semibold text-[#1a1a1a] mb-1.5">Confirmar contraseña</label>
-                        <input type={showPassword.confirmar ? "text" : "password"} value={formDataSeguridad.confirmarPassword} onChange={e => setFormDataSeguridad({...formDataSeguridad, confirmarPassword: e.target.value})} className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/20 focus:border-[#1D9E75]" />
-                        <button type="button" onClick={() => setShowPassword({...showPassword, confirmar: !showPassword.confirmar})} className="absolute right-3 top-[38px] text-gray-400 hover:text-gray-600">
-                          {showPassword.confirmar ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                      </div>
-                      <button className="w-full bg-[#1a1a1a] text-white py-2.5 rounded-lg text-sm font-bold shadow-sm hover:bg-black transition-colors">
-                        Actualizar contraseña
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-              </div>
-
-              {/* FOOTER DE ACCIONES GLOBAL */}
-              {activeTab !== 'Seguridad' && (
-                <div className="p-6 md:p-8 pt-0 border-t border-gray-100 bg-gray-50/30 flex items-center justify-end gap-3 shrink-0 mt-auto">
-                  <button className="px-5 py-2.5 bg-white border border-gray-200 text-[#1a1a1a] rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm flex items-center gap-2">
-                    <X className="w-4 h-4" /> Cancelar
-                  </button>
-                  <button 
-                    onClick={handleSave}
-                    disabled={isSaving}
-                    className="px-6 py-2.5 bg-[#1D9E75] text-white rounded-lg text-sm font-bold hover:bg-[#0F6E56] transition-colors shadow-sm flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-                  >
-                    {isSaving ? (
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    ) : (
-                      <Save className="w-4 h-4" />
-                    )}
-                    Guardar cambios
-                  </button>
+          {/* Formulario de carga de documentos si no está verificado */}
+          {!isVerified && (
+            <div className="space-y-4 pt-2">
+              {/* Documento 1: Carnet de Identidad */}
+              <div className="space-y-2">
+                <span className="text-xs font-bold text-slate-600 block">Carnet de Identidad (ambos lados)</span>
+                <div 
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    handleFileUpload(e.dataTransfer.files[0], 'ci');
+                  }}
+                  className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors bg-slate-50"
+                >
+                  <input
+                    type="file"
+                    id="ci-upload"
+                    accept=".jpg,.jpeg,.png,.pdf"
+                    onChange={(e) => handleFileUpload(e.target.files[0], 'ci')}
+                    className="hidden"
+                  />
+                  <label htmlFor="ci-upload" className="cursor-pointer text-center flex flex-col items-center">
+                    <Upload className="w-6 h-6 text-slate-400 mb-1" />
+                    <span className="text-[11px] font-bold text-emerald-600">Subir CI</span>
+                  </label>
                 </div>
-              )}
+                {fileCI && (
+                  <div className="text-[10px] text-slate-500 truncate font-semibold bg-slate-100 p-1.5 rounded-lg flex items-center justify-between">
+                    <span className="truncate">{fileCI.name}</span>
+                    <button type="button" onClick={() => setFileCI(null)} className="text-rose-600 hover:bg-rose-50 p-0.5 rounded"><X className="w-3.5 h-3.5" /></button>
+                  </div>
+                )}
+              </div>
+
+              {/* Documento 2: RAU */}
+              <div className="space-y-2">
+                <span className="text-xs font-bold text-slate-600 block">Registro Agrario Único (RAU)</span>
+                <div 
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    handleFileUpload(e.dataTransfer.files[0], 'rau');
+                  }}
+                  className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors bg-slate-50"
+                >
+                  <input
+                    type="file"
+                    id="rau-upload"
+                    accept=".jpg,.jpeg,.png,.pdf"
+                    onChange={(e) => handleFileUpload(e.target.files[0], 'rau')}
+                    className="hidden"
+                  />
+                  <label htmlFor="rau-upload" className="cursor-pointer text-center flex flex-col items-center">
+                    <Upload className="w-6 h-6 text-slate-400 mb-1" />
+                    <span className="text-[11px] font-bold text-emerald-600">Subir RAU</span>
+                  </label>
+                </div>
+                {fileRAU && (
+                  <div className="text-[10px] text-slate-500 truncate font-semibold bg-slate-100 p-1.5 rounded-lg flex items-center justify-between">
+                    <span className="truncate">{fileRAU.name}</span>
+                    <button type="button" onClick={() => setFileRAU(null)} className="text-rose-600 hover:bg-rose-50 p-0.5 rounded"><X className="w-3.5 h-3.5" /></button>
+                  </div>
+                )}
+              </div>
+
+              {/* Submit Docs */}
+              <button
+                type="button"
+                onClick={handleUploadDocs}
+                disabled={isUploadingDocs || (!fileCI && !fileRAU)}
+                className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-extrabold transition-all shadow-md disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {isUploadingDocs && <Loader2 className="w-4 h-4 animate-spin" />}
+                Enviar acreditaciones
+              </button>
+            </div>
+          )}
+
+        </div>
+
+        {/* Sección 3: Datos de Cobro QR (Col Span 3) */}
+        <div className="lg:col-span-3 bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-sm space-y-6">
+          <div className="border-b border-slate-100 pb-4">
+            <h3 className="text-lg font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-emerald-600" /> Mis datos de cobro
+            </h3>
+            <p className="text-xs text-slate-400 mt-1">Configurá el QR donde recibirás los pagos de los compradores</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-5">
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1.5">Banco / Billetera</label>
+                <select
+                  value={banco}
+                  onChange={(e) => setBanco(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-slate-200 rounded-xl text-sm font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                >
+                  <option value="BNB">BNB</option>
+                  <option value="Banco Unión">Banco Unión</option>
+                  <option value="Tigo Money">Tigo Money</option>
+                  <option value="Banco Mercantil">Banco Mercantil</option>
+                  <option value="Bisa">Bisa</option>
+                  <option value="FIE">FIE</option>
+                  <option value="Otro">Otro</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1.5">Nombre del titular</label>
+                <input
+                  type="text"
+                  value={titular}
+                  onChange={(e) => setTitular(e.target.value)}
+                  placeholder="Ej. Juan Pérez Mamani"
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-slate-200 rounded-xl text-sm font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                />
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-2xl p-4 space-y-2">
+                <h4 className="text-xs font-bold flex items-center gap-1.5">
+                  <AlertCircle className="w-4 h-4" /> Tip para subir tu QR
+                </h4>
+                <p className="text-[11px] text-blue-800/80 leading-normal font-semibold">
+                  Abrí tu app bancaria, buscá la opción "Cobrar" o "Mi QR" y sacá una captura de pantalla. Esa imagen es la que debés subir aquí.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <span className="text-xs font-bold text-slate-600 block">Mi código QR de cobro</span>
+              <div 
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  handleQRUpload(e.dataTransfer.files[0]);
+                }}
+                className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors bg-slate-50 relative overflow-hidden"
+                style={{ minHeight: '200px' }}
+              >
+                <input
+                  type="file"
+                  id="qr-upload"
+                  accept=".jpg,.jpeg,.png"
+                  onChange={(e) => handleQRUpload(e.target.files[0])}
+                  className="hidden"
+                />
+                
+                {qrImagePreview ? (
+                  <div className="flex flex-col items-center">
+                    <img src={qrImagePreview} alt="QR de cobro" className="w-32 h-32 object-contain border border-slate-200 rounded-xl bg-white p-2 shadow-sm mb-3" />
+                    <label htmlFor="qr-upload" className="cursor-pointer text-xs font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full">
+                      Cambiar foto de QR
+                    </label>
+                  </div>
+                ) : (
+                  <label htmlFor="qr-upload" className="cursor-pointer text-center flex flex-col items-center w-full h-full justify-center">
+                    <Camera className="w-8 h-8 text-slate-400 mb-2" />
+                    <span className="text-sm font-bold text-slate-600">Subí la foto de tu QR bancario</span>
+                    <span className="text-[10px] text-slate-400 mt-1">PNG, JPG hasta 5MB</span>
+                  </label>
+                )}
+              </div>
+
+              <div className="pt-2 flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleSaveQR}
+                  className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-md transition-all flex items-center gap-2"
+                >
+                  <Save className="w-4 h-4" />
+                  Guardar datos de cobro
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
 
       </div>
-    </div>
-  </div>
-);
+    </PageShell>
+  );
 };
 
 export default MiPerfilProductorPage;

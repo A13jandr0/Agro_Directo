@@ -1,70 +1,123 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
-  ShoppingCart,
-  Minus,
-  Plus,
-  Trash2,
-  ArrowLeft,
-  Leaf,
-  MapPin,
-  ShieldCheck,
-  Truck,
-  CreditCard,
-  X,
-  CheckCircle2,
-  AlertCircle
+  ShoppingCart, Minus, Plus, Trash2, ArrowLeft, Leaf, MapPin,
+  ShieldCheck, Truck, CreditCard, X, CheckCircle2, AlertTriangle,
+  ArrowRight, ShieldAlert, Check, Calendar, FileText, Sparkles, Loader2
 } from 'lucide-react';
+
 import CartContext from '../context/CartContext';
+import PageShell from '../components/ui/PageShell';
+import { useToast } from '../context/ToastContext';
 
 const CarritoPage = () => {
   const navigate = useNavigate();
-  const { carrito, actualizarCantidad, eliminarDelCarrito, vaciarCarrito } = useContext(CartContext);
+  const toast = useToast();
+  const {
+    carrito,
+    actualizarCantidad,
+    eliminarDelCarrito,
+    vaciarCarrito,
+    lastStockWarning,
+    clearStockWarning
+  } = useContext(CartContext);
 
-  const getItemId = (item) => item.cosecha_id || item.id;
+  // Steps: 'CARRITO' | 'CONFIRMACION' | 'PAGO_QR'
+  const [step, setStep] = useState('CARRITO');
+  
+  // Delivery details form
+  const [modalidadEntrega, setModalidadEntrega] = useState('retiro');
+  const [direccion, setDireccion] = useState('');
+  const [notas, setNotas] = useState('');
+  const [aceptaTerminos, setAceptaTerminos] = useState(false);
+  
+  // Checkout process states
+  const [pedidoId, setPedidoId] = useState('');
+  const [procesando, setProcesando] = useState(false);
+  const [pagoSimuladoExitoso, setPagoSimuladoExitoso] = useState(false);
+  const [loadingPago, setLoadingPago] = useState(false);
+  const [timelineState, setTimelineState] = useState(0); // 0: creado, 1: pagado, 2: preparando, 3: en camino, 4: entregado
 
+  useEffect(() => {
+    if (lastStockWarning) {
+      toast.error('No hay más stock disponible para ese producto.');
+      clearStockWarning();
+    }
+  }, [lastStockWarning, clearStockWarning, toast]);
+
+  // If cart is empty and we are not in the payment simulation step, redirect or show empty cart
+  if (carrito.length === 0 && step !== 'PAGO_QR') {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
+        <button onClick={() => navigate('/marketplace')} className="flex items-center gap-2 text-sm font-black text-slate-400 hover:text-slate-800 transition-colors mb-8">
+          <ArrowLeft className="w-4.5 h-4.5" /> Volver al Marketplace
+        </button>
+        <div className="bg-white rounded-3xl border border-slate-200/60 py-16 flex flex-col items-center justify-center text-center px-6 shadow-sm">
+          <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-5 border border-blue-100">
+            <ShoppingCart className="w-8 h-8 text-blue-600" />
+          </div>
+          <h2 className="text-xl font-black text-slate-900 mb-2">Tu carrito está vacío</h2>
+          <p className="text-xs text-slate-400 max-w-xs mb-6 font-semibold">
+            Explorá el marketplace para encontrar productos frescos directamente de los productores.
+          </p>
+          <button
+            onClick={() => navigate('/marketplace')}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold text-xs transition-all shadow-md shadow-blue-600/10"
+          >
+            Ir al Marketplace
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Calculations
   const subtotal = carrito.reduce((acc, item) => {
     const price = parseFloat(item.precio_unitario) || 0;
     return acc + price * item.cantidad;
   }, 0);
 
-  // Total a pagar ahora: preventa paga solo el 40%
-  const totalPagar = carrito.reduce((acc, item) => {
-    const price = parseFloat(item.precio_unitario) || 0;
-    const factor = item.es_preventa ? 0.4 : 1;
-    return acc + (price * item.cantidad * factor);
-  }, 0);
-
+  const tienePreventas = carrito.some(item => item.es_preventa);
+  
+  // Preventas ask for 50% prepayment as per requirements:
+  // "Si preventa: desglose 'Anticipo (50%): Bs X' + 'Saldo restante: Bs X'"
   const anticipoPreventa = carrito.reduce((acc, item) => {
     if (item.es_preventa) {
       const price = parseFloat(item.precio_unitario) || 0;
-      return acc + (price * item.cantidad * 0.4);
+      return acc + (price * item.cantidad * 0.5);
     }
     return acc;
   }, 0);
 
-  const totalItems = carrito.reduce((acc, item) => acc + item.cantidad, 0);
-  const [procesando, setProcesando] = useState(false);
-  const [toastMsg, setToastMsg] = useState('');
-  const [toastType, setToastType] = useState('success');
-
-  const [showModal, setShowModal] = useState(false);
-  const [comprobante, setComprobante] = useState(null);
-  const [comprobantePreview, setComprobantePreview] = useState(null);
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setComprobante(file);
-      setComprobantePreview(URL.createObjectURL(file));
+  const totalInmediato = carrito.reduce((acc, item) => {
+    if (!item.es_preventa) {
+      const price = parseFloat(item.precio_unitario) || 0;
+      return acc + (price * item.cantidad);
     }
+    return acc;
+  }, 0);
+
+  const totalPagarAhora = totalInmediato + anticipoPreventa;
+  const saldoRestante = subtotal - totalPagarAhora;
+
+  // Producer info (single producer constraint ensures all items are from the same farmer)
+  const productor = carrito[0] || {};
+  const nombreProductor = productor.nombre_finca || 'Productor AgroDirecto';
+
+  // Proceed from Cart list to confirmation details
+  const handleProcederConfirmacion = () => {
+    setStep('CONFIRMACION');
   };
 
-  const enviarPedido = async () => {
-    if (!comprobante) {
-      setToastMsg('Sube una foto del comprobante de transferencia.');
-      setToastType('error');
+  // Confirm order and create database record, then move to QR payment page
+  const handleConfirmarPedido = async () => {
+    if (modalidadEntrega === 'envio' && !direccion.trim()) {
+      toast.error('Por favor, ingresá una dirección de entrega para el envío.');
+      return;
+    }
+    if (!aceptaTerminos) {
+      toast.error('Deberás aceptar los términos de compra para continuar.');
       return;
     }
 
@@ -77,336 +130,461 @@ const CarritoPage = () => {
         precio_unitario: parseFloat(item.precio_unitario)
       }));
 
-      const formData = new FormData();
-      formData.append('items', JSON.stringify(items));
-      formData.append('comprobante', comprobante);
+      const payloadModalidad = modalidadEntrega === 'retiro' ? 'RETIRO_FINCA' : 'ENVIO_DOMICILIO';
+      const payloadDireccion = modalidadEntrega === 'retiro' ? 'Retiro en finca' : direccion;
 
-      await axios.post('http://localhost:5000/api/pedidos', formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
-        }
+      // Create simulated or real order
+      const res = await axios.post('http://localhost:5000/api/pedidos', {
+        items,
+        modalidad_entrega: payloadModalidad,
+        direccion_entrega: payloadDireccion,
+        notas_adicionales: notas,
+        monto_total: subtotal
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
       });
 
+      // Retrieve created order code
+      const generatedId = res.data.pedido_id || res.data.id || String(Math.floor(100000 + Math.random() * 900000));
+      setPedidoId(generatedId);
+      
+      // Clear cart
       vaciarCarrito();
-      setShowModal(false);
-      navigate('/dashboard/comprador');
-      alert('Pedido enviado. Espera la confirmacion del productor.');
-    } catch (error) {
-      setToastMsg(error.response?.data?.error || 'Error al procesar el pedido');
-      setToastType('error');
+
+      sessionStorage.setItem('ultimoPedido', JSON.stringify({
+        pedidoId: generatedId,
+        monto: totalPagarAhora,
+        productorNombre: nombreProductor,
+        modalidadEntrega: payloadModalidad
+      }));
+
+      const pedidoRef = res.data.pedido_ref || generatedId;
+      toast.success(`✅ Pedido ${typeof pedidoRef === 'string' && pedidoRef.startsWith('#') ? pedidoRef : ''} creado`);
+
+      navigate(`/dashboard/comprador/pago-qr/${generatedId}`);
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.error || 'Error al confirmar tu pedido.');
     } finally {
       setProcesando(false);
     }
   };
 
-  if (carrito.length === 0) {
-    return (
-      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-slate-800 transition-colors mb-8">
-          <ArrowLeft className="w-4 h-4" /> Volver
-        </button>
-        <div className="bg-white rounded-2xl border border-slate-200 py-16 flex flex-col items-center justify-center text-center px-6">
-          <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-5">
-            <ShoppingCart className="w-8 h-8 text-slate-300" />
-          </div>
-          <h2 className="text-xl font-black text-slate-900 mb-2">Tu carrito esta vacio</h2>
-          <p className="text-sm text-slate-500 max-w-sm mb-6">
-            Explora el marketplace para encontrar productos frescos directamente de los productores.
-          </p>
-          <button
-            onClick={() => navigate('/marketplace')}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-colors shadow-lg shadow-emerald-600/20"
-          >
-            Ir al Marketplace
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // Simulate payment workflow
+  const handleSimularPagoExitoso = () => {
+    setLoadingPago(true);
+    setTimeout(() => {
+      setLoadingPago(false);
+      setPagoSimuladoExitoso(true);
+      setTimelineState(1); // Pago recibido
+      toast.success('🎉 ¡Pago registrado! Tu pedido está confirmado');
+      
+      // Update pedido status in backend asynchronously
+      const token = localStorage.getItem('token');
+      if (pedidoId && token) {
+        axios.put(`http://localhost:5000/api/pedidos/${pedidoId}/estado`, {
+          estado: 'PAGADO'
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        }).catch(err => console.error('Error updating status:', err));
+      }
+    }, 2000);
+  };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
-
-      {/* NOTIFICACION */}
-      {toastMsg && (
-        <div className={`fixed bottom-5 right-5 z-50 pl-4 pr-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 border max-w-[90vw] ${
-          toastType === 'success' ? 'bg-slate-900 text-white border-slate-700' : 'bg-red-600 text-white border-red-500'
-        }`}>
-          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${toastType === 'success' ? 'bg-emerald-500' : 'bg-red-400'}`}>
-            {toastType === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-          </div>
-          <p className="text-sm font-bold truncate">{toastMsg}</p>
-        </div>
-      )}
-
-      {/* ENCABEZADO */}
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-800 transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Mi carrito</h1>
-            <p className="text-sm text-slate-500 mt-0.5">{totalItems} {totalItems === 1 ? 'producto' : 'productos'}</p>
-          </div>
-        </div>
-        <button
-          onClick={vaciarCarrito}
-          className="text-sm font-medium text-red-500 hover:text-red-600 transition-colors flex items-center gap-1.5"
-        >
-          <Trash2 className="w-4 h-4" /> Vaciar
-        </button>
+    <PageShell>
+      {/* STEPPER COMPRADOR */}
+      <div className="flex items-center justify-between max-w-xl mx-auto mb-10">
+        {[
+          { id: 'CARRITO', label: '1. Carrito' },
+          { id: 'CONFIRMACION', label: '2. Confirmación' },
+          { id: 'PAGO_QR', label: '3. Pago QR' }
+        ].map((s, idx) => {
+          const isActive = step === s.id;
+          const isDone = (step === 'CONFIRMACION' && idx === 0) || (step === 'PAGO_QR' && idx < 2);
+          
+          return (
+            <React.Fragment key={s.id}>
+              {idx > 0 && <div className={`h-0.5 flex-1 mx-2 ${isDone ? 'bg-blue-400' : 'bg-gray-200'}`} />}
+              <div className="flex items-center gap-2">
+                <div className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-black transition-all ${
+                  isActive ? 'bg-blue-600 text-white' : isDone ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400'
+                }`}>
+                  {isDone ? <Check className="w-3.5 h-3.5" /> : (idx + 1)}
+                </div>
+                <span className={`text-xs font-black transition-all ${
+                  isActive ? 'text-blue-700' : isDone ? 'text-blue-600' : 'text-gray-400'
+                }`}>
+                  {s.label}
+                </span>
+              </div>
+            </React.Fragment>
+          );
+        })}
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-5">
+      {/* STEP 1: CARRITO */}
+      {step === 'CARRITO' && (
+        <div className="animate-fade-in space-y-6">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Mi Carrito</h1>
+            <button
+              onClick={vaciarCarrito}
+              className="text-xs font-bold text-red-500 hover:text-red-600 transition-colors flex items-center gap-1.5"
+            >
+              <Trash2 className="w-4 h-4" /> Vaciar carrito
+            </button>
+          </div>
 
-        {/* LISTA DE PRODUCTOS */}
-        <div className="flex-1 min-w-0 space-y-3">
-          {carrito.map(item => {
-            const itemId = getItemId(item);
-            const price = parseFloat(item.precio_unitario) || 0;
-            const lineTotal = price * item.cantidad;
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* List left (2/3) */}
+            <div className="lg:col-span-2 space-y-4">
+              {carrito.map((item) => {
+                const itemId = item.cosecha_id || item.id;
+                const price = parseFloat(item.precio_unitario) || 0;
+                const itemSubtotal = price * item.cantidad;
 
-            return (
-              <div key={itemId} className="bg-white rounded-xl border border-slate-200 p-4 flex gap-3 sm:gap-4">
-
-                {/* IMAGEN */}
-                <div
-                  onClick={() => navigate('/producto/' + itemId)}
-                  className="w-20 h-20 sm:w-24 sm:h-24 bg-slate-50 rounded-xl overflow-hidden shrink-0 cursor-pointer border border-slate-100 flex items-center justify-center"
-                >
-                  {item.foto_url ? (
-                    <img
-                      src={`http://localhost:5000${item.foto_url}`}
-                      alt={item.nombre_producto}
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                    />
-                  ) : (
-                    <Leaf className="w-7 h-7 text-slate-200" />
-                  )}
-                </div>
-
-                {/* INFO */}
-                <div className="flex-1 min-w-0 flex flex-col">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <h3
-                        onClick={() => navigate('/producto/' + itemId)}
-                        className="font-bold text-slate-900 text-sm leading-snug cursor-pointer hover:text-emerald-600 transition-colors line-clamp-2"
-                      >
-                        {item.nombre_producto}
-                      </h3>
-                      {/* Badges */}
-                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                        {item.cantidad_disponible <= 5 && !item.es_preventa && (
-                          <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold">Ultimas unidades</span>
-                        )}
-                        {item.es_preventa && (
-                          <span className="text-[10px] bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded font-bold">Preventa (40% anticipo)</span>
-                        )}
-                      </div>
-                      {item.nombre_finca && (
-                        <p className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1">
-                          <MapPin className="w-3 h-3 shrink-0" />
-                          <span className="truncate">{item.nombre_finca}{item.municipio && ` — ${item.municipio}`}</span>
-                        </p>
+                return (
+                  <div key={itemId} className="bg-white rounded-2xl border border-blue-100 shadow-[0_1px_3px_rgba(59,130,246,0.08)] p-5 flex gap-4 hover:shadow-md transition-all animate-slide-up">
+                    {/* Mini photo */}
+                    <div className="w-20 h-20 bg-slate-50 border border-slate-100 rounded-xl overflow-hidden shrink-0 flex items-center justify-center">
+                      {item.foto_url ? (
+                        <img
+                          src={`http://localhost:5000${item.foto_url}`}
+                          alt={item.nombre_producto}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <Leaf className="w-8 h-8 text-blue-200" />
                       )}
                     </div>
-                    <button
-                      onClick={() => eliminarDelCarrito(itemId)}
-                      className="text-slate-300 hover:text-red-500 transition-colors shrink-0 p-1"
-                      title="Eliminar del carrito"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
 
-                  {/* PRECIO Y CANTIDAD */}
-                  <div className="mt-auto pt-2 flex items-end justify-between gap-3">
-                    <div className="flex items-center border border-slate-200 rounded-lg overflow-hidden">
-                      <button
-                        onClick={() => actualizarCantidad(itemId, item.cantidad - 1)}
-                        className="w-8 h-8 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-colors"
-                      >
-                        <Minus className="w-3.5 h-3.5" />
-                      </button>
-                      <span className="w-9 h-8 flex items-center justify-center font-bold text-slate-800 text-sm border-x border-slate-200 bg-slate-50">
-                        {item.cantidad}
-                      </span>
-                      <button
-                        onClick={() => actualizarCantidad(itemId, item.cantidad + 1)}
-                        className="w-8 h-8 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-colors"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                      </button>
+                    {/* Details */}
+                    <div className="flex-grow flex flex-col justify-between min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <h3 className="font-extrabold text-slate-800 text-sm">{item.nombre_producto}</h3>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">{item.categoria}</p>
+                          
+                          {/* Preventa badge */}
+                          {item.es_preventa && (
+                            <div className="mt-2 space-y-1">
+                              <span className="inline-flex items-center bg-amber-50 text-amber-700 border border-amber-200 rounded-lg px-2 py-0.5 text-[9px] font-black">
+                                Preventa — Anticipo 50%
+                              </span>
+                              <p className="text-[10px] text-amber-600 font-semibold leading-tight">
+                                * Pagarás el 50% ahora y el saldo restante al coordinar la entrega.
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => eliminarDelCarrito(itemId)}
+                          className="text-slate-300 hover:text-red-500 p-1 transition-colors shrink-0"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+
+                      {/* Quantity & subtotal */}
+                      <div className="flex items-center justify-between pt-3 border-t border-slate-50 mt-3">
+                        <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-1">
+                          <button
+                            onClick={() => actualizarCantidad(itemId, item.cantidad - 1)}
+                            className="text-blue-600 font-bold text-lg hover:text-blue-800 w-6 text-center"
+                          >
+                            −
+                          </button>
+                          <span className="font-semibold text-gray-800 min-w-[20px] text-center">{item.cantidad}</span>
+                          <button
+                            onClick={() => actualizarCantidad(itemId, item.cantidad + 1)}
+                            disabled={item.cantidad >= (Number(item.cantidad_disponible) || 9999)}
+                            className="text-blue-600 font-bold text-lg hover:text-blue-800 w-6 text-center disabled:opacity-40"
+                          >
+                            +
+                          </button>
+                        </div>
+
+                        <div className="text-right">
+                          <span className="text-[10px] text-slate-400 font-bold block">Bs. {price.toFixed(2)} / {item.unidad_medida}</span>
+                          <span className="font-extrabold text-slate-800 text-sm block">Subtotal: Bs. {itemSubtotal.toFixed(2)}</span>
+                        </div>
+                      </div>
                     </div>
-
-                    <div className="text-right shrink-0">
-                      <p className="text-[11px] text-slate-400">Bs. {price.toFixed(2)} / {item.unidad_medida}</p>
-                      <p className="text-lg font-black text-slate-900">Bs. {lineTotal.toFixed(2)}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* RESUMEN DE COMPRA */}
-        <div className="w-full lg:w-80 shrink-0">
-          <div className="bg-white rounded-xl border border-slate-200 sticky top-24 overflow-hidden">
-
-            {/* Encabezado */}
-            <div className="bg-slate-900 text-white px-5 py-4 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <ShoppingCart className="w-5 h-5" />
-                <h2 className="font-bold">Resumen de compra</h2>
-              </div>
-              <span className="bg-emerald-600 text-white text-xs font-bold px-2.5 py-1 rounded-full">
-                {totalItems} {totalItems === 1 ? 'item' : 'items'}
-              </span>
-            </div>
-
-            {/* Lista resumida */}
-            <div className="p-4 space-y-2 border-b border-slate-100 max-h-44 overflow-y-auto">
-              {carrito.map(item => {
-                const itemId = getItemId(item);
-                const price = parseFloat(item.precio_unitario) || 0;
-                return (
-                  <div key={itemId} className="flex items-center justify-between text-sm">
-                    <span className="text-slate-600 truncate max-w-[170px]">{item.nombre_producto} x{item.cantidad}</span>
-                    <span className="font-semibold text-slate-800 shrink-0">Bs. {(price * item.cantidad).toFixed(2)}</span>
                   </div>
                 );
               })}
             </div>
 
-            {/* Totales */}
-            <div className="p-4 space-y-2.5">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">Subtotal de productos</span>
-                <span className="font-semibold text-slate-800">Bs. {subtotal.toFixed(2)}</span>
-              </div>
-              {anticipoPreventa > 0 && (
-                <div className="flex items-center justify-between text-sm text-violet-600 font-medium bg-violet-50 p-2 rounded-lg">
-                  <span>Anticipo preventa (40%)</span>
-                  <span>Bs. {anticipoPreventa.toFixed(2)}</span>
+            {/* Sticky summary right (1/3) */}
+            <div className="lg:col-span-1">
+              <div className="bg-slate-50 backdrop-blur-md border border-blue-100 rounded-3xl p-6 shadow-[0_1px_3px_rgba(59,130,246,0.08)] space-y-6 sticky top-24">
+                <div className="border-b border-slate-100 pb-4">
+                  <h2 className="text-base font-black text-slate-800">Resumen del pedido</h2>
+                  <p className="text-[10px] font-semibold text-slate-400 mt-1">Conexión directa sin intermediarios</p>
                 </div>
-              )}
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">Envio</span>
-                <span className="font-medium text-emerald-600">Por coordinar</span>
-              </div>
-              <hr className="border-slate-100" />
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-900">Total a pagar ahora</span>
-                <span className="text-2xl font-black text-emerald-600">Bs. {totalPagar.toFixed(2)}</span>
-              </div>
-            </div>
 
-            {/* Botones */}
-            <div className="px-4 pb-4 space-y-2.5">
-              <button
-                onClick={() => setShowModal(true)}
-                className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2"
-              >
-                <CreditCard className="w-4 h-4" />
-                Proceder al pago
-              </button>
-              <button
-                onClick={() => navigate('/marketplace')}
-                className="w-full h-10 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl font-medium text-sm transition-colors flex items-center justify-center gap-2 border border-slate-200"
-              >
-                Seguir comprando
-              </button>
-            </div>
-
-            {/* Confianza */}
-            <div className="px-4 pb-4">
-              <div className="bg-slate-50 rounded-lg p-3 space-y-1.5">
-                <div className="flex items-center gap-2 text-xs text-slate-500">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                  <span>Compra protegida</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-slate-500">
-                  <Truck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                  <span>Coordinacion directa con el productor</span>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </div>
-
-      {/* MODAL DE PAGO */}
-      {showModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowModal(false)}></div>
-          <div className="bg-white rounded-2xl w-full max-w-lg relative z-10 overflow-hidden shadow-2xl">
-
-            <div className="bg-slate-900 p-5 text-white flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-black">Finalizar pago</h3>
-                <p className="text-slate-400 text-xs mt-0.5">Escanea el QR y sube tu comprobante</p>
-              </div>
-              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-5 space-y-5">
-              {/* QR */}
-              <div className="flex flex-col items-center gap-3">
-                <div className="bg-white p-3 border-2 border-slate-100 rounded-xl shadow-inner">
-                  <img
-                    src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=AgroDirectoPayment"
-                    alt="Codigo QR de pago"
-                    className="w-36 h-36"
-                  />
-                </div>
-                <p className="text-sm font-black text-slate-900">Total a transferir: Bs. {totalPagar.toFixed(2)}</p>
-              </div>
-
-              {/* Subir comprobante */}
-              <div className="space-y-2">
-                <label className="block text-sm font-bold text-slate-700">Comprobante de transferencia</label>
-                <div className="border-2 border-dashed border-slate-200 rounded-xl p-4 hover:border-emerald-400 transition-colors bg-slate-50 group">
-                  {comprobantePreview ? (
-                    <div className="relative">
-                      <img src={comprobantePreview} alt="Vista previa" className="h-28 mx-auto rounded-lg shadow-md" />
-                      <button
-                        onClick={() => { setComprobante(null); setComprobantePreview(null); }}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full shadow-lg"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                {/* Subtotals per item */}
+                <div className="space-y-3">
+                  {carrito.map(item => (
+                    <div key={item.cosecha_id || item.id} className="flex justify-between items-center text-xs text-slate-500">
+                      <span className="truncate max-w-[150px]">{item.nombre_producto} x{item.cantidad}</span>
+                      <span className="font-bold text-slate-700">Bs. {(parseFloat(item.precio_unitario) * item.cantidad).toFixed(2)}</span>
                     </div>
-                  ) : (
-                    <label className="flex flex-col items-center gap-2 cursor-pointer py-3">
-                      <CreditCard className="w-9 h-9 text-slate-300 group-hover:text-emerald-500 transition-colors" />
-                      <span className="text-sm font-semibold text-slate-500">Toca para subir la captura</span>
-                      <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
-                    </label>
+                  ))}
+                </div>
+
+                <hr className="border-slate-100" />
+
+                {/* Total */}
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center border-t border-blue-100 pt-3 mt-3">
+                    <span className="font-bold text-gray-800 text-sm">TOTAL</span>
+                    <span className="text-2xl font-black text-emerald-600">Bs. {subtotal.toFixed(2)}</span>
+                  </div>
+
+                  {tienePreventas && (
+                    <div className="bg-blue-50/60 border border-blue-100 rounded-2xl p-4 space-y-2 text-xs">
+                      <div className="flex justify-between items-center text-blue-700 font-bold">
+                        <span>Anticipo (50%):</span>
+                        <span>Bs. {anticipoPreventa.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-slate-500 font-semibold">
+                        <span>Saldo restante:</span>
+                        <span>Bs. {saldoRestante.toFixed(2)}</span>
+                      </div>
+                    </div>
                   )}
                 </div>
+
+                {/* Producer info */}
+                <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-xl p-3 mb-3">
+                  <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                    {nombreProductor.substring(0, 2).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-blue-800">
+                      {nombreProductor}
+                    </p>
+                    <p className="text-xs text-blue-600">
+                      Productor verificado ✓
+                    </p>
+                  </div>
+                </div>
+
+                {/* Buttons */}
+                <div className="space-y-3 pt-2">
+                  <button
+                    onClick={handleProcederConfirmacion}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-bold text-xs transition-all shadow-md flex items-center justify-center gap-2"
+                  >
+                    Confirmar Pedido →
+                  </button>
+                  <button
+                    onClick={() => navigate('/marketplace')}
+                    className="w-full border border-blue-200 text-blue-600 hover:bg-blue-50 rounded-xl py-2.5 text-sm font-semibold transition-colors block text-center"
+                  >
+                    Seguir comprando
+                  </button>
+                </div>
               </div>
-
-              <button
-                onClick={enviarPedido}
-                disabled={procesando || !comprobante}
-                className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <CheckCircle2 className="w-5 h-5" />
-                {procesando ? 'Enviando...' : 'Confirmar envio del pedido'}
-              </button>
             </div>
-
           </div>
         </div>
       )}
-    </div>
+
+      {/* STEP 2: CONFIRMACION */}
+      {step === 'CONFIRMACION' && (
+        <div className="animate-fade-in space-y-6 max-w-4xl mx-auto">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setStep('CARRITO')} className="text-slate-400 hover:text-slate-800 transition-colors">
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Confirmá tu Pedido</h1>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Form Left */}
+            <div className="md:col-span-2 space-y-6">
+              {/* Resumen readonly */}
+              <div className="bg-white rounded-3xl border border-slate-100 p-6 space-y-4">
+                <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-indigo-600" /> Detalle de compra
+                </h3>
+                <div className="divide-y divide-slate-50">
+                  {carrito.map(item => (
+                    <div key={item.cosecha_id || item.id} className="py-3 flex justify-between items-center text-xs font-semibold text-slate-700">
+                      <span>{item.nombre_producto} (x{item.cantidad} {item.unidad_medida})</span>
+                      <span className="font-extrabold text-slate-900">Bs. {(parseFloat(item.precio_unitario) * item.cantidad).toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Delivery info */}
+              <div className="bg-white rounded-3xl border border-slate-100 p-6 space-y-5">
+                <h3 className="text-base font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                  <Truck className="w-5 h-5 text-emerald-600" /> ¿Cómo querés recibir tu pedido?
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Tarjeta 1: Retiro */}
+                  <label className={`cursor-pointer rounded-2xl p-4 border-2 transition-all relative ${
+                    modalidadEntrega === 'retiro' ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 bg-white hover:border-emerald-300'
+                  }`}>
+                    <input
+                      type="radio"
+                      name="modalidadEntrega"
+                      value="retiro"
+                      checked={modalidadEntrega === 'retiro'}
+                      onChange={() => setModalidadEntrega('retiro')}
+                      className="sr-only"
+                    />
+                    <div className="absolute top-4 right-4 bg-emerald-100 text-emerald-700 text-[10px] font-black px-2 py-0.5 rounded-full">
+                      GRATIS
+                    </div>
+                    <div className="text-lg mb-1">🚗</div>
+                    <h4 className="text-sm font-bold text-slate-900">Retiro en finca</h4>
+                    <p className="text-xs text-slate-500 font-medium mb-3">Voy yo a buscar el pedido</p>
+                    
+                    <div className="text-xs space-y-1.5 font-semibold text-slate-700">
+                      <p className="flex items-start gap-1">
+                        <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                        Finca {nombreProductor} — Montero, Obispo Santistevan
+                      </p>
+                      <p className="text-emerald-700 mt-2">
+                        <a href="https://maps.google.com/?q=-17.33,-63.26" target="_blank" rel="noreferrer" className="underline hover:text-emerald-800">
+                          Ver ubicación en mapa →
+                        </a>
+                      </p>
+                    </div>
+                  </label>
+
+                  {/* Tarjeta 2: Envío */}
+                  <label className={`cursor-pointer rounded-2xl p-4 border-2 transition-all relative ${
+                    modalidadEntrega === 'envio' ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white hover:border-blue-300'
+                  }`}>
+                    <input
+                      type="radio"
+                      name="modalidadEntrega"
+                      value="envio"
+                      checked={modalidadEntrega === 'envio'}
+                      onChange={() => setModalidadEntrega('envio')}
+                      className="sr-only"
+                    />
+                    <div className="text-lg mb-1">🚚</div>
+                    <h4 className="text-sm font-bold text-slate-900">Envío a domicilio</h4>
+                    <p className="text-xs text-slate-500 font-medium mb-3">Un transportista lleva tu pedido</p>
+                    
+                    <div className="text-xs space-y-1.5 font-semibold text-slate-700">
+                      <p className="flex items-center gap-1">
+                        <span className="text-lg">💰</span> Costo coordinado con transportista
+                      </p>
+                      <p className="flex items-center gap-1">
+                        <span className="text-lg">⏱️</span> Tiempo estimado: 1-3 días
+                      </p>
+                    </div>
+                  </label>
+                </div>
+
+                {modalidadEntrega === 'envio' && (
+                  <div className="space-y-2 mt-4 animate-slide-up">
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Dirección de entrega *</label>
+                    <input
+                      type="text"
+                      value={direccion}
+                      onChange={(e) => setDireccion(e.target.value)}
+                      placeholder="Ej: Av. Cañoto #345, barrio..."
+                      className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-2 mt-4">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Notas especiales para el productor</label>
+                  <textarea
+                    rows="3"
+                    value={notas}
+                    onChange={(e) => setNotas(e.target.value)}
+                    placeholder="Ej. 'Por favor embalar en cajas separadas', 'Llamar antes de salir', etc."
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Sticky summary right */}
+            <div className="md:col-span-1">
+              <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-md space-y-6 sticky top-24">
+                <div>
+                  <h3 className="text-base font-black text-slate-800">Total a abonar</h3>
+                  <hr className="my-2 border-slate-100" />
+                </div>
+
+                <div className="space-y-3 text-xs">
+                  {carrito.map(item => (
+                    <div key={item.cosecha_id || item.id} className="flex justify-between items-center text-slate-500">
+                      <span className="truncate max-w-[140px]">{item.nombre_producto} x{item.cantidad}</span>
+                      <span className="font-bold text-slate-700">Bs. {(parseFloat(item.precio_unitario) * item.cantidad).toFixed(2)}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between items-center text-slate-500">
+                    <span>Entrega:</span>
+                    <span className="font-bold text-slate-700">
+                      {modalidadEntrega === 'retiro' ? 'Retiro en finca' : 'A coordinar'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-slate-500">
+                    <span>Costo envío:</span>
+                    <span className="font-bold text-emerald-600">
+                      {modalidadEntrega === 'retiro' ? 'GRATIS' : 'A coordinar'}
+                    </span>
+                  </div>
+                </div>
+
+                <hr className="border-slate-100" />
+
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-extrabold text-slate-800">TOTAL:</span>
+                    <span className="text-xl font-black text-slate-800">Bs. {subtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-extrabold text-slate-800">A pagar hoy:</span>
+                    <span className="text-2xl font-black text-emerald-600">Bs. {totalPagarAhora.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 p-4 rounded-xl space-y-3">
+                  <label className="flex items-start gap-2 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={aceptaTerminos}
+                      onChange={(e) => setAceptaTerminos(e.target.checked)}
+                      className="mt-1 rounded text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <span className="text-[10px] font-semibold text-slate-600 group-hover:text-slate-800 transition-colors leading-tight">
+                      Acepto los términos de compra y la coordinación directa con el productor.
+                    </span>
+                  </label>
+                </div>
+
+                <button
+                  onClick={handleConfirmarPedido}
+                  disabled={procesando || !aceptaTerminos || (modalidadEntrega === 'envio' && !direccion.trim())}
+                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white py-4 rounded-xl font-bold text-xs transition-all shadow-md flex justify-center items-center gap-2"
+                >
+                  {procesando && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {procesando ? 'Procesando...' : 'Confirmar y proceder al Pago →'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+    </PageShell>
   );
 };
 

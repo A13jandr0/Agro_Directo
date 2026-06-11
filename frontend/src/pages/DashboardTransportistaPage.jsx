@@ -1,5 +1,6 @@
-﻿import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import {
   Truck, ClipboardList, MapPin, Package, DollarSign, Clock,
   Star, Navigation, Lock, Check, Scale, Map, Zap, ChevronRight, Route, ArrowUpRight
@@ -7,17 +8,20 @@ import {
 
 const DashboardTransportistaPage = () => {
   const navigate = useNavigate();
-  const [transporterState] = useState({
-    nombre: 'Carlos',
+  const [transporterState, setTransporterState] = useState({
+    nombre: 'Transportista',
     estado: 'Verificado',
-    zonaOperacion: 'Local - Santa Cruz de la Sierra',
-    entregasMes: 12,
-    ingresosMes: 1850,
-    calificacion: 4.9,
-    tiempoPromedio: 2.3
+    zonaOperacion: 'Santa Cruz',
+    entregasMes: 0,
+    ingresosMes: 0,
+    calificacion: 5.0,
+    tiempoPromedio: 2.0
   });
 
   const [isDisponible, setIsDisponible] = useState(true);
+  const [rutaActiva, setRutaActiva] = useState(null);
+  const [historial, setHistorial] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const bolsaDeCarga = [
     { id: 'C-101', origen: 'Finca El Paraíso - Warnes', destino: 'Mercado Los Pozos - Santa Cruz', producto: 'Tomate perita', peso: '500 kg', distancia: 45, pago: 120, tiempoLimite: '14:00' },
@@ -25,21 +29,44 @@ const DashboardTransportistaPage = () => {
     { id: 'C-103', origen: 'Hacienda Verde - La Guardia', destino: 'Mercado Abasto - Santa Cruz', producto: 'Maíz amarillo', peso: '800 kg', distancia: 25, pago: 80, tiempoLimite: '11:00' }
   ];
 
-  const rutaActiva = {
-    id: 'R-998',
-    paradas: [
-      { tipo: 'Recogida', lugar: 'Hacienda San Juan', completado: true },
-      { tipo: 'Recogida', lugar: 'Quinta La Esperanza', completado: false },
-      { tipo: 'Entrega', lugar: 'Mercado Mutualista', completado: false }
-    ],
-    progreso: 33
-  };
+  useEffect(() => {
+    const fetchResumen = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) { navigate('/login'); return; }
+        const res = await axios.get('http://localhost:5000/api/bi/transportista/resumen', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setTransporterState({
+          nombre: res.data.nombre,
+          estado: res.data.estado,
+          zonaOperacion: res.data.zonaOperacion,
+          entregasMes: res.data.entregasMes,
+          ingresosMes: res.data.ingresosMes,
+          calificacion: res.data.calificacion,
+          tiempoPromedio: res.data.tiempoPromedio
+        });
+        setRutaActiva(res.data.rutaActiva);
+        setHistorial(res.data.historialReciente || []);
+      } catch (error) {
+        console.error('Error fetching transporter summary:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchResumen();
+  }, [navigate]);
 
-  const historial = [
-    { id: 'H-01', producto: 'Yuca y Plátano', ruta: 'Yapacaní → Abasto', pago: 450, calificacion: 5, fecha: 'Ayer' },
-    { id: 'H-02', producto: 'Limón', ruta: 'Porongo → Los Pozos', pago: 150, calificacion: 4, fecha: '25 Abr' },
-    { id: 'H-03', producto: 'Café (Grano)', ruta: 'Samaipata → Centro', pago: 550, calificacion: 5, fecha: '22 Abr' }
-  ];
+  if (loading) {
+    return (
+      <div className="flex h-[80vh] items-center justify-center p-20">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-amber-100 border-t-amber-500 rounded-full animate-spin"></div>
+          <p className="text-slate-500 font-bold animate-pulse">Cargando panel de control...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-5 sm:p-8 lg:p-10 max-w-7xl mx-auto space-y-7">
@@ -198,58 +225,71 @@ const DashboardTransportistaPage = () => {
         <div className="space-y-5">
 
           {/* RUTA ACTIVA */}
-          <div className="card-elevated overflow-hidden !border-amber-200 animate-slide-in-right">
-            <div className="bg-gradient-to-r from-amber-500 to-amber-600 px-6 py-4 flex justify-between items-center text-white">
-              <h3 className="font-black flex items-center gap-2 text-sm">
-                <Map className="w-4 h-4" /> Ruta Activa
-              </h3>
-              <span className="text-[10px] font-black bg-white/20 px-3 py-1 rounded-full backdrop-blur-sm">{rutaActiva.id}</span>
-            </div>
-            {/* Mini map */}
-            <div className="h-28 bg-gradient-to-br from-slate-100 to-slate-200 relative overflow-hidden">
-              <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/cartographer.png")' }} />
-              <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
-                <path d="M 20 20 Q 80 50 150 100 T 280 80" fill="transparent" stroke="#d97706" strokeWidth="2.5" strokeDasharray="6,4" />
-              </svg>
-              <div className="absolute top-4 left-4 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white shadow-lg animate-pulse" />
-              <div className="absolute bottom-4 right-6 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center border-2 border-white shadow-lg">
-                <Navigation className="w-2.5 h-2.5 text-white" />
+          {rutaActiva ? (
+            <div className="card-elevated overflow-hidden !border-amber-200 animate-slide-in-right">
+              <div className="bg-gradient-to-r from-amber-500 to-amber-600 px-6 py-4 flex justify-between items-center text-white">
+                <h3 className="font-black flex items-center gap-2 text-sm">
+                  <Map className="w-4 h-4" /> Ruta Activa
+                </h3>
+                <span className="text-[10px] font-black bg-white/20 px-3 py-1 rounded-full backdrop-blur-sm">{rutaActiva.id}</span>
               </div>
-            </div>
-            <div className="p-5">
-              {/* Progress */}
-              <div className="mb-5">
-                <div className="flex justify-between text-[11px] font-black mb-2">
-                  <span className="text-amber-600">Progreso</span>
-                  <span className="text-slate-500">{rutaActiva.progreso}%</span>
-                </div>
-                <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                  <div className="bg-gradient-to-r from-amber-400 to-amber-600 h-2 rounded-full transition-all duration-1000 ease-out" style={{ width: `${rutaActiva.progreso}%` }} />
+              {/* Mini map */}
+              <div className="h-28 bg-gradient-to-br from-slate-100 to-slate-200 relative overflow-hidden">
+                <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/cartographer.png")' }} />
+                <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
+                  <path d="M 20 20 Q 80 50 150 100 T 280 80" fill="transparent" stroke="#d97706" strokeWidth="2.5" strokeDasharray="6,4" />
+                </svg>
+                <div className="absolute top-4 left-4 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white shadow-lg animate-pulse" />
+                <div className="absolute bottom-4 right-6 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center border-2 border-white shadow-lg">
+                  <Navigation className="w-2.5 h-2.5 text-white" />
                 </div>
               </div>
-              {/* Stops */}
-              <ul className="space-y-4 mb-5 relative">
-                <div className="absolute top-2 bottom-4 left-[11px] w-0.5 bg-gradient-to-b from-emerald-400 via-slate-200 to-amber-400" />
-                {rutaActiva.paradas.map((parada, idx) => (
-                  <li key={idx} className={`relative pl-9 text-sm ${parada.completado ? 'text-slate-400' : 'text-slate-900'}`}>
-                    <div className={`absolute left-0 top-0.5 w-6 h-6 rounded-full border-2 flex items-center justify-center z-10 bg-white shadow-sm transition-all duration-300 ${parada.completado ? 'border-emerald-500' : 'border-amber-500'}`}>
-                      {parada.completado ? <Check className="w-3 h-3 text-emerald-500" /> : <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />}
-                    </div>
-                    <p className="font-bold leading-tight">{parada.lugar}</p>
-                    <p className="text-[10px] uppercase font-black text-slate-400 mt-0.5 tracking-wider">{parada.tipo}</p>
-                  </li>
-                ))}
-              </ul>
-              <div className="space-y-2">
-                <button onClick={() => navigate('/dashboard/transportista/hoja-de-ruta')} className="w-full py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-500/20 transition-all duration-300 flex items-center justify-center gap-2 hover:-translate-y-0.5">
-                  <Check className="w-4 h-4" /> Ir a Hoja de Ruta
-                </button>
-                <button className="w-full py-2.5 bg-white border border-slate-200 text-slate-600 font-bold text-sm rounded-xl hover:bg-slate-50 transition-all duration-300 flex items-center justify-center gap-2">
-                  <MapPin className="w-4 h-4" /> Abrir en Google Maps
-                </button>
+              <div className="p-5">
+                {/* Progress */}
+                <div className="mb-5">
+                  <div className="flex justify-between text-[11px] font-black mb-2">
+                    <span className="text-amber-600">Progreso</span>
+                    <span className="text-slate-500">{rutaActiva.progreso}%</span>
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                    <div className="bg-gradient-to-r from-amber-400 to-amber-600 h-2 rounded-full transition-all duration-1000 ease-out" style={{ width: `${rutaActiva.progreso}%` }} />
+                  </div>
+                </div>
+                {/* Stops */}
+                <ul className="space-y-4 mb-5 relative">
+                  <div className="absolute top-2 bottom-4 left-[11px] w-0.5 bg-gradient-to-b from-emerald-400 via-slate-200 to-amber-400" />
+                  {rutaActiva.paradas.map((parada, idx) => (
+                    <li key={idx} className={`relative pl-9 text-sm ${parada.completado ? 'text-slate-400' : 'text-slate-900'}`}>
+                      <div className={`absolute left-0 top-0.5 w-6 h-6 rounded-full border-2 flex items-center justify-center z-10 bg-white shadow-sm transition-all duration-300 ${parada.completado ? 'border-emerald-500' : 'border-amber-500'}`}>
+                        {parada.completado ? <Check className="w-3 h-3 text-emerald-500" /> : <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />}
+                      </div>
+                      <p className="font-bold leading-tight">{parada.lugar}</p>
+                      <p className="text-[10px] uppercase font-black text-slate-400 mt-0.5 tracking-wider">{parada.tipo}</p>
+                    </li>
+                  ))}
+                </ul>
+                <div className="space-y-2">
+                  <button onClick={() => navigate('/dashboard/transportista/hoja-de-ruta')} className="w-full py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-500/20 transition-all duration-300 flex items-center justify-center gap-2 hover:-translate-y-0.5">
+                    <Check className="w-4 h-4" /> Ir a Hoja de Ruta
+                  </button>
+                  <button className="w-full py-2.5 bg-white border border-slate-200 text-slate-600 font-bold text-sm rounded-xl hover:bg-slate-50 transition-all duration-300 flex items-center justify-center gap-2">
+                    <MapPin className="w-4 h-4" /> Abrir en Google Maps
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="card-elevated p-6 text-center !border-slate-200 bg-slate-50/50 animate-slide-in-right">
+              <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Route className="w-6 h-6 text-slate-400" />
+              </div>
+              <h3 className="font-black text-slate-800 text-sm">Sin ruta activa hoy</h3>
+              <p className="text-xs text-slate-500 mt-1">Acepta un flete en la Bolsa de Carga para comenzar.</p>
+              <button onClick={() => navigate('/dashboard/transportista/bolsa')} className="mt-4 px-4 py-2 bg-amber-500 text-white text-xs font-bold rounded-xl hover:bg-amber-600 transition-all shadow-md">
+                Ver Bolsa de Cargas
+              </button>
+            </div>
+          )}
 
           {/* HISTORIAL */}
           <div className="card-elevated overflow-hidden animate-slide-in-right" style={{ animationDelay: '0.1s' }}>

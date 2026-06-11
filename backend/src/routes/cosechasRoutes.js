@@ -4,10 +4,18 @@ const cosechasController = require('../controllers/cosechasController');
 const { verifyToken } = require('../middlewares/authMiddleware');
 const { checkRole, checkVerified } = require('../middlewares/roleMiddleware');
 const uploadImage = require('../middlewares/uploadImageMiddleware');
+const handleUploadImageError = require('../middlewares/handleUploadImageError');
 
-router.post('/', verifyToken, checkRole(['PRODUCTOR']), checkVerified, uploadImage.single('foto'), cosechasController.crearCosecha);
+const uploadFoto = (req, res, next) => {
+    uploadImage.single('foto')(req, res, (err) => {
+        if (err) return handleUploadImageError(err, req, res, next);
+        next();
+    });
+};
+
+router.post('/', verifyToken, checkRole(['PRODUCTOR']), checkVerified, uploadFoto, cosechasController.crearCosecha);
 router.get('/mi-catalogo', verifyToken, checkRole(['PRODUCTOR']), cosechasController.miCatalogo);
-router.put('/:id', verifyToken, checkRole(['PRODUCTOR']), checkVerified, uploadImage.single('foto'), cosechasController.actualizarCosecha);
+router.put('/:id', verifyToken, checkRole(['PRODUCTOR']), checkVerified, uploadFoto, cosechasController.actualizarCosecha);
 router.delete('/:id', verifyToken, checkRole(['PRODUCTOR']), checkVerified, cosechasController.eliminarCosecha);
 router.get('/:id', verifyToken, cosechasController.getCosechaById);
 

@@ -211,3 +211,53 @@ exports.updateQR = async (req, res) => {
         res.status(500).json({ error: 'Error al actualizar el código QR' });
     }
 };
+
+// -------------------------------------------------------
+// GET /api/productor/metricas (o /api/productores/metricas)
+// -------------------------------------------------------
+exports.getMetricas = async (req, res) => {
+    try {
+        const pool = await getPool();
+        const userId = req.user.id;
+
+        // Necesitamos filtrar por el productor. Como la consulta original del usuario
+        // es genérica, la adaptamos para que cruce con las cosechas del productor actual.
+        // O si la arquitectura asume que Pedidos puede usarse directo (por ahora lo hacemos
+        // cruzando con el productor para que sea correcto, o según el query del usuario).
+        
+        // Obtener el productor ID
+        const producerResult = await pool.request()
+            .input('usuario_id', sql.UniqueIdentifier, userId)
+            .query('SELECT id FROM perfil_productor WHERE usuario_id = @usuario_id');
+
+        if (producerResult.recordset.length === 0) {
+            return res.status(404).json({ error: 'Perfil de productor no encontrado' });
+        }
+
+        const producerId = producerResult.recordset[0].id;
+
+        // Ejecutar el query usando fecha_pago para ingresos del mes
+        const query = `
+            SELECT SUM(p.monto_total) as ingresos_mes
+            FROM Pedidos p
+            JOIN Detalle_Pedidos dp ON p.id = dp.pedido_id
+            JOIN Cosechas c ON dp.cosecha_id = c.id
+            WHERE p.estado IN ('PAGADO', 'LISTO_PARA_DESPACHO', 'EN_CAMINO', 'ENTREGADO')
+              AND MONTH(p.fecha_pago) = MONTH(GETDATE())
+              AND YEAR(p.fecha_pago) = YEAR(GETDATE())
+              AND c.productor_id = @productorId
+        `;
+
+        const result = await pool.request()
+            .input('productorId', sql.UniqueIdentifier, producerId)
+            .query(query);
+
+        const ingresosMes = result.recordset[0].ingresos_mes || 0;
+
+        res.json({ ingresos_mes: ingresosMes });
+
+    } catch (error) {
+        console.error('Get Metricas Error:', error);
+        res.status(500).json({ error: 'Error al obtener métricas' });
+    }
+};

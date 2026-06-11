@@ -20,4 +20,7 @@ router.put('/perfil', verifyToken, checkRole('PRODUCTOR'), producerController.up
 const upload = require('../middlewares/uploadDocsMiddleware');
 router.put('/perfil/qr', verifyToken, checkRole('PRODUCTOR'), upload.single('qr_image'), producerController.updateQR);
 
+// GET /api/productor/metricas — Dashboard ingresos
+router.get('/metricas', verifyToken, checkRole('PRODUCTOR'), producerController.getMetricas);
+
 module.exports = router;

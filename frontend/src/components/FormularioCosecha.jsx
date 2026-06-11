@@ -1,16 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Camera, Calendar, Tag, AlertCircle, Info, Upload } from 'lucide-react';
+import { Camera, Calendar, Tag, AlertCircle, Upload } from 'lucide-react';
 import axios from 'axios';
+import ComparadorPrecioAbasto from './ComparadorPrecioAbasto';
+import { validarFormularioCosecha, validarImagenCosecha } from '../utils/cosechaFormUtils';
+import { diasHastaDisponibilidad } from '../utils/preventaUtils';
 
 const FormularioCosecha = ({ onSuccess }) => {
   const [formData, setFormData] = useState({
     nombre_producto: '',
+    categoria: '',
     descripcion: '',
     cantidad_disponible: '',
     unidad_medida: 'Quintal',
     precio_unitario: '',
     fecha_disponibilidad: new Date().toISOString().split('T')[0],
   });
+  const [formErrors, setFormErrors] = useState({});
   const [foto, setFoto] = useState(null);
   const [fotoPreview, setFotoPreview] = useState(null);
   const [precioSugerido, setPrecioSugerido] = useState(null);
@@ -46,10 +51,21 @@ const FormularioCosecha = ({ onSuccess }) => {
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setFoto(file);
-      setFotoPreview(URL.createObjectURL(file));
+    if (!file) return;
+    const imgError = validarImagenCosecha(file);
+    if (imgError) {
+      setFormErrors((prev) => ({ ...prev, foto: imgError }));
+      setFoto(null);
+      setFotoPreview(null);
+      return;
     }
+    setFormErrors((prev) => {
+      const next = { ...prev };
+      delete next.foto;
+      return next;
+    });
+    setFoto(file);
+    setFotoPreview(URL.createObjectURL(file));
   };
 
   // Lógica para determinar si es Preventa o Stock Inmediato (US06)
@@ -61,12 +77,26 @@ const FormularioCosecha = ({ onSuccess }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    const errors = validarFormularioCosecha(formData, foto);
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      setError('Completa los campos obligatorios antes de publicar.');
+      return;
+    }
+    setFormErrors({});
     setIsSubmitting(true);
 
     try {
       const data = new FormData();
-      Object.keys(formData).forEach((key) => data.append(key, formData[key]));
-      if (foto) data.append('foto', foto);
+      data.append('nombre_producto', formData.nombre_producto.trim());
+      data.append('categoria', formData.categoria);
+      data.append('descripcion', formData.descripcion.trim());
+      data.append('cantidad_disponible', formData.cantidad_disponible);
+      data.append('unidad_medida', formData.unidad_medida);
+      data.append('precio_unitario', formData.precio_unitario);
+      data.append('fecha_disponibilidad', formData.fecha_disponibilidad);
+      data.append('foto', foto);
 
       const token = localStorage.getItem('token');
       await axios.post('http://localhost:5000/api/cosechas', data, {
@@ -81,6 +111,7 @@ const FormularioCosecha = ({ onSuccess }) => {
       // Reiniciar formulario
       setFormData({
         nombre_producto: '',
+        categoria: '',
         descripcion: '',
         cantidad_disponible: '',
         unidad_medida: 'Quintal',
@@ -90,7 +121,7 @@ const FormularioCosecha = ({ onSuccess }) => {
       setFoto(null);
       setFotoPreview(null);
     } catch (err) {
-      setError(err.response?.data?.error || 'Error al publicar la cosecha');
+      setError(err.response?.data?.message || err.response?.data?.error || 'Error al publicar la cosecha');
     } finally {
       setIsSubmitting(false);
     }
@@ -129,10 +160,30 @@ const FormularioCosecha = ({ onSuccess }) => {
                 placeholder="Ej. Achachairú fresco"
               />
               {precioSugerido && (
-                <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs font-semibold animate-pulse">
-                  <span>💡 Precio actual en Mercado Abasto: {precioSugerido.precio_promedio_bs} Bs</span>
-                </div>
+                <ComparadorPrecioAbasto
+                  precioUsuario={formData.precio_unitario}
+                  precioMercado={precioSugerido.precio_promedio_bs}
+                  nombreProducto={precioSugerido.nombre_producto}
+                />
               )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+              <select
+                name="categoria"
+                required
+                value={formData.categoria}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
+              >
+                <option value="">Seleccionar...</option>
+                <option value="Verduras">Verduras</option>
+                <option value="Frutas">Frutas</option>
+                <option value="Granos">Granos</option>
+                <option value="Tubérculos">Tubérculos</option>
+              </select>
+              {formErrors.categoria && <p className="text-xs text-red-500 mt-1">{formErrors.categoria}</p>}
             </div>
 
             <div>
@@ -140,11 +191,13 @@ const FormularioCosecha = ({ onSuccess }) => {
               <textarea
                 name="descripcion"
                 rows="3"
+                required
                 value={formData.descripcion}
                 onChange={handleInputChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all outline-none resize-none"
                 placeholder="Detalles sobre calidad, variedad..."
               ></textarea>
+              {formErrors.descripcion && <p className="text-xs text-red-500 mt-1">{formErrors.descripcion}</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -210,20 +263,20 @@ const FormularioCosecha = ({ onSuccess }) => {
                   <div className="flex text-sm text-gray-600 justify-center mt-2">
                     <label htmlFor="foto-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-emerald-600 hover:text-emerald-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-emerald-500 px-2 py-1 shadow-sm border border-gray-200">
                       <span>Subir archivo</span>
-                      <input id="foto-upload" name="foto" type="file" className="sr-only" onChange={handleFileChange} accept="image/*" />
+                      <input id="foto-upload" name="foto" type="file" className="sr-only" onChange={handleFileChange} accept="image/jpeg,image/png,image/webp" required={!fotoPreview} />
                     </label>
                   </div>
-                  <p className="text-xs text-gray-500">PNG, JPG hasta 5MB</p>
+                  <p className="text-xs text-gray-500">JPG, PNG o WEBP — máx. 5 MB</p>
+                  {formErrors.foto && <p className="text-xs text-red-500 mt-1">{formErrors.foto}</p>}
                 </div>
               </div>
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="block text-sm font-medium text-gray-700">Fecha de Disponibilidad</label>
-                {/* Etiqueta Visual Dinámica (US06) */}
-                <span className={`text-xs font-bold px-2 py-1 rounded-full ${isPreventa() ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`}>
-                  {isPreventa() ? 'Modo Preventa Activado' : 'Stock Inmediato'}
+                <label className="block text-sm font-medium text-gray-700">Fecha de disponibilidad *</label>
+                <span className={`text-xs font-bold px-2 py-1 rounded-full ${isPreventa() ? 'bg-violet-100 text-violet-700' : 'bg-green-100 text-green-700'}`}>
+                  {isPreventa() ? 'Preventa disponible' : 'Stock inmediato'}
                 </span>
               </div>
               <div className="relative">
@@ -240,6 +293,11 @@ const FormularioCosecha = ({ onSuccess }) => {
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
                 />
               </div>
+              {isPreventa() && (
+                <p className="text-xs text-violet-600 font-medium mt-1">
+                  Disponible en {diasHastaDisponibilidad(formData.fecha_disponibilidad)} día(s)
+                </p>
+              )}
             </div>
           </div>
         </div>

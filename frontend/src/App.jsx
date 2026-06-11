@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import LandingPage from './pages/LandingPage';
 import RegisterWizardPage from './pages/RegisterWizardPage';
 import FincaMap from './components/FincaMap';
 import ProducerProfile from './components/ProducerProfile';
@@ -8,22 +9,34 @@ import PanelAdminPage from './pages/PanelAdminPage';
 import LoginPage from './pages/LoginPage';
 import DashboardProductorPage from './pages/DashboardProductorPage';
 import DashboardCompradorPage from './pages/DashboardCompradorPage';
-import DashboardTransportistaPage from './pages/DashboardTransportistaPage';
+import PanelTransportistaPage from './pages/PanelTransportistaPage';
 import MisCosechasPage from './pages/MisCosechasPage';
 import MiFincaPage from './pages/MiFincaPage';
 import PedidosProductorPage from './pages/PedidosProductorPage';
 import MisIngresosPage from './pages/MisIngresosPage';
 import MiPerfilProductorPage from './pages/MiPerfilProductorPage';
+import MiPerfilCompradorPage from './pages/MiPerfilCompradorPage';
 import MarketplacePage from './pages/MarketplacePage';
 import ProductoDetallePage from './pages/ProductoDetallePage';
 import MainLayout from './components/MainLayout';
 import { CartProvider } from './context/CartContext';
+import { ToastProvider } from './context/ToastContext';
+import { NotificationProvider } from './context/NotificationContext';
 import CarritoPage from './pages/CarritoPage';
+import PagoQRPage from './pages/PagoQRPage';
 import MisPedidosPage from './pages/MisPedidosPage';
 import HojaDeRutaPage from './pages/HojaDeRutaPage';
 import BolsaCargaPage from './pages/BolsaCargaPage';
 import PerfilTransportistaPage from './pages/PerfilTransportistaPage';
 import HistorialTransaccionesPage from './pages/HistorialTransaccionesPage';
+
+// Admin pages
+import AdminDashboardPage from './pages/AdminDashboardPage';
+import AdminVerificacionesPage from './pages/AdminVerificacionesPage';
+import AdminPedidosPage from './pages/AdminPedidosPage';
+import AdminConfiguracionPage from './pages/AdminConfiguracionPage';
+
+import MapaProductoresPage from './pages/MapaProductoresPage';
 
 // Rutas donde NO se muestra el navbar global
 const HIDDEN_NAVBAR_ROUTES = [
@@ -32,7 +45,7 @@ const HIDDEN_NAVBAR_ROUTES = [
   '/dashboard/productor/cosechas', '/dashboard/productor/finca',
   '/dashboard/productor/pedidos', '/dashboard/productor/ingresos',
   '/dashboard/productor/perfil', '/admin/verificaciones', '/marketplace',
-  '/carrito', '/dashboard/comprador/mis-pedidos', '/dashboard/transportista/bolsa',
+  '/carrito', '/dashboard/comprador/mis-pedidos', '/dashboard/comprador/perfil', '/dashboard/transportista/bolsa',
   '/dashboard/transportista/hoja-de-ruta'
 ];
 
@@ -92,16 +105,27 @@ function App() {
     { id: 104, nombre: 'Maíz Amarillo Duro', precio: 95, unidadMedida: 'Quintal', stockAcumulado: 200, categoria: 'Granos' }
   ];
 
+  React.useEffect(() => {
+    if (!localStorage.getItem('productorQR')) {
+      localStorage.setItem('productorQR', JSON.stringify({
+        banco: "BNB",
+        titular: "Ramiro Flores Vaca",
+        qrImageUrl: "https://images.unsplash.com/photo-1595079676339-1534801ad6cf?w=200&h=200&fit=crop"
+      }));
+    }
+  }, []);
+
   return (
-    <CartProvider>
-      <Router>
-        <div className="min-h-screen bg-[#fafbfc] flex flex-col">
-          <Toaster position="top-right" reverseOrder={false} />
-          <NavbarWrapper />
+    <ToastProvider>
+      <NotificationProvider>
+        <CartProvider>
+          <Router>
+          <div className="min-h-screen bg-[#fafbfc] flex flex-col">
+            <NavbarWrapper />
 
           <main className="flex-grow flex flex-col">
             <Routes>
-              <Route path="/" element={<RegisterWizardPage />} />
+              <Route path="/" element={<LandingPage />} />
               <Route path="/registro" element={<RegisterWizardPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/mapa" element={<div className="container mx-auto p-4 md:p-8"><FincaMap /></div>} />
@@ -116,15 +140,25 @@ function App() {
                 <Route path="/dashboard/productor/ingresos" element={<MisIngresosPage />} />
                 <Route path="/dashboard/productor/perfil" element={<MiPerfilProductorPage />} />
                 <Route path="/dashboard/comprador" element={<DashboardCompradorPage />} />
-                <Route path="/dashboard/transportista" element={<DashboardTransportistaPage />} />
+                <Route path="/dashboard/comprador/mapa" element={<MapaProductoresPage />} />
+                <Route path="/dashboard/transportista" element={<PanelTransportistaPage />} />
                 <Route path="/marketplace" element={<MarketplacePage />} />
                 <Route path="/producto/:id" element={<ProductoDetallePage />} />
                 <Route path="/carrito" element={<CarritoPage />} />
+                <Route path="/dashboard/comprador/pago-qr/:pedidoId" element={<PagoQRPage />} />
                 <Route path="/dashboard/comprador/mis-pedidos" element={<MisPedidosPage />} />
+                <Route path="/dashboard/comprador/perfil" element={<MiPerfilCompradorPage />} />
                 <Route path="/dashboard/transportista/perfil" element={<PerfilTransportistaPage />} />
                 <Route path="/dashboard/transportista/bolsa" element={<BolsaCargaPage />} />
                 <Route path="/dashboard/transportista/hoja-de-ruta" element={<HojaDeRutaPage />} />
                 <Route path="/dashboard/historial" element={<HistorialTransaccionesPage />} />
+                
+                {/* Admin Routes */}
+                <Route path="/dashboard/admin" element={<AdminDashboardPage />} />
+                <Route path="/dashboard/admin/verificaciones" element={<AdminVerificacionesPage />} />
+                <Route path="/dashboard/admin/pedidos" element={<AdminPedidosPage />} />
+                <Route path="/dashboard/admin/bi" element={<AdminDashboardPage />} />
+                <Route path="/dashboard/admin/configuracion" element={<AdminConfiguracionPage />} />
               </Route>
             </Routes>
           </main>
@@ -134,7 +168,9 @@ function App() {
           </footer>
         </div>
       </Router>
-    </CartProvider>
+        </CartProvider>
+      </NotificationProvider>
+    </ToastProvider>
   );
 }
 

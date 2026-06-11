@@ -1,43 +1,63 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
-import { Leaf, Mail, Lock, Eye, EyeOff, AlertCircle, ArrowRight, LogIn, Sprout, ShoppingBag, Truck, Shield } from 'lucide-react';
+import { Leaf, Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const toast = useToast();
   const [formData, setFormData] = useState({ correo: '', contrasena: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
-  const [formErrors, setFormErrors] = useState({ correo: false, contrasena: false });
-  const [focusedField, setFocusedField] = useState(null);
+  const [errors, setErrors] = useState({ correo: '', contrasena: '' });
+  const [shake, setShake] = useState(false);
+
+  const validateField = (name, value) => {
+    let error = '';
+    if (name === 'correo') {
+      if (!value) {
+        error = 'El correo electrónico es requerido';
+      } else if (!/\S+@\S+\.\S+/.test(value)) {
+        error = 'Ingresá un correo electrónico válido';
+      }
+    } else if (name === 'contrasena') {
+      if (!value) {
+        error = 'La contraseña es requerida';
+      } else if (value.length < 8) {
+        error = 'La contraseña debe tener al menos 8 caracteres';
+      }
+    }
+    setErrors(prev => ({ ...prev, [name]: error }));
+    return error === '';
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    if (formErrors[name]) setFormErrors(prev => ({ ...prev, [name]: false }));
-    if (errorMsg) setErrorMsg('');
+    validateField(name, value);
   };
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    const errors = {
-      correo: !formData.correo.trim(),
-      contrasena: !formData.contrasena.trim()
-    };
-    if (errors.correo || errors.contrasena) {
-      setFormErrors(errors);
+    const isEmailValid = validateField('correo', formData.correo);
+    const isPassValid = validateField('contrasena', formData.contrasena);
+
+    if (!isEmailValid || !isPassValid) {
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
+      toast.error('Por favor, corregí los errores en el formulario');
       return;
     }
 
     setIsLoading(true);
-    setErrorMsg('');
-
     try {
       const response = await axios.post('http://localhost:5000/api/auth/login', formData);
       const { token, usuario } = response.data;
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(usuario));
+
+      toast.success(`¡Bienvenido de nuevo, ${usuario.nombre_completo}!`);
 
       const roleToPath = {
         'PRODUCTOR': '/dashboard/productor',
@@ -45,213 +65,222 @@ const LoginPage = () => {
         'TRANSPORTISTA': '/dashboard/transportista',
         'ADMINISTRADOR': '/admin/verificaciones'
       };
-      setTimeout(() => navigate(roleToPath[usuario.rol] || '/'), 600);
+
+      setTimeout(() => {
+        navigate(roleToPath[usuario.rol] || '/');
+      }, 1000);
     } catch (error) {
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
+      const errMsg = error.response?.data?.error || 'Credenciales incorrectas. Verificá tu correo y contraseña.';
+      toast.error(errMsg);
+    } finally {
       setIsLoading(false);
-      setErrorMsg('Correo o contraseña incorrectos');
     }
   };
 
   return (
-    <div className="min-h-screen flex w-full font-sans">
-
-      {/* LEFT PANEL — Premium visual */}
-      <div className="hidden lg:flex w-[55%] flex-col justify-between relative overflow-hidden bg-gradient-to-br from-[#064e3b] via-[#065f46] to-[#047857]">
-        {/* Animated background elements */}
-        <div className="absolute inset-0">
-          <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-emerald-400/10 rounded-full blur-[100px] animate-float" />
-          <div className="absolute bottom-[-15%] left-[-10%] w-[600px] h-[600px] bg-teal-300/8 rounded-full blur-[120px] animate-float" style={{ animationDelay: '3s' }} />
-          <div className="absolute top-[40%] left-[30%] w-[300px] h-[300px] bg-emerald-200/5 rounded-full blur-[80px] animate-float" style={{ animationDelay: '1.5s' }} />
-          {/* Dot pattern */}
-          <div className="absolute inset-0 dot-pattern opacity-30" />
-        </div>
+    <div className="min-h-screen flex w-full font-sans bg-[#f4f6f9]">
+      {/* LADO IZQUIERDO — Hero (bg gradiente emerald-700 to-emerald-900) */}
+      <div className="hidden lg:flex w-1/2 flex-col justify-between relative overflow-hidden bg-gradient-to-br from-emerald-700 via-emerald-800 to-emerald-900 text-white p-12">
+        {/* Overlay con gradient placeholder verde que simula el campo agrícola boliviano */}
+        <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/90 via-emerald-900/40 to-emerald-800/20 mix-blend-multiply z-10" />
+        <div 
+          className="absolute inset-0 bg-cover bg-center opacity-30 z-0 transform scale-105 transition-transform duration-10000"
+          style={{ 
+            backgroundImage: "url('https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&q=80&w=1000')" 
+          }} 
+        />
         
-        {/* Content */}
-        <div className="relative z-10 flex flex-col justify-center items-center flex-1 px-16">
-          <div className="max-w-md text-center">
-            {/* Logo */}
-            <div className="mb-10 animate-slide-up">
-              <div className="w-20 h-20 bg-white/10 backdrop-blur-xl rounded-3xl flex items-center justify-center mx-auto border border-white/20 shadow-2xl shadow-emerald-900/30 animate-pulse-glow">
-                <Leaf className="w-10 h-10 text-emerald-300" />
-              </div>
-            </div>
+        {/* Patrón de puntos superpuesto (rgba blanco 0.04) */}
+        <div className="absolute inset-0 bg-radial-gradient-dots opacity-40 z-10" />
 
-            <h1 className="text-5xl font-black mb-5 tracking-tight text-white leading-[1.1] animate-slide-up" style={{ animationDelay: '0.1s' }}>
-              AgroDirecto
-              <span className="block text-2xl font-bold text-emerald-300/70 mt-2">Santa Cruz</span>
-            </h1>
-            
-            <p className="text-lg text-emerald-100/60 leading-relaxed mb-12 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-              Conectando el campo cruceño con el mercado. Sin intermediarios, más justo para todos.
-            </p>
+        {/* Floating gradient circles */}
+        <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl animate-float z-10" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-emerald-400/15 rounded-full blur-3xl animate-float z-10" style={{ animationDelay: '2s' }} />
 
-            {/* Feature cards */}
-            <div className="grid grid-cols-3 gap-3 animate-slide-up" style={{ animationDelay: '0.3s' }}>
-              {[
-                { icon: Sprout, label: 'Productores', value: '120+', color: 'emerald' },
-                { icon: ShoppingBag, label: 'Productos', value: '500+', color: 'teal' },
-                { icon: Truck, label: 'Entregas', value: '1.2K', color: 'cyan' },
-              ].map((s, i) => {
-                const Icon = s.icon;
-                return (
-                  <div key={i} className="bg-white/[0.07] backdrop-blur-xl rounded-2xl p-4 border border-white/[0.1] hover:bg-white/[0.12] transition-all duration-500 group cursor-default">
-                    <Icon className="w-5 h-5 text-emerald-400 mb-3 mx-auto group-hover:scale-110 transition-transform duration-300" />
-                    <p className="text-2xl font-black text-white mb-0.5">{s.value}</p>
-                    <p className="text-[11px] text-emerald-200/50 font-bold uppercase tracking-wider">{s.label}</p>
-                  </div>
-                );
-              })}
-            </div>
+        {/* Top Header */}
+        <div className="relative z-20 flex items-center gap-3">
+          <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20">
+            <Leaf className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <span className="text-2xl font-black tracking-tight block">AgroDirecto</span>
+            <span className="text-[10px] font-bold tracking-widest text-emerald-300 uppercase">Santa Cruz</span>
           </div>
         </div>
 
-        {/* Bottom */}
-        <div className="relative z-10 px-16 pb-8">
-          <p className="text-emerald-200/30 text-xs text-center">
-            &copy; 2026 AgroDirecto Santa Cruz — Todos los derechos reservados
+        {/* Central Content */}
+        <div className="relative z-20 max-w-md my-auto animate-slide-up">
+          <h2 className="text-4xl font-extrabold tracking-tight leading-tight mb-4">
+            Conectamos el campo con la ciudad
+          </h2>
+          <p className="text-emerald-100/80 text-base leading-relaxed mb-10">
+            Comprá directamente a productores cruceños y optimizá tu cadena de suministro con precios justos y transporte coordinado.
           </p>
+
+          {/* Estadísticas animadas */}
+          <div className="grid grid-cols-3 gap-4">
+            {[
+              { label: 'Productores', value: '500+' },
+              { label: 'Provincias', value: '12' },
+              { label: 'Intermediarios', value: '30% menos' },
+            ].map((stat, i) => (
+              <div 
+                key={i} 
+                className="bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl p-4 transition-all hover:bg-white/15 cursor-default group"
+              >
+                <div className="text-xl font-black text-white group-hover:scale-105 transition-transform duration-300">
+                  {stat.value}
+                </div>
+                <div className="text-[10px] font-bold text-emerald-200/70 uppercase tracking-wide mt-1">
+                  {stat.label}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="relative z-20 text-xs text-emerald-200/50">
+          © 2026 AgroDirecto Santa Cruz — Plataforma Agropecuaria Digital Boliviana.
         </div>
       </div>
 
-      {/* RIGHT PANEL — Login Form */}
-      <div className="w-full lg:w-[45%] flex items-center justify-center bg-[#fafbfc] p-6 sm:p-12 relative">
-        {/* Subtle background */}
-        <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-50 rounded-full blur-[100px] opacity-40" />
-        
-        <div className="w-full max-w-[420px] relative z-10">
-          
+      {/* LADO DERECHO — Formulario */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-16 relative">
+        {/* Decorative background blur */}
+        <div className="absolute top-1/4 right-1/4 w-80 h-80 bg-emerald-100 rounded-full blur-3xl opacity-30 pointer-events-none" />
+
+        <div className={`w-full max-w-md relative z-10 ${shake ? 'animate-shake' : ''}`}>
           {/* Mobile logo */}
-          <div className="lg:hidden flex items-center justify-center gap-2.5 mb-10 animate-fade-in">
+          <div className="lg:hidden flex items-center justify-center gap-2.5 mb-8">
             <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-600/20">
               <Leaf className="w-5 h-5 text-white" />
             </div>
             <span className="text-2xl font-black text-slate-900 tracking-tight">AgroDirecto</span>
           </div>
 
-          <div className="animate-slide-up">
-            {/* Form card */}
-            <div className="bg-white p-8 sm:p-10 rounded-3xl shadow-xl shadow-slate-900/[0.04] border border-slate-200/60">
-              <div className="mb-8">
-                <h2 className="text-3xl font-black text-slate-900 tracking-tight">Bienvenido</h2>
-                <p className="text-sm text-slate-400 mt-2 font-medium">Ingresa a tu cuenta para continuar</p>
-              </div>
-
-              <form onSubmit={handleLogin} className="space-y-5">
-                
-                {/* Correo */}
-                <div className="animate-slide-up" style={{ animationDelay: '0.1s' }}>
-                  <label className="block text-[13px] font-bold text-slate-700 mb-2">Correo electrónico</label>
-                  <div className={`relative rounded-xl transition-all duration-300 ${focusedField === 'correo' ? 'ring-2 ring-emerald-500/20' : ''}`}>
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <Mail className={`w-4 h-4 transition-colors duration-300 ${focusedField === 'correo' ? 'text-emerald-500' : 'text-slate-400'}`} />
-                    </div>
-                    <input
-                      type="email"
-                      name="correo"
-                      value={formData.correo}
-                      onChange={handleChange}
-                      onFocus={() => setFocusedField('correo')}
-                      onBlur={() => setFocusedField(null)}
-                      placeholder="ejemplo@correo.com"
-                      className={`w-full pl-11 pr-4 py-3.5 border rounded-xl text-sm font-medium focus:outline-none focus:border-emerald-500 transition-all duration-300 bg-slate-50/50 focus:bg-white ${
-                        formErrors.correo ? 'border-red-400 ring-2 ring-red-400/20' : 'border-slate-200'
-                      }`}
-                    />
-                  </div>
-                  {formErrors.correo && <span className="text-red-500 text-xs mt-1.5 block font-medium">El correo es obligatorio</span>}
-                </div>
-
-                {/* Contraseña */}
-                <div className="animate-slide-up" style={{ animationDelay: '0.15s' }}>
-                  <label className="block text-[13px] font-bold text-slate-700 mb-2">Contraseña</label>
-                  <div className={`relative rounded-xl transition-all duration-300 ${focusedField === 'contrasena' ? 'ring-2 ring-emerald-500/20' : ''}`}>
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <Lock className={`w-4 h-4 transition-colors duration-300 ${focusedField === 'contrasena' ? 'text-emerald-500' : 'text-slate-400'}`} />
-                    </div>
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      name="contrasena"
-                      value={formData.contrasena}
-                      onChange={handleChange}
-                      onFocus={() => setFocusedField('contrasena')}
-                      onBlur={() => setFocusedField(null)}
-                      placeholder="Tu contraseña segura"
-                      className={`w-full pl-11 pr-12 py-3.5 border rounded-xl text-sm font-medium focus:outline-none focus:border-emerald-500 transition-all duration-300 bg-slate-50/50 focus:bg-white ${
-                        formErrors.contrasena ? 'border-red-400 ring-2 ring-red-400/20' : 'border-slate-200'
-                      }`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-emerald-600 transition-colors duration-300"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                  {formErrors.contrasena && <span className="text-red-500 text-xs mt-1.5 block font-medium">La contraseña es obligatoria</span>}
-                </div>
-
-                {/* Forgot */}
-                <div className="flex justify-end">
-                  <a href="#" className="text-xs font-bold text-emerald-600 hover:text-emerald-700 transition-colors duration-300">
-                    ¿Olvidaste tu contraseña?
-                  </a>
-                </div>
-
-                {/* Error */}
-                {errorMsg && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl text-sm font-medium flex items-center gap-3 animate-scale-bounce">
-                    <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center shrink-0">
-                      <AlertCircle className="w-4 h-4" />
-                    </div>
-                    {errorMsg}
-                  </div>
-                )}
-
-                {/* Submit */}
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full py-4 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white rounded-xl font-bold text-sm transition-all duration-500 shadow-lg shadow-emerald-600/25 hover:shadow-xl hover:shadow-emerald-600/30 flex items-center justify-center gap-2.5 disabled:opacity-60 disabled:cursor-not-allowed group hover:-translate-y-0.5 active:translate-y-0"
-                >
-                  {isLoading ? (
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      <LogIn className="w-4 h-4" /> 
-                      Iniciar Sesión
-                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
-                    </>
-                  )}
-                </button>
-              </form>
-
-              {/* Divider */}
-              <div className="mt-8 flex items-center gap-4">
-                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
-                <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">¿Nuevo aquí?</span>
-                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
-              </div>
-
-              {/* Register */}
-              <div className="mt-6">
-                <Link to="/">
-                  <button className="w-full py-3.5 border-2 border-slate-200 text-slate-700 rounded-xl font-bold text-sm hover:border-emerald-300 hover:text-emerald-700 hover:bg-emerald-50/50 transition-all duration-300 flex items-center justify-center gap-2 group">
-                    Crear cuenta gratis
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
-                  </button>
-                </Link>
-              </div>
+          <div className="bg-white p-8 sm:p-10 rounded-3xl shadow-xl shadow-slate-900/[0.03] border border-slate-100 animate-slide-up">
+            <div className="mb-8">
+              <h1 className="text-3xl font-extrabold tracking-tight text-[#111827]">Bienvenido de nuevo</h1>
+              <p className="text-sm text-slate-400 mt-2">Ingresá con tu cuenta registrada</p>
             </div>
 
-            {/* Trust badges */}
-            <div className="mt-6 flex items-center justify-center gap-6 animate-fade-in" style={{ animationDelay: '0.4s' }}>
-              <div className="flex items-center gap-1.5 text-slate-400">
-                <Shield className="w-3.5 h-3.5" />
-                <span className="text-[11px] font-medium">Datos seguros</span>
+            <form onSubmit={handleLogin} className="space-y-6">
+              {/* Campo Email */}
+              <div className="relative group">
+                <label className="block text-[13px] font-bold text-slate-700 mb-1.5">
+                  Correo electrónico
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-500 transition-colors">
+                    <Mail className="w-4.5 h-4.5" />
+                  </div>
+                  <input
+                    type="email"
+                    name="correo"
+                    value={formData.correo}
+                    onChange={handleChange}
+                    placeholder="ejemplo@correo.com"
+                    className={`w-full pl-11 pr-4 py-3.5 bg-gray-50 border rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all duration-200 ${
+                      errors.correo ? 'border-rose-300 ring-2 ring-rose-100 bg-rose-50/20' : 'border-slate-200'
+                    }`}
+                  />
+                </div>
+                {errors.correo && (
+                  <p className="text-rose-600 text-xs font-semibold mt-1.5 animate-slide-up">
+                    {errors.correo}
+                  </p>
+                )}
               </div>
-              <div className="w-1 h-1 bg-slate-300 rounded-full" />
-              <span className="text-[11px] text-slate-400 font-medium">&copy; 2026 AgroDirecto</span>
+
+              {/* Campo Contraseña */}
+              <div className="relative group">
+                <label className="block text-[13px] font-bold text-slate-700 mb-1.5">
+                  Contraseña
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-500 transition-colors">
+                    <Lock className="w-4.5 h-4.5" />
+                  </div>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="contrasena"
+                    value={formData.contrasena}
+                    onChange={handleChange}
+                    placeholder="Tus 8 caracteres de seguridad"
+                    className={`w-full pl-11 pr-12 py-3.5 bg-gray-50 border rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all duration-200 ${
+                      errors.contrasena ? 'border-rose-300 ring-2 ring-rose-100 bg-rose-50/20' : 'border-slate-200'
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-emerald-600 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
+                  </button>
+                </div>
+                {errors.contrasena && (
+                  <p className="text-rose-600 text-xs font-semibold mt-1.5 animate-slide-up">
+                    {errors.contrasena}
+                  </p>
+                )}
+              </div>
+
+              {/* Recordarme + Olvidaste Contraseña */}
+              <div className="flex items-center justify-between text-xs sm:text-sm">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input 
+                    type="checkbox" 
+                    className="w-4 h-4 rounded text-emerald-600 border-slate-300 focus:ring-emerald-500 focus:ring-offset-0 transition-all cursor-pointer"
+                  />
+                  <span className="font-semibold text-slate-600">Recordarme</span>
+                </label>
+                <a 
+                  href="#" 
+                  className="font-bold text-emerald-600 hover:text-emerald-700 transition-colors"
+                >
+                  ¿Olvidaste tu contraseña?
+                </a>
+              </div>
+
+              {/* Botón Ingresar */}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl py-3.5 font-bold text-sm shadow-lg shadow-emerald-600/20 hover:shadow-xl hover:shadow-emerald-600/30 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed group hover:-translate-y-0.5 active:translate-y-0"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Iniciando sesión...</span>
+                  </>
+                ) : (
+                  <span>Ingresar</span>
+                )}
+              </button>
+            </form>
+
+            {/* Separador */}
+            <div className="mt-8 flex items-center gap-4">
+              <div className="flex-1 h-px bg-slate-100" />
+              <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">o</span>
+              <div className="flex-1 h-px bg-slate-100" />
+            </div>
+
+            {/* Link Registro */}
+            <div className="mt-6 text-center">
+              <p className="text-sm text-slate-500 font-medium">
+                ¿No tenés cuenta?{' '}
+                <Link 
+                  to="/registro" 
+                  className="font-bold text-emerald-600 hover:underline transition-colors"
+                >
+                  Registrate aquí
+                </Link>
+              </p>
             </div>
           </div>
         </div>

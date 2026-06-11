@@ -4,6 +4,7 @@
 // ============================================================
 const { sql, getPool } = require('../db');
 const { verificacionSchema } = require('../validators/authValidators');
+const { notificarVerificacionCuenta } = require('../services/notificacionesService');
 
 // -------------------------------------------------------
 // GET /api/admin/verificaciones
@@ -11,6 +12,19 @@ const { verificacionSchema } = require('../validators/authValidators');
 // Lista todos los usuarios con estado PENDIENTE_VERIFICACION,
 // incluyendo la URL del documento subido.
 // -------------------------------------------------------
+exports.getVerificacionesCount = async (req, res) => {
+    try {
+        const pool = await getPool();
+        const result = await pool.request().query(`
+            SELECT COUNT(*) AS total FROM usuarios WHERE estado = 'PENDIENTE_VERIFICACION'
+        `);
+        res.json({ total: result.recordset[0]?.total ?? 0 });
+    } catch (error) {
+        console.error('Get Verificaciones Count Error:', error);
+        res.status(500).json({ error: 'Error al obtener conteo.' });
+    }
+};
+
 exports.getPendingUsers = async (req, res) => {
     try {
         const pool = await getPool();
@@ -22,6 +36,7 @@ exports.getPendingUsers = async (req, res) => {
                 u.correo,
                 u.celular,
                 u.rol,
+                u.estado,
                 u.fecha_registro,
                 -- Documentos según el rol
                 pp.tipo_documento      AS doc_tipo_productor,
@@ -33,7 +48,6 @@ exports.getPendingUsers = async (req, res) => {
                 pt.placa_vehiculo,
                 pt.url_documento       AS doc_url_transportista
             FROM usuarios u
-            LEFT JOIN perfil_productor p     ON u.id = p.usuario_id
             LEFT JOIN perfil_productor pp    ON u.id = pp.usuario_id
             LEFT JOIN perfil_transportista pt ON u.id = pt.usuario_id
             WHERE u.estado = 'PENDIENTE_VERIFICACION'
@@ -47,11 +61,12 @@ exports.getPendingUsers = async (req, res) => {
             correo: r.correo,
             celular: r.celular,
             rol: r.rol,
+            estado: r.estado,
             fecha_registro: r.fecha_registro,
             documento: {
                 tipo: r.doc_tipo_productor || r.doc_tipo_transportista || null,
                 numero: r.doc_numero_productor || r.numero_licencia || null,
-                url: r.doc_url_productor || r.doc_url_transportista || null,
+                url: r.doc_url_productor || r.doc_url_productor_legacy || r.doc_url_transportista || null,
                 placa: r.placa_vehiculo || null,
                 finca: r.nombre_finca || null
             }
@@ -119,20 +134,18 @@ exports.verifyUser = async (req, res) => {
             });
         }
 
-        // Actualizar el estado
+        // Actualizar el estado y motivo de rechazo
         await pool.request()
             .input('id', sql.UniqueIdentifier, id)
             .input('estado', sql.VarChar(50), nuevoEstado)
+            .input('motivo', sql.VarChar(500), accion === 'rechazar' ? (motivo || null) : null)
             .query(`
                 UPDATE usuarios 
-                SET estado = @estado, fecha_actualizacion = GETDATE()
+                SET estado = @estado, motivo_rechazo = @motivo, fecha_actualizacion = GETDATE()
                 WHERE id = @id
             `);
 
-        // Log del motivo de rechazo (en producción se guardaría en una tabla de auditoría)
-        if (accion === 'rechazar' && motivo) {
-            console.log(`[VERIFICACIÓN] Usuario ${id} (${usuario.nombre_completo}) RECHAZADO. Motivo: ${motivo}`);
-        }
+        await notificarVerificacionCuenta(id, accion === 'aprobar', motivo);
 
         res.json({
             mensaje: `Usuario ${accion === 'aprobar' ? 'aprobado' : 'rechazado'} exitosamente`,

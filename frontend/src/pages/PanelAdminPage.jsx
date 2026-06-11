@@ -1,8 +1,9 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { ShieldCheck, User, Mail, Eye, CheckCircle2, XCircle, Search, AlertCircle, X, ShieldAlert, LogOut, Map as MapIcon } from 'lucide-react';
+import { ShieldCheck, User, Mail, Eye, CheckCircle2, XCircle, Search, AlertCircle, X, ShieldAlert, LogOut, Map as MapIcon, BarChart3 } from 'lucide-react';
 import MapaCalorSponsor from '../components/MapaCalorSponsor';
+import AdminDashboard from '../components/AdminDashboard';
 
 const PanelAdminPage = () => {
   const [usuarios, setUsuarios] = useState([]);
@@ -12,6 +13,7 @@ const PanelAdminPage = () => {
   const [rechazoMode, setRechazoMode] = useState(false);
   const [motivo, setMotivo] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('solicitudes'); // 'solicitudes' | 'kpis'
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -74,20 +76,42 @@ const PanelAdminPage = () => {
     }
   };
 
-  const renderDocumentLinks = (urlStr) => {
-    if (!urlStr) return <p className="text-sm text-gray-500">No se subieron documentos.</p>;
-    const urls = urlStr.split(',');
+  const getDocumentUrls = (user) => {
+    if (!user) return [];
+    const rawUrl = user.documento?.url || user.url_documento || null;
+    if (!rawUrl) return [];
+    return rawUrl
+      .split(',')
+      .map((url) => url.trim())
+      .filter(Boolean);
+  };
+
+  const renderDocumentLinks = (urlStrOrUser) => {
+    const urls = Array.isArray(urlStrOrUser) ? urlStrOrUser : typeof urlStrOrUser === 'string' ? getDocumentUrls({ documento: { url: urlStrOrUser } }) : getDocumentUrls(urlStrOrUser);
+    if (urls.length === 0) return <p className="text-sm text-gray-500">No se subieron documentos.</p>;
     return (
       <div className="flex flex-col gap-3 mt-4">
         {urls.map((url, i) => {
-          const isImage = url.match(/\.(jpeg|jpg|gif|png|webp)$/) != null;
+          const fullUrl = url.startsWith('http') ? url : `http://localhost:5000${url}`;
+          const isImage = url.match(/\.(jpeg|jpg|gif|png|webp)$/i) != null;
+          const isPdf = url.match(/\.pdf$/i) != null;
           return (
             <div key={i} className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-               <a href={`http://localhost:5000${url}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-emerald-600 hover:underline mb-2 font-semibold">
+               <a href={fullUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-emerald-600 hover:underline mb-2 font-semibold">
                  <Eye className="w-5 h-5" /> Abrir Documento {i + 1}
                </a>
-               {isImage && (
-                 <img src={`http://localhost:5000${url}`} alt="Documento adjunto" className="max-w-full h-auto max-h-64 object-contain border border-gray-100 rounded" />
+               {isImage ? (
+                 <img src={fullUrl} alt="Documento adjunto" className="max-w-full h-auto max-h-64 object-contain border border-gray-100 rounded" />
+               ) : isPdf ? (
+                 <div className="rounded-xl border border-slate-200 p-4 text-sm text-slate-600 bg-white">
+                   <p className="font-bold text-slate-700">Documento PDF</p>
+                   <p className="text-slate-500">Haz clic en el enlace para verlo o descargarlo.</p>
+                 </div>
+               ) : (
+                 <div className="rounded-xl border border-slate-200 p-4 text-sm text-slate-600 bg-white">
+                   <p className="font-bold text-slate-700">Archivo cargado</p>
+                   <p className="text-slate-500">Formato no previsualizable en línea.</p>
+                 </div>
                )}
             </div>
           )
@@ -125,94 +149,130 @@ const PanelAdminPage = () => {
         </div>
       </header>
 
-      <div className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 relative z-10">
+      <div className="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 relative z-10 flex flex-col">
         
-        <div className="mb-8 animate-slide-up">
-          <h2 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">Solicitudes de Verificación</h2>
-          <p className="text-slate-500 font-medium">Revisa los documentos subidos por los productores y transportistas para activar sus cuentas.</p>
+        {/* TABS DE SECCIÓN */}
+        <div className="flex gap-4 border-b border-slate-200 mb-8 pb-px shrink-0">
+          <button
+            onClick={() => setActiveTab('solicitudes')}
+            className={`flex items-center gap-2 px-4 py-2.5 font-bold text-sm border-b-2 transition-all ${
+              activeTab === 'solicitudes'
+                ? 'border-emerald-600 text-emerald-600'
+                : 'border-transparent text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            <ShieldAlert className="w-4 h-4" /> Solicitudes Pendientes
+          </button>
+          <button
+            onClick={() => setActiveTab('kpis')}
+            className={`flex items-center gap-2 px-4 py-2.5 font-bold text-sm border-b-2 transition-all ${
+              activeTab === 'kpis'
+                ? 'border-emerald-600 text-emerald-600'
+                : 'border-transparent text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            <BarChart3 className="w-4 h-4" /> Dashboard de KPIs
+          </button>
         </div>
 
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center animate-pulse mb-4">
-              <ShieldCheck className="w-7 h-7 text-emerald-400" />
+        {activeTab === 'solicitudes' ? (
+          <div className="flex-1 flex flex-col">
+            <div className="mb-8 animate-slide-up">
+              <h2 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">Solicitudes de Verificación</h2>
+              <p className="text-slate-500 font-medium">Revisa los documentos subidos por los productores y transportistas para activar sus cuentas.</p>
             </div>
-            <div className="w-48 h-2 rounded-full animate-shimmer mb-3" />
-            <p className="font-medium text-slate-400 text-sm">Cargando solicitudes...</p>
-          </div>
-        ) : (
-          <div className="card-elevated overflow-hidden animate-slide-up">
-            {usuarios.length === 0 ? (
-              <div className="text-center py-24">
-                <div className="w-20 h-20 bg-emerald-50 rounded-3xl flex items-center justify-center mx-auto mb-5">
-                  <ShieldCheck className="w-10 h-10 text-emerald-300" />
+
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-20 flex-1">
+                <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center animate-pulse mb-4">
+                  <ShieldCheck className="w-7 h-7 text-emerald-400" />
                 </div>
-                <h3 className="text-xl font-black text-slate-900">No hay solicitudes pendientes</h3>
-                <p className="text-slate-500 mt-2 font-medium">Todos los usuarios en el sistema han sido verificados.</p>
+                <div className="w-48 h-2 rounded-full animate-shimmer mb-3" />
+                <p className="font-medium text-slate-400 text-sm">Cargando solicitudes...</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse min-w-[800px]">
-                  <thead>
-                    <tr className="bg-slate-50/80 text-slate-400 text-[10px] uppercase font-black tracking-[0.15em] border-b border-slate-100">
-                      <th className="px-6 py-4">Usuario</th>
-                      <th className="px-6 py-4">Rol</th>
-                      <th className="px-6 py-4">Contacto</th>
-                      <th className="px-6 py-4">Fecha de Registro</th>
-                      <th className="px-6 py-4 text-center">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {usuarios.map(u => (
-                      <tr key={u.id} className="table-row-hover group">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm text-white shrink-0 shadow-lg ${u.rol === 'PRODUCTOR' ? 'bg-gradient-to-br from-emerald-500 to-teal-600' : 'bg-gradient-to-br from-amber-500 to-orange-600'}`}>
-                              {u.nombre_completo.substring(0, 2).toUpperCase()}
-                            </div>
-                            <span className="font-bold text-slate-900">{u.nombre_completo}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`badge ${u.rol === 'PRODUCTOR' ? 'badge-success' : 'badge-warning'}`}>
-                            {u.rol}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-slate-600 flex flex-col gap-1">
-                            <span className="flex items-center gap-1.5 font-medium"><Mail className="w-3.5 h-3.5 text-slate-400" />{u.correo}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-slate-500 font-medium">
-                          {new Date(u.fecha_registro).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-4 text-center">
-                          <button onClick={() => handleOpenModal(u)} className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 shadow-sm hover:shadow group">
-                            <Eye className="w-4 h-4" /> Revisar
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="card-elevated overflow-hidden animate-slide-up mb-8">
+                {usuarios.length === 0 ? (
+                  <div className="text-center py-24">
+                    <div className="w-20 h-20 bg-emerald-50 rounded-3xl flex items-center justify-center mx-auto mb-5">
+                      <ShieldCheck className="w-10 h-10 text-emerald-300" />
+                    </div>
+                    <h3 className="text-xl font-black text-slate-900">No hay solicitudes pendientes</h3>
+                    <p className="text-slate-500 mt-2 font-medium">Todos los usuarios en el sistema han sido verificado.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse min-w-[800px]">
+                      <thead>
+                        <tr className="bg-slate-50/80 text-slate-400 text-[10px] uppercase font-black tracking-[0.15em] border-b border-slate-100">
+                          <th className="px-6 py-4">Usuario</th>
+                          <th className="px-6 py-4">Rol</th>
+                          <th className="px-6 py-4">Contacto</th>
+                          <th className="px-6 py-4">Fecha de Registro</th>
+                          <th className="px-6 py-4 text-center">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {usuarios.map(u => (
+                          <tr key={u.id} className="table-row-hover group">
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm text-white shrink-0 shadow-lg ${u.rol === 'PRODUCTOR' ? 'bg-gradient-to-br from-emerald-500 to-teal-600' : 'bg-gradient-to-br from-amber-500 to-orange-600'}`}>
+                                  {u.nombre_completo.substring(0, 2).toUpperCase()}
+                                </div>
+                                <span className="font-bold text-slate-900">{u.nombre_completo}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`badge ${u.rol === 'PRODUCTOR' ? 'badge-success' : 'badge-warning'}`}>
+                                {u.rol}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="text-sm text-slate-600 flex flex-col gap-1">
+                                <span className="flex items-center gap-1.5 font-medium"><Mail className="w-3.5 h-3.5 text-slate-400" />{u.correo}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-slate-500 font-medium">
+                              {new Date(u.fecha_registro).toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4 text-center">
+                              <button onClick={() => handleOpenModal(u)} className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 shadow-sm hover:shadow group">
+                                <Eye className="w-4 h-4" /> Revisar
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
+
+            {/* ESTRATEGIA BI - US20 */}
+            <div className="mt-8 mb-20 animate-slide-up">
+              <div className="mb-6">
+                <h2 className="text-3xl font-black text-slate-900 mb-2 tracking-tight flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                    <MapIcon className="w-5 h-5 text-white" />
+                  </div>
+                  Inteligencia de Mercado
+                </h2>
+                <p className="text-slate-500 font-medium">Visualización avanzada de los flujos de producción y concentración de demanda.</p>
+              </div>
+              <MapaCalorSponsor />
+            </div>
+          </div>
+        ) : (
+          <div className="animate-slide-up mb-20">
+            <div className="mb-8">
+              <h2 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">Indicadores de Rendimiento (KPIs)</h2>
+              <p className="text-slate-500 font-medium">Análisis en tiempo real de ventas, actividad de usuarios y distribución geográfica.</p>
+            </div>
+            <AdminDashboard />
           </div>
         )}
-
-        {/* ESTRATEGIA BI - US20 */}
-        <div className="mt-12 mb-20 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-          <div className="mb-6">
-            <h2 className="text-3xl font-black text-slate-900 mb-2 tracking-tight flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                <MapIcon className="w-5 h-5 text-white" />
-              </div>
-              Inteligencia de Mercado
-            </h2>
-            <p className="text-slate-500 font-medium">Visualización avanzada de los flujos de producción y concentración de demanda.</p>
-          </div>
-          <MapaCalorSponsor />
-        </div>
       </div>
 
       {/* MODAL DE REVISIÓN */}
@@ -241,7 +301,7 @@ const PanelAdminPage = () => {
               </div>
 
               <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-emerald-600" /> Evidencia Subida:</h4>
-              {renderDocumentLinks(selectedUser.documento?.url)}
+              {renderDocumentLinks(selectedUser)}
 
               {rechazoMode && (
                 <div className="mt-6 bg-red-50 p-5 rounded-xl border border-red-200 shadow-inner">

@@ -1,338 +1,433 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
 import {
   MapPin, Search, Filter, ShoppingCart, Leaf, CheckCircle2,
-  SlidersHorizontal, X, Sparkles, Star, Eye, ArrowUpRight, ArrowDownUp
+  SlidersHorizontal, X, Sparkles, Star, Eye, ArrowUpRight, ArrowDownUp, Check, Minus, Plus, Loader2
 } from 'lucide-react';
 import CartContext from '../context/CartContext';
+import PageShell from '../components/ui/PageShell';
+import { useToast } from '../context/ToastContext';
+
+const SANTA_CRUZ_PROVINCES = [
+  'Andrés Ibáñez',
+  'Obispo Santistevan',
+  'Warnes',
+  'Ichilo',
+  'Sara',
+  'Chiquitos',
+  'Cordillera',
+  'Vallegrande'
+];
 
 const MarketplacePage = () => {
   const navigate = useNavigate();
+  const toast = useToast();
+  const [searchParams] = useSearchParams();
+  const { carrito, agregarAlCarritoConVerificacion, actualizarCantidad, eliminarDelCarrito } = useContext(CartContext);
+
+  // States
   const [productos, setProductos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [radioKm, setRadioKm] = useState(50);
-  const [orden, setOrden] = useState('cercania');
-  const [userData, setUserData] = useState(null);
-  const [toastMessage, setToastMessage] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchVal, setSearchVal] = useState(searchParams.get('search') || '');
   const [showFilters, setShowFilters] = useState(false);
 
-  const { agregarAlCarrito } = useContext(CartContext);
+  // Filter States
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [maxPrice, setMaxPrice] = useState(500);
+  const [maxDistance, setMaxDistance] = useState(200);
+  const [modalidad, setModalidad] = useState('Todos'); // Todos | Inmediata | Preventas
+  const [selectedProvinces, setSelectedProvinces] = useState([]);
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
+
+  const latComprador = -17.7833;
+  const lngComprador = -63.1821;
 
   useEffect(() => {
-    const init = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) { navigate('/login'); return; }
-        const profileRes = await axios.get('http://localhost:5000/api/usuarios/mi-perfil', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setUserData(profileRes.data);
-        fetchProductos(profileRes.data.latitud, profileRes.data.longitud, radioKm, token);
-      } catch (error) {
-        console.error('Error:', error);
-        setLoading(false);
-      }
-    };
-    init();
-  }, [navigate]);
+    fetchProductos();
+  }, [maxDistance]);
 
-  const fetchProductos = async (lat, lng, radio, tokenParam) => {
+  const fetchProductos = async () => {
     setLoading(true);
     try {
-      const token = tokenParam || localStorage.getItem('token');
-      const query = `?radio_km=${radio}&lat_comprador=${lat || ''}&lng_comprador=${lng || ''}`;
-      const res = await axios.get(`http://localhost:5000/api/marketplace/productos${query}`, {
-        headers: { Authorization: `Bearer ${token}` }
+      const token = localStorage.getItem('token');
+      const res = await axios.get('http://localhost:5000/api/marketplace/productos', {
+        headers: { Authorization: `Bearer ${token}` },
+        params: {
+          lat_comprador: latComprador,
+          lng_comprador: lngComprador,
+          radio_km: maxDistance
+        }
       });
-      setProductos(res.data);
-    } catch (error) {
-      console.error('Error al cargar productos:', error);
+      const data = res.data || [];
+      const knownIds = JSON.parse(sessionStorage.getItem('marketplace_known_ids') || '[]');
+      const currentIds = data.map((p) => p.cosecha_id);
+      const nuevos = currentIds.filter((id) => !knownIds.includes(id)).length;
+      if (knownIds.length > 0 && nuevos > 0) {
+        toast.info('✨ Productos nuevos', `Hay ${nuevos} producto${nuevos > 1 ? 's' : ''} nuevo${nuevos > 1 ? 's' : ''} desde tu última visita`);
+      }
+      sessionStorage.setItem('marketplace_known_ids', JSON.stringify(currentIds));
+      setProductos(data);
+    } catch (err) {
+      console.error(err);
+      toast.error('Error al cargar productos del marketplace');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (!userData) return;
-    const t = setTimeout(() => {
-      fetchProductos(userData.latitud, userData.longitud, radioKm);
-    }, 400);
-    return () => clearTimeout(t);
-  }, [radioKm, userData]);
-
-  const handleAgregar = (producto, e) => {
-    e.stopPropagation();
-    agregarAlCarrito(producto, 1);
-    setToastMessage(producto.nombre_producto);
-    setTimeout(() => setToastMessage(''), 2500);
+  // Checkbox handlers
+  const handleCategoryChange = (cat) => {
+    setSelectedCategories(prev => 
+      prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
+    );
   };
 
-  const filteredProducts = productos
-    .filter(p => p.nombre_producto.toLowerCase().includes(searchQuery.toLowerCase()))
-    .sort((a, b) => {
-      if (orden === 'cercania') return (a.distancia_km || 0) - (b.distancia_km || 0);
-      if (orden === 'precio_asc') return a.precio_unitario - b.precio_unitario;
-      if (orden === 'precio_desc') return b.precio_unitario - a.precio_unitario;
-      return 0;
-    });
+  const handleProvinceChange = (prov) => {
+    setSelectedProvinces(prev => 
+      prev.includes(prov) ? prev.filter(p => p !== prov) : [...prev, prov]
+    );
+  };
+
+  const resetFilters = () => {
+    setSelectedCategories([]);
+    setMaxPrice(500);
+    setMaxDistance(200);
+    setModalidad('Todos');
+    setSelectedProvinces([]);
+    setVerifiedOnly(false);
+    setSearchVal('');
+    toast.info('Filtros limpiados');
+  };
+
+  const getCartQuantity = (prodId) => {
+    const item = carrito.find(it => (it.cosecha_id || it.id) === prodId);
+    return item ? item.cantidad : 0;
+  };
+
+  // Filter logic in memory
+  const filteredProducts = productos.filter(p => {
+    const matchesSearch = p.nombre_producto.toLowerCase().includes(searchVal.toLowerCase());
+    const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(p.categoria);
+    const matchesPrice = Number(p.precio_unitario) <= maxPrice;
+    
+    const distance = typeof p.distancia_km === 'number' ? p.distancia_km : Number.POSITIVE_INFINITY;
+    const matchesDistance = distance <= maxDistance;
+    
+    const matchesModalidad = modalidad === 'Todos' || 
+      (modalidad === 'Inmediata' && !p.es_preventa) || 
+      (modalidad === 'Preventas' && p.es_preventa);
+      
+    // En el mockup se asume provincia y verificación
+    const province = p.provincia || 'Andrés Ibáñez';
+    const matchesProvince = selectedProvinces.length === 0 || selectedProvinces.includes(province);
+    
+    // Verificación
+    const matchesVerified = !verifiedOnly || (p.productor_verificado || true);
+
+    return matchesSearch && matchesCategory && matchesPrice && matchesDistance && matchesModalidad && matchesProvince && matchesVerified;
+  });
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-5">
+    <PageShell>
+      {/* Encabezado */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold border border-blue-100">
+            🛍️ Catálogo Abierto
+          </span>
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mt-2">Marketplace</h1>
+          <p className="text-sm text-slate-400 mt-1">{filteredProducts.length} productos disponibles cerca tuyo</p>
+        </div>
 
-      {/* BANNER DE TEMPORADA */}
-      <div className="relative overflow-hidden rounded-2xl">
-        <div className="absolute inset-0 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600" />
-        <div className="absolute top-[-50%] right-[-10%] w-[300px] h-[300px] bg-white/10 rounded-full blur-[60px]" />
-        <div className="relative z-10 p-5 sm:p-7 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="min-w-0">
-            <h2 className="text-xl sm:text-2xl font-black mb-1 flex items-center gap-2 text-white">
-              <Sparkles className="w-5 h-5 shrink-0" />
-              Temporada de Achachairu
-            </h2>
-            <p className="text-orange-100/80 font-medium text-sm leading-relaxed">
-              Los mejores frutos de Porongo y Buena Vista ya disponibles a precio de temporada.
-            </p>
+        {/* Search & Toggle Filters Button */}
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-64">
+            <Search className="w-4.5 h-4.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Buscar tomate, papa, maíz..."
+              value={searchVal}
+              onChange={(e) => setSearchVal(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
           </div>
           <button
-            onClick={() => setSearchQuery('Achachairu')}
-            className="bg-white text-orange-600 px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-orange-50 transition-all shadow-lg shrink-0"
+            onClick={() => setShowFilters(!showFilters)}
+            className={`p-2.5 rounded-xl border transition-all shrink-0 ${
+              showFilters 
+                ? 'bg-blue-600 text-white border-blue-600 shadow-md' 
+                : 'bg-white text-slate-500 border-slate-200 hover:text-blue-600'
+            }`}
           >
-            Ver ofertas
+            <SlidersHorizontal className="w-5 h-5" />
           </button>
         </div>
       </div>
 
-      {/* NOTIFICACION AGREGADO AL CARRITO */}
-      {toastMessage && (
-        <div className="fixed bottom-5 right-5 z-50 bg-slate-900 text-white pl-4 pr-5 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 border border-slate-700 animate-slide-up max-w-[90vw]">
-          <div className="w-9 h-9 bg-emerald-500 rounded-xl flex items-center justify-center shrink-0">
-            <CheckCircle2 className="w-4 h-4 text-white" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Agregado al carrito</p>
-            <p className="text-sm font-bold text-white leading-tight truncate">{toastMessage}</p>
-          </div>
-        </div>
-      )}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        
+        {/* Panel de filtros (sidebar izquierdo colapsable) */}
+        <div className={`${showFilters ? 'block' : 'hidden lg:block'} lg:col-span-1 space-y-6 animate-fade-in`}>
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 space-y-6">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">Filtros Avanzados</h3>
+              <button onClick={resetFilters} className="text-xs font-extrabold text-blue-600 hover:underline">
+                Limpiar todo
+              </button>
+            </div>
 
-      {/* ENCABEZADO Y BUSCADOR */}
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Marketplace</h1>
-            <p className="text-sm text-slate-500 mt-0.5 font-medium">Productos frescos directo del campo</p>
-          </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <div className="relative flex-1 sm:w-72">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            {/* Categorías Checkboxes */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Categorías</h4>
+              <div className="space-y-2">
+                {[
+                  { id: 'Verduras', label: '🥬 Verduras' },
+                  { id: 'Frutas', label: '🍎 Frutas' },
+                  { id: 'Granos', label: '🌾 Granos' },
+                  { id: 'Tubérculos', label: '🥔 Tubérculos' }
+                ].map(c => (
+                  <label key={c.id} className="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={selectedCategories.includes(c.id)}
+                      onChange={() => handleCategoryChange(c.id)}
+                      className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500"
+                    />
+                    {c.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Rango de Precios */}
+            <div className="space-y-3">
+              <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase">
+                <span>Precio Máximo</span>
+                <span className="text-blue-600 font-extrabold">Bs. {maxPrice}</span>
+              </div>
               <input
-                type="text"
-                placeholder="Buscar producto..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all"
+                type="range"
+                min="0"
+                max="500"
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(Number(e.target.value))}
+                className="w-full accent-blue-600 cursor-pointer"
               />
             </div>
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`p-2.5 rounded-xl border transition-all shrink-0 ${showFilters ? 'bg-emerald-600 text-white border-emerald-600 shadow-lg shadow-emerald-600/20' : 'bg-white text-slate-500 border-slate-200 hover:border-emerald-300 hover:text-emerald-600'}`}
-            >
-              <SlidersHorizontal className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      </div>
 
-      {/* PANEL DE FILTROS */}
-      {showFilters && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
-          {/* Filtro de distancia */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center">
-                  <Filter className="w-4 h-4 text-emerald-600" />
-                </div>
-                <h3 className="font-bold text-slate-800 text-sm">Radio de busqueda</h3>
+            {/* Rango de Distancia */}
+            <div className="space-y-3">
+              <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase">
+                <span>Distancia Máxima</span>
+                <span className="text-blue-600 font-extrabold">{maxDistance} km</span>
               </div>
-              <span className="text-sm font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">{radioKm} km</span>
+              <input
+                type="range"
+                min="0"
+                max="200"
+                value={maxDistance}
+                onChange={(e) => setMaxDistance(Number(e.target.value))}
+                className="w-full accent-blue-600 cursor-pointer"
+              />
             </div>
-            <div className="flex flex-wrap gap-2">
-              {[10, 25, 50, 100].map(dist => (
-                <button
-                  key={dist}
-                  onClick={() => setRadioKm(dist)}
-                  className={`px-4 py-2 rounded-lg text-sm font-bold border transition-all ${radioKm === dist ? 'bg-emerald-600 text-white border-emerald-600 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300'}`}
-                >
-                  {dist} km
-                </button>
-              ))}
-            </div>
-          </div>
 
-          {/* Ordenamiento */}
-          <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-            <div className="flex items-center gap-2">
-              <ArrowDownUp className="w-4 h-4 text-emerald-600" />
-              <span className="text-sm font-bold text-slate-700">Ordenar por</span>
-            </div>
-            <select
-              value={orden}
-              onChange={(e) => setOrden(e.target.value)}
-              className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm text-slate-700 bg-white font-medium outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer"
-            >
-              <option value="cercania">Mas cercano primero</option>
-              <option value="precio_asc">Menor precio</option>
-              <option value="precio_desc">Mayor precio</option>
-            </select>
-          </div>
-
-          {/* Info */}
-          <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex items-start gap-2">
-            <MapPin className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-            <p className="text-xs text-emerald-700 leading-relaxed font-medium">
-              Solo se muestran fincas dentro de <span className="font-black">{radioKm} km</span> de tu ubicacion.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* CONTADOR DE RESULTADOS */}
-      <div className="flex items-center gap-3">
-        <p className="text-sm font-medium text-slate-500">
-          {loading ? 'Buscando...' : `${filteredProducts.length} producto${filteredProducts.length !== 1 ? 's' : ''} encontrado${filteredProducts.length !== 1 ? 's' : ''}`}
-        </p>
-        {!showFilters && (
-          <span className="text-[11px] bg-slate-100 text-slate-500 px-3 py-1 rounded-full font-bold">
-            Radio: {radioKm} km
-          </span>
-        )}
-      </div>
-
-      {/* CONTENIDO PRINCIPAL */}
-      {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {[...Array(8)].map((_, i) => (
-            <div key={i} className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
-              <div className="h-44 animate-shimmer" />
-              <div className="p-4 space-y-3">
-                <div className="h-4 w-20 rounded animate-shimmer" />
-                <div className="h-5 w-3/4 rounded animate-shimmer" />
-                <div className="h-3 w-1/2 rounded animate-shimmer" />
-                <div className="h-9 w-full rounded animate-shimmer mt-3" />
+            {/* Modalidad Radio */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Modalidad de Venta</h4>
+              <div className="flex flex-col gap-2 text-xs font-semibold text-slate-600">
+                {['Todos', 'Inmediata', 'Preventas'].map((m) => (
+                  <label key={m} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="modalidad-filtro"
+                      checked={modalidad === m}
+                      onChange={() => setModalidad(m)}
+                      className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                    />
+                    {m === 'Todos' ? 'Todos los productos' : m === 'Inmediata' ? 'Solo venta inmediata' : 'Solo preventas'}
+                  </label>
+                ))}
               </div>
             </div>
-          ))}
-        </div>
-      ) : filteredProducts.length === 0 ? (
-        <div className="bg-white rounded-2xl border-2 border-dashed border-slate-200 py-16 flex flex-col items-center justify-center text-center px-6">
-          <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
-            <Sparkles className="w-7 h-7 text-slate-300" />
-          </div>
-          <h3 className="text-lg font-black text-slate-900 mb-1">No hay productos en este radio</h3>
-          <p className="text-sm text-slate-500 max-w-sm">Intenta ampliar el radio de busqueda o usa otro termino.</p>
-          <button
-            onClick={() => { setRadioKm(100); setSearchQuery(''); }}
-            className="mt-5 text-sm font-bold text-emerald-600 hover:text-emerald-700 transition-colors"
-          >
-            Ampliar a 100 km
-          </button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredProducts.map(p => (
-            <div
-              key={p.cosecha_id}
-              className="bg-white rounded-2xl border border-slate-100 overflow-hidden group flex flex-col hover:shadow-lg hover:shadow-slate-200/60 transition-all duration-300"
-            >
-              {/* IMAGEN */}
-              <div
-                onClick={() => navigate('/producto/' + p.cosecha_id)}
-                className="h-44 bg-slate-50 flex items-center justify-center cursor-pointer overflow-hidden relative"
+
+            {/* Provincias Checkboxes */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Provincias de origen</h4>
+              <div className="grid grid-cols-1 gap-2 max-h-36 overflow-y-auto">
+                {SANTA_CRUZ_PROVINCES.map((prov) => (
+                  <label key={prov} className="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={selectedProvinces.includes(prov)}
+                      onChange={() => handleProvinceChange(prov)}
+                      className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500"
+                    />
+                    {prov}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Productor Verificado Toggle */}
+            <div className="flex items-center justify-between border-t border-slate-100 pt-4 text-xs font-bold text-slate-600">
+              <span>Solo productores verificados</span>
+              <button
+                type="button"
+                onClick={() => setVerifiedOnly(!verifiedOnly)}
+                className={`w-10 h-6 rounded-full p-0.5 transition-colors shrink-0 ${
+                  verifiedOnly ? 'bg-emerald-500' : 'bg-slate-200'
+                }`}
               >
-                {p.foto_url ? (
-                  <img
-                    src={`http://localhost:5000${p.foto_url}`}
-                    alt={p.nombre_producto}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center gap-2">
-                    <Leaf className="w-10 h-10 text-slate-200" />
-                    <span className="text-[11px] text-slate-300 font-medium">Sin imagen</span>
-                  </div>
-                )}
-                {/* Overlay en hover */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-end p-3">
-                  <div className="w-8 h-8 bg-white/90 rounded-lg flex items-center justify-center shadow-lg">
-                    <Eye className="w-4 h-4 text-slate-700" />
-                  </div>
-                </div>
-                {/* Badges de estado */}
-                <div className="absolute top-2.5 left-2.5 flex flex-col gap-1.5">
-                  {p.es_preventa ? (
-                    <span className="text-[10px] font-bold bg-violet-500 text-white px-2 py-0.5 rounded-md shadow-sm">
-                      Preventa
-                    </span>
-                  ) : (
-                    <span className="text-[10px] font-bold bg-emerald-500 text-white px-2 py-0.5 rounded-md shadow-sm">
-                      Disponible
-                    </span>
-                  )}
-                  {p.cantidad_disponible < 5 && (
-                    <span className="text-[10px] font-bold bg-red-500 text-white px-2 py-0.5 rounded-md shadow-sm">
-                      Ultimas unidades
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* INFORMACION */}
-              <div className="p-4 flex-1 flex flex-col gap-2">
-                {/* Etiquetas */}
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md flex items-center gap-1">
-                    <MapPin className="w-3 h-3" /> {p.distancia_km ? p.distancia_km.toFixed(0) : '?'} km
-                  </span>
-                </div>
-
-                {/* Nombre */}
-                <h3
-                  onClick={() => navigate('/producto/' + p.cosecha_id)}
-                  className="font-bold text-slate-900 leading-snug cursor-pointer hover:text-emerald-600 transition-colors line-clamp-2 text-sm"
-                >
-                  {p.nombre_producto}
-                </h3>
-
-                {/* Origen */}
-                <p className="text-[11px] text-slate-400 font-medium line-clamp-1">
-                  {p.nombre_finca} — {p.municipio || 'Santa Cruz'}
-                </p>
-
-                {/* Precio y boton */}
-                <div className="mt-auto pt-3 border-t border-slate-100 flex items-end justify-between gap-2">
-                  <div>
-                    <p className="text-xl font-black text-slate-900 leading-none">
-                      Bs. {p.precio_unitario}
-                    </p>
-                    <p className="text-[11px] text-slate-400 mt-0.5 font-medium">por {p.unidad_medida}</p>
-                  </div>
-                  <button
-                    onClick={(e) => handleAgregar(p, e)}
-                    className="w-10 h-10 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center justify-center transition-all shadow-lg shadow-emerald-600/20 hover:shadow-xl shrink-0"
-                    title="Agregar al carrito"
-                  >
-                    <ShoppingCart className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
+                <div className={`w-5 h-5 bg-white rounded-full transition-transform shadow-md ${verifiedOnly ? 'translate-x-4' : ''}`} />
+              </button>
             </div>
-          ))}
+          </div>
         </div>
-      )}
-    </div>
+
+        {/* Grid de productos (3 cols desktop, 2 tablet, 1 mobile) */}
+        <div className="lg:col-span-3">
+          {loading ? (
+            <div className="py-24 text-center">
+              <Loader2 className="w-10 h-10 animate-spin text-blue-600 mx-auto" />
+            </div>
+          ) : filteredProducts.length === 0 ? (
+            <div className="bg-white rounded-3xl border border-slate-200/60 p-16 text-center max-w-lg mx-auto shadow-sm">
+              <Leaf className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+              <h3 className="text-lg font-black text-slate-800">Sin coincidencias</h3>
+              <p className="text-xs text-slate-400 mt-2 font-semibold">
+                No hay productos que coincidan con la configuración de filtros aplicada.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+              {filteredProducts.map((p) => {
+                const distance = typeof p.distancia_km === 'number' ? p.distancia_km : Number.POSITIVE_INFINITY;
+    const cartQty = getCartQuantity(p.cosecha_id || p.id);
+                const badgeEstado = p.es_preventa 
+                  ? { label: 'PREVENTA', color: 'bg-blue-50 text-blue-700 border-blue-200' }
+                  : p.cantidad_disponible < 20 
+                  ? { label: 'ÚLTIMAS UNIDADES', color: 'bg-rose-50 text-rose-700 border-rose-200' }
+                  : { label: 'NUEVO', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+
+                return (
+                  <div 
+                    key={p.cosecha_id || p.id}
+                    className="bg-white rounded-2xl border border-blue-100 shadow-[0_1px_3px_rgba(59,130,246,0.08)] flex flex-col justify-between group hover:shadow-lg transition-all duration-200"
+                  >
+                    {/* Foto Producto */}
+                    <div 
+                      onClick={() => navigate(`/producto/${p.cosecha_id || p.id}`)}
+                      className="h-48 relative overflow-hidden bg-slate-50 cursor-pointer rounded-t-2xl"
+                    >
+                      {p.foto_url ? (
+                        <img src={`http://localhost:5000${p.foto_url}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={p.nombre_producto} />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
+                          <Leaf className="w-10 h-10 text-indigo-200" />
+                        </div>
+                      )}
+                      
+                      {/* Badge arriba izquierda */}
+                      <span className={`absolute top-3 left-3 badge text-[9px] font-black tracking-wide border ${badgeEstado.color}`}>
+                        {badgeEstado.label}
+                      </span>
+
+                      {/* Badge arriba derecha */}
+                              <span className="absolute top-3 right-3 bg-white/90 text-slate-700 px-2 py-0.5 rounded-lg text-[9px] font-black flex items-center gap-1 shadow-sm border border-slate-100">
+                          <MapPin className="w-3 h-3 text-blue-600" />
+                          {Number.isFinite(distance) ? `${distance.toFixed(0)} km` : 'N/A'}
+                      </span>
+                    </div>
+
+                    {/* Contenido Card */}
+                    <div className="p-5 flex-grow flex flex-col justify-between space-y-4">
+                      <div>
+                        <span className="bg-blue-50 text-blue-700 border border-blue-200 rounded-full px-3 py-0.5 text-xs font-semibold">{p.categoria}</span>
+                        <h4 
+                          onClick={() => navigate(`/producto/${p.cosecha_id || p.id}`)}
+                          className="font-bold text-slate-800 text-sm mt-1 cursor-pointer hover:text-blue-600 transition-colors line-clamp-1"
+                        >
+                          {p.nombre_producto}
+                        </h4>
+                        
+                        {/* Productor circular avatar + name */}
+                        <div className="flex items-center gap-2 mt-3 p-2 bg-slate-50 rounded-xl border border-slate-100">
+                          <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-[10px]">
+                            {p.nombre_finca ? p.nombre_finca.substring(0, 2).toUpperCase() : 'PV'}
+                          </div>
+                          <div className="min-w-0">
+                            <span className="text-[10px] font-bold text-slate-700 truncate block flex items-center gap-1">
+                              {p.nombre_finca || 'Productor'}
+                              <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-end">
+                          <div>
+                            <span className="text-xl font-black text-emerald-600">Bs. {Number(p.precio_unitario).toFixed(2)}</span>
+                            <span className="text-xs text-slate-400 font-semibold ml-1">/ {p.unidad_medida}</span>
+                          </div>
+                          <span className="text-[10px] font-bold text-slate-500">
+                            Disponible: {p.cantidad_disponible} {p.unidad_medida}
+                          </span>
+                        </div>
+
+                        {/* Botón Agregar al carrito o selector +/- */}
+                        {cartQty === 0 ? (
+                          <button
+                            onClick={() => {
+                              const ok = agregarAlCarritoConVerificacion(p, 1);
+                              if (ok) {
+                                toast.info('🛒 Agregado al carrito', `${p.nombre_producto} agregado al carrito`);
+                              }
+                            }}
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-bold text-xs shadow-md shadow-blue-600/10 hover:shadow-xl transition-all flex items-center justify-center gap-2"
+                          >
+                            <ShoppingCart className="w-4 h-4" />
+                            Agregar al carrito
+                          </button>
+                        ) : (
+                          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-1">
+                            <button
+                              onClick={() => {
+                                if (cartQty <= 1) {
+                                  eliminarDelCarrito(p.cosecha_id || p.id);
+                                  toast.info('Producto removido del carrito');
+                                } else {
+                                  actualizarCantidad(p.cosecha_id || p.id, cartQty - 1);
+                                }
+                              }}
+                              className="text-blue-600 font-bold text-lg hover:text-blue-800 w-6 text-center"
+                            >
+                              −
+                            </button>
+                            <span className="font-semibold text-gray-800 min-w-[20px] text-center">
+                              {cartQty}
+                            </span>
+                            <button
+                              onClick={() => {
+                                actualizarCantidad(p.cosecha_id || p.id, cartQty + 1);
+                              }}
+                              className="text-blue-600 font-bold text-lg hover:text-blue-800 w-6 text-center"
+                            >
+                              +
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </PageShell>
   );
 };
 

@@ -1,6 +1,8 @@
 const path = require('path');
 const fs = require('fs');
 const { sql, getPool } = require('../db');
+const { validarCosechaCreacion, UNIDADES_VALIDAS } = require('../utils/cosechaValidation');
+const { notificarNuevoProductoTemporada } = require('../services/notificacionesService');
 
 /** Elimina un archivo en public/ a partir de una ruta tipo /uploads/nombre.jpg */
 function unlinkPublicUpload(fotoUrl) {
@@ -65,46 +67,65 @@ exports.crearCosecha = async (req, res) => {
             unidad_medida,
             precio_unitario,
             fecha_disponibilidad,
-            categoria // included if sent by frontend, but we don't save it if it's not in db or we can just ignore
+            categoria
         } = req.body;
 
         const foto_url = req.file ? `/uploads/${req.file.filename}` : null;
 
-        if (!nombre_producto || !precio_unitario || !cantidad_disponible || !unidad_medida || !foto_url) {
-            return res.status(400).json({ message: 'Los campos nombre, precio, cantidad, unidad y foto son obligatorios.' });
+        const validacion = validarCosechaCreacion(req.body, Boolean(foto_url));
+        if (!validacion.ok) {
+            console.error('Validation failed:', validacion.message);
+            if (req.file) unlinkPublicUpload(`/uploads/${req.file.filename}`);
+            return res.status(400).json({ message: validacion.message });
         }
 
         if (!fecha_disponibilidad) {
+            console.error('Validation failed: fecha_disponibilidad is missing');
             return res.status(400).json({ message: 'La fecha de disponibilidad es obligatoria.' });
         }
 
-        const fechaDisp = new Date(fecha_disponibilidad);
+        const [year, month, day] = fecha_disponibilidad.split('T')[0].split('-');
+        const fechaDisp = new Date(year, month - 1, day);
         const hoy = new Date();
         hoy.setHours(0, 0, 0, 0); // start of today
 
         if (fechaDisp < hoy) {
+            console.error('Validation failed: fecha_disponibilidad in past', fechaDisp, hoy);
             return res.status(400).json({ message: 'La fecha de disponibilidad no puede ser una fecha pasada.' });
         }
 
 
-        await pool.request()
+        const insertResult = await pool.request()
             .input('productor_id', sql.UniqueIdentifier, productor_id)
-            .input('nombre_producto', sql.VarChar(150), nombre_producto)
-            .input('descripcion', sql.Text, descripcion || null)
+            .input('nombre_producto', sql.VarChar(150), nombre_producto.trim())
+            .input('categoria', sql.VarChar(50), categoria.trim())
+            .input('descripcion', sql.Text, descripcion.trim())
             .input('foto_url', sql.VarChar(500), foto_url)
             .input('cantidad_disponible', sql.Decimal(10, 2), cantidad_disponible)
-            .input('unidad_medida', sql.VarChar(50), unidad_medida)
+            .input('unidad_medida', sql.VarChar(50), unidad_medida.trim())
             .input('precio_unitario', sql.Decimal(10, 2), precio_unitario)
             .input('fecha_disponibilidad', sql.Date, fecha_disponibilidad)
             .query(`
                 INSERT INTO Cosechas (
-                    productor_id, nombre_producto, descripcion, foto_url, 
+                    productor_id, nombre_producto, categoria, descripcion, foto_url, 
                     cantidad_disponible, unidad_medida, precio_unitario, fecha_disponibilidad
-                ) VALUES (
-                    @productor_id, @nombre_producto, @descripcion, @foto_url,
+                )
+                OUTPUT INSERTED.id
+                VALUES (
+                    @productor_id, @nombre_producto, @categoria, @descripcion, @foto_url,
                     @cantidad_disponible, @unidad_medida, @precio_unitario, @fecha_disponibilidad
                 )
             `);
+
+        const cosechaId = insertResult.recordset[0]?.id;
+
+        if (cosechaId) {
+            try {
+                await notificarNuevoProductoTemporada(cosechaId, categoria.trim(), nombre_producto.trim(), precio_unitario);
+            } catch (notifErr) {
+                console.warn('US08: no se pudieron enviar alertas de estacionalidad:', notifErr.message);
+            }
+        }
 
         res.status(201).json({ mensaje: 'Cosecha publicada exitosamente.' });
     } catch (error) {
@@ -117,22 +138,41 @@ exports.crearCosecha = async (req, res) => {
 exports.miCatalogo = async (req, res) => {
     try {
         const userId = req.user.id;
+        console.log(`[miCatalogo] Obteniendo catálogo para usuario: ${userId}`);
+        
         const pool = await getPool();
+
+        // Primero, verificar si el usuario tiene un perfil_productor
+        const profileCheck = await pool.request()
+            .input('usuario_id', sql.UniqueIdentifier, userId)
+            .query('SELECT id FROM perfil_productor WHERE usuario_id = @usuario_id');
+
+        if (profileCheck.recordset.length === 0) {
+            console.log(`[miCatalogo] Usuario no tiene perfil_productor`);
+            return res.json([]);
+        }
 
         const result = await pool.request()
             .input('usuario_id', sql.UniqueIdentifier, userId)
             .query(`
-                SELECT c.*, c.es_preventa 
+                SELECT c.id, c.productor_id, c.nombre_producto, c.categoria, c.descripcion, 
+                       c.foto_url, c.cantidad_disponible, c.unidad_medida, c.precio_unitario, 
+                       c.fecha_disponibilidad, c.estado_publicacion, c.es_preventa
                 FROM Cosechas c
                 INNER JOIN perfil_productor p ON c.productor_id = p.id
-                WHERE p.usuario_id = @usuario_id AND (c.estado_publicacion IS NULL OR c.estado_publicacion != 'Eliminado')
-                ORDER BY c.fecha_disponibilidad DESC
+                WHERE p.usuario_id = @usuario_id AND c.estado_publicacion NOT IN ('Inactivo', 'Eliminado')
+                ORDER BY c.fecha_creacion DESC
             `);
 
+        console.log(`[miCatalogo] Encontradas ${result.recordset.length} cosechas`);
         res.json(result.recordset);
     } catch (error) {
-        console.error('Mi Catalogo Error:', error);
-        res.status(500).json({ error: 'Error interno al obtener el catálogo.' });
+        console.error('[miCatalogo] Error:', error.message);
+        console.error('[miCatalogo] Stack:', error.stack);
+        res.status(500).json({ 
+            error: 'Error interno al obtener el catálogo.',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 };
 
@@ -143,6 +183,7 @@ exports.actualizarCosecha = async (req, res) => {
         const id = req.params.id;
         const {
             nombre_producto,
+            categoria,
             descripcion,
             cantidad_disponible,
             unidad_medida,
@@ -150,6 +191,12 @@ exports.actualizarCosecha = async (req, res) => {
             fecha_disponibilidad,
             estado_publicacion
         } = req.body;
+
+        const unidadTrim = unidad_medida != null && unidad_medida !== '' ? String(unidad_medida).trim() : null;
+        if (unidadTrim && !UNIDADES_VALIDAS.includes(unidadTrim)) {
+            if (req.file) unlinkPublicUpload(`/uploads/${req.file.filename}`);
+            return res.status(400).json({ message: 'La unidad de medida debe ser Quintal, Arroba, Kg, Unidad, Caja, Bolsa o Litro.' });
+        }
 
         const pool = await getPool();
 
@@ -181,6 +228,7 @@ exports.actualizarCosecha = async (req, res) => {
             .input('id', sql.UniqueIdentifier, id)
             .input('usuario_id', sql.UniqueIdentifier, userId)
             .input('nombre_producto', sql.VarChar(150), trimOrNull(nombre_producto))
+            .input('categoria', sql.VarChar(50), trimOrNull(categoria))
             .input('descripcion', sql.Text, trimOrNull(descripcion))
             .input('cantidad_disponible', sql.Decimal(10, 2), cantidad_disponible != null && cantidad_disponible !== '' ? Number(cantidad_disponible) : null)
             .input('unidad_medida', sql.VarChar(50), trimOrNull(unidad_medida))
@@ -194,6 +242,7 @@ exports.actualizarCosecha = async (req, res) => {
             sqlUpdate = `
                 UPDATE c
                 SET nombre_producto = COALESCE(@nombre_producto, c.nombre_producto),
+                    categoria = COALESCE(@categoria, c.categoria),
                     descripcion = COALESCE(@descripcion, c.descripcion),
                     cantidad_disponible = COALESCE(@cantidad_disponible, c.cantidad_disponible),
                     unidad_medida = COALESCE(@unidad_medida, c.unidad_medida),
@@ -209,6 +258,7 @@ exports.actualizarCosecha = async (req, res) => {
             sqlUpdate = `
                 UPDATE c
                 SET nombre_producto = COALESCE(@nombre_producto, c.nombre_producto),
+                    categoria = COALESCE(@categoria, c.categoria),
                     descripcion = COALESCE(@descripcion, c.descripcion),
                     cantidad_disponible = COALESCE(@cantidad_disponible, c.cantidad_disponible),
                     unidad_medida = COALESCE(@unidad_medida, c.unidad_medida),
@@ -263,29 +313,13 @@ exports.eliminarCosecha = async (req, res) => {
 
         const fotoUrl = existing.recordset[0].foto_url;
 
-        const enPedidos = await pool.request()
-            .input('id', sql.UniqueIdentifier, id)
-            .query(`
-                SELECT COUNT(*) AS cnt
-                FROM Detalle_Pedidos
-                WHERE cosecha_id = @id
-            `);
-
-        const cnt = enPedidos.recordset[0]?.cnt ?? 0;
-        if (cnt > 0) {
-            return res.status(409).json({
-                message:
-                    'No se puede eliminar: esta cosecha ya aparece en al menos un pedido.'
-            });
-        }
-
-        // Soft delete: actualizar estado_publicacion
+        // Soft delete: marca inactivo; conserva historial en Detalle_Pedidos (US21)
         const del = await pool.request()
             .input('id', sql.UniqueIdentifier, id)
             .input('usuario_id', sql.UniqueIdentifier, userId)
             .query(`
                 UPDATE Cosechas
-                SET estado_publicacion = 'Eliminado'
+                SET estado_publicacion = 'Inactivo'
                 WHERE id = @id
                   AND productor_id IN (
                       SELECT id FROM perfil_productor WHERE usuario_id = @usuario_id
@@ -310,10 +344,12 @@ exports.eliminarCosecha = async (req, res) => {
     }
 };
 
-// GET /api/cosechas/:id
+// GET /api/cosechas/:id (US23 — detalle enriquecido)
 exports.getCosechaById = async (req, res) => {
     try {
         const id = req.params.id;
+        const latComprador = parseFloat(req.query.lat_comprador);
+        const lngComprador = parseFloat(req.query.lng_comprador);
         const pool = await getPool();
 
         const result = await pool.request()
@@ -322,22 +358,50 @@ exports.getCosechaById = async (req, res) => {
                 SELECT 
                     c.*, 
                     c.es_preventa,
+                    p.tipo_productor,
+                    p.anios_experiencia,
                     p.nombre_finca,
                     p.municipio,
                     p.provincia,
                     p.departamento,
-                    u.nombre_completo AS nombre_productor
+                    p.ubicacion_gps.Lat AS latitud_productor,
+                    p.ubicacion_gps.Long AS longitud_productor,
+                    u.nombre_completo AS nombre_productor,
+                    u.id AS productor_usuario_id,
+                    (SELECT COUNT(*) FROM Cosechas c2 
+                     WHERE c2.productor_id = p.id AND c2.estado_publicacion = 'Activo') AS productos_publicados
                 FROM Cosechas c
                 LEFT JOIN perfil_productor p ON c.productor_id = p.id
                 LEFT JOIN usuarios u ON p.usuario_id = u.id
-                WHERE c.id = @id
+                WHERE c.id = @id AND c.estado_publicacion NOT IN ('Inactivo', 'Eliminado')
             `);
 
         if (result.recordset.length === 0) {
             return res.status(404).json({ error: 'Producto no encontrado' });
         }
 
-        res.json(result.recordset[0]);
+        const row = result.recordset[0];
+        const payload = {
+            ...row,
+            calificacion_productor: 4.5,
+            fotos: row.foto_url ? [row.foto_url] : [],
+        };
+
+        if (!Number.isNaN(latComprador) && !Number.isNaN(lngComprador) && row.latitud_productor != null && row.longitud_productor != null) {
+            const distResult = await pool.request()
+                .input('lat', sql.Float, latComprador)
+                .input('lng', sql.Float, lngComprador)
+                .input('lat_p', sql.Float, row.latitud_productor)
+                .input('lng_p', sql.Float, row.longitud_productor)
+                .query(`
+                    DECLARE @comprador GEOGRAPHY = geography::Point(@lat, @lng, 4326);
+                    DECLARE @productor GEOGRAPHY = geography::Point(@lat_p, @lng_p, 4326);
+                    SELECT @comprador.STDistance(@productor) / 1000 AS distancia_km
+                `);
+            payload.distancia_km = distResult.recordset[0]?.distancia_km ?? null;
+        }
+
+        res.json(payload);
     } catch (error) {
         console.error('Get Cosecha By Id Error:', error);
         res.status(500).json({ error: 'Error interno al obtener el detalle del producto.' });

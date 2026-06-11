@@ -20,10 +20,12 @@ router.post(
     checkRole(['PRODUCTOR', 'TRANSPORTISTA']),
     uploadDocs.fields([
         { name: 'documento_ci', maxCount: 1 },
-        { name: 'documento_rau', maxCount: 1 }
+        { name: 'documento_rau', maxCount: 1 },
+        { name: 'documento', maxCount: 1 }
     ]),
     uploadController.uploadDocument
 );
+
 
 module.exports = router;
 

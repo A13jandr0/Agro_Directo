@@ -7,6 +7,9 @@ const adminController = require('../controllers/adminController');
 // NOTA: En producción proteger con verifyToken + checkRole('ADMIN')
 // Por ahora se deja abierto para pruebas en Postman.
 
+// GET /api/admin/verificaciones/count — Badge sidebar admin
+router.get('/verificaciones/count', adminController.getVerificacionesCount);
+
 // GET /api/admin/verificaciones — Listar usuarios pendientes (US04)
 router.get('/verificaciones', adminController.getPendingUsers);
 

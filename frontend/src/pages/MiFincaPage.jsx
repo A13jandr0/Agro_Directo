@@ -1,22 +1,16 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  MapPin, 
-  CheckCircle2, 
-  AlertCircle, 
-  Edit2, 
-  Save, 
-  Info, 
-  AlertTriangle,
-  Lock,
-  ChevronRight
+  MapPin, Edit2, Save, Info, AlertTriangle, CheckCircle2, Navigation, Loader2, Check
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import axios from 'axios';
 import L from 'leaflet';
+import PageShell from '../components/ui/PageShell';
+import { useToast } from '../context/ToastContext';
 
-// Fix para el icono de Leaflet
+// Fix Leaflet icons
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -24,84 +18,66 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-const greenIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
-
-const LocationMarker = ({ position, setPosition, isDraggable }) => {
-  const markerRef = useRef(null);
-
+const LocationMarker = ({ position, setPosition, isEditing }) => {
   useMapEvents({
     click(e) {
-      if(isDraggable) {
+      if (isEditing) {
         setPosition(e.latlng);
       }
     },
   });
 
-  const eventHandlers = useMemo(
-    () => ({
-      dragend() {
-        const marker = markerRef.current;
-        if (marker != null) {
-          setPosition(marker.getLatLng());
-        }
-      },
-    }),
-    [setPosition]
-  );
-
   return position === null ? null : (
     <Marker 
-      draggable={isDraggable} 
-      eventHandlers={eventHandlers} 
+      draggable={isEditing} 
       position={position} 
-      ref={markerRef}
-      icon={greenIcon}
+      eventHandlers={{
+        dragend(e) {
+          if (isEditing) {
+            setPosition(e.target.getLatLng());
+          }
+        }
+      }}
     />
   );
 };
 
 const MiFincaPage = () => {
   const navigate = useNavigate();
-  const [hasLocation, setHasLocation] = useState(false);
+  const toast = useToast();
+  
+  const [position, setPosition] = useState({ lat: -17.3639, lng: -63.2505 }); // Montero, Santa Cruz default
   const [isEditing, setIsEditing] = useState(false);
-  const [position, setPosition] = useState(null); 
-  const [userData, setUserData] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [toastMsg, setToastMsg] = useState('');
+  const [userData, setUserData] = useState(null);
 
-  const fetchProfile = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) return navigate('/login');
-      const res = await axios.get('http://localhost:5000/api/usuarios/mi-perfil', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = res.data;
-      setUserData(data);
-      if (data.latitud != null && data.longitud != null) {
-        setPosition({ lat: parseFloat(data.latitud), lng: parseFloat(data.longitud) });
-        setHasLocation(true);
-      } else {
-        setIsEditing(true);
-      }
-    } catch (error) {
-      console.error("Error fetching profile", error);
-    }
-  };
+  // Inferred geo locations
+  const inferredProvincia = 'Obispo Santistevan';
+  const inferredMunicipio = 'Montero';
 
   useEffect(() => {
+    const fetchProfile = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return navigate('/login');
+      try {
+        const res = await axios.get('http://localhost:5000/api/usuarios/mi-perfil', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setUserData(res.data);
+        if (res.data.latitud && res.data.longitud) {
+          setPosition({ 
+            lat: parseFloat(res.data.latitud), 
+            lng: parseFloat(res.data.longitud) 
+          });
+        }
+      } catch (err) {
+        console.error('Error fetching profile in MiFinca:', err);
+      }
+    };
     fetchProfile();
   }, [navigate]);
 
   const handleSaveLocation = async () => {
-    if (!position) return;
     setIsSaving(true);
     try {
       const token = localStorage.getItem('token');
@@ -111,144 +87,145 @@ const MiFincaPage = () => {
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setHasLocation(true);
+      
+      toast.success('Ubicación de tu finca registrada con éxito');
       setIsEditing(false);
-      setToastMsg('Ubicación guardada correctamente');
-      setTimeout(() => setToastMsg(''), 3000);
-      fetchProfile();
-    } catch (error) {
-      setToastMsg('Error al guardar la ubicación');
-      setTimeout(() => setToastMsg(''), 3000);
+    } catch (err) {
+      toast.error('No se pudo guardar la ubicación en la base de datos');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const center = position || { lat: -17.7833, lng: -63.1821 };
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error('Tu navegador no soporta la geolocalización de dispositivo');
+      return;
+    }
+    
+    toast.info('Obteniendo coordenadas actuales...');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setPosition({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude
+        });
+        setIsEditing(true);
+        toast.success('Ubicación obtenida con éxito. Recordá guardarla.');
+      },
+      () => {
+        toast.error('No se pudo acceder a tu ubicación actual. Permití el acceso de GPS.');
+      }
+    );
+  };
 
   return (
-    <div className="p-6 sm:p-8 lg:p-10 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
-      
-      {/* HEADER SECTION */}
+    <PageShell>
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-xl shadow-emerald-500/20 shrink-0">
-            <MapPin className="w-8 h-8" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Ubicación de Mi Finca</h1>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Geolocalización de Producción</p>
-          </div>
+        <div>
+          <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold border border-emerald-100">
+            🗺️ Geolocalización
+          </span>
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mt-2">Mi Finca</h1>
+          <p className="text-sm text-slate-400 mt-1">Registrá las coordenadas de tu centro de producción agrícola</p>
         </div>
 
-        {!isEditing && hasLocation && (
-          <button 
-            onClick={() => setIsEditing(true)}
-            className="flex items-center gap-2 px-6 py-2.5 bg-white border-2 border-emerald-500 text-emerald-600 rounded-2xl font-black text-sm shadow-sm hover:bg-emerald-50 transition-all"
+        <div className="flex gap-3">
+          <button
+            onClick={handleUseCurrentLocation}
+            className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all shadow-sm hover:bg-slate-50"
           >
-            <Edit2 className="w-4 h-4" /> Editar Ubicación
+            <Navigation className="w-4 h-4 text-emerald-600" />
+            Usar mi ubicación actual
           </button>
-        )}
-      </div>
-
-      {toastMsg && (
-        <div className={`p-4 rounded-2xl border-l-4 font-bold text-sm shadow-md flex items-center gap-3 animate-in slide-in-from-top-4 ${toastMsg.includes('Error') ? 'bg-rose-50 border-rose-500 text-rose-700' : 'bg-emerald-50 border-emerald-500 text-emerald-700'}`}>
-          {toastMsg.includes('Error') ? <AlertCircle className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
-          {toastMsg}
+          {!isEditing ? (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md"
+            >
+              <Edit2 className="w-4 h-4" />
+              Actualizar ubicación
+            </button>
+          ) : (
+            <button
+              onClick={handleSaveLocation}
+              disabled={isSaving}
+              className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md disabled:opacity-50"
+            >
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              Guardar ubicación
+            </button>
+          )}
         </div>
-      )}
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* INFO COLUMN */}
-        <div className="lg:col-span-1 space-y-6">
-          <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm space-y-6">
-            <div>
-              <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-4">Estado Actual</h3>
-              {hasLocation ? (
-                <div className="flex items-center gap-3 text-emerald-600 bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
-                  <CheckCircle2 className="w-6 h-6 shrink-0" />
-                  <div>
-                    <p className="font-black text-sm leading-tight">Ubicación Registrada</p>
-                    <p className="text-[10px] font-bold uppercase mt-0.5">Listo para publicar</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-3 text-amber-600 bg-amber-50 p-4 rounded-2xl border border-amber-100">
-                  <AlertTriangle className="w-6 h-6 shrink-0" />
-                  <div>
-                    <p className="font-black text-sm leading-tight">Sin Ubicación</p>
-                    <p className="text-[10px] font-bold uppercase mt-0.5 text-amber-500">Publicación bloqueada</p>
-                  </div>
-                </div>
-              )}
-            </div>
+        {/* Panel lateral de geolocalización */}
+        <div className="space-y-6">
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 space-y-6">
+            <h3 className="text-sm font-extrabold text-slate-900 border-b border-slate-100 pb-2">
+              Ubicación Registrada
+            </h3>
 
+            {/* Estado */}
             <div className="space-y-4">
-              <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">Coordenadas</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-slate-50 p-3 rounded-xl">
-                  <p className="text-[10px] font-black text-slate-400 uppercase">Latitud</p>
-                  <p className="font-bold text-slate-700">{position?.lat.toFixed(6) || '---'}</p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0">
+                  <MapPin className="w-5 h-5 text-emerald-600 animate-float" />
                 </div>
-                <div className="bg-slate-50 p-3 rounded-xl">
-                  <p className="text-[10px] font-black text-slate-400 uppercase">Longitud</p>
-                  <p className="font-bold text-slate-700">{position?.lng.toFixed(6) || '---'}</p>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Coordenadas Finca</span>
+                  <div className="text-xs font-bold text-slate-600 mt-1">
+                    Lat: {position.lat.toFixed(5)} <br />
+                    Lng: {position.lng.toFixed(5)}
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="pt-6 border-t border-slate-100">
-              <div className="flex gap-3 items-start">
-                <Info className="w-5 h-5 text-emerald-500 shrink-0" />
-                <p className="text-xs text-slate-500 leading-relaxed font-medium">
-                  Marca el punto exacto de tu finca en el mapa. Esta ubicación se usará para que los compradores vean qué tan cerca estás.
-                </p>
+            {/* Inferred Geo */}
+            <div className="space-y-4 border-t border-slate-100 pt-4">
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Provincia inferida</span>
+                <span className="text-sm font-extrabold text-slate-800 block mt-0.5">{inferredProvincia}</span>
               </div>
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Municipio inferido</span>
+                <span className="text-sm font-extrabold text-slate-800 block mt-0.5">{inferredMunicipio}</span>
+              </div>
+            </div>
+
+            {/* Guardar Ubicación Button (If editing) */}
+            {isEditing && (
+              <button
+                onClick={handleSaveLocation}
+                disabled={isSaving}
+                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold shadow-lg shadow-emerald-600/10 transition-all flex items-center justify-center gap-2"
+              >
+                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                Guardar ubicación
+              </button>
+            )}
+
+            <div className="pt-4 border-t border-slate-100 flex gap-3">
+              <Info className="w-5 h-5 text-slate-400 shrink-0 mt-0.5" />
+              <p className="text-[11px] text-slate-500 leading-normal font-semibold">
+                Al habilitar el modo de edición y hacer clic sobre cualquier sector del mapa, el marcador se desplazará registrando la nueva parcela de tu finca.
+              </p>
             </div>
           </div>
-
-          {isEditing && (
-            <div className="bg-slate-900 rounded-3xl p-8 text-white shadow-xl">
-              <h3 className="font-black text-lg mb-2">Guardar Cambios</h3>
-              <p className="text-slate-400 text-sm mb-6 font-medium">¿Confirmas que este es el punto exacto de tu producción?</p>
-              <div className="flex gap-3">
-                <button 
-                  onClick={() => { setIsEditing(false); fetchProfile(); }}
-                  className="flex-1 py-3 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-bold text-sm transition-all"
-                >
-                  Cancelar
-                </button>
-                <button 
-                  onClick={handleSaveLocation}
-                  disabled={isSaving}
-                  className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-bold text-sm transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
-                >
-                  {isSaving ? 'Guardando...' : 'Confirmar'}
-                </button>
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* MAP COLUMN */}
-        <div className="lg:col-span-2 h-[600px] bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm relative z-0">
-          {!isEditing && hasLocation && (
-            <div className="absolute inset-0 bg-slate-900/5 z-[40] cursor-not-allowed flex items-center justify-center backdrop-blur-[2px]">
-               <div className="bg-white/90 px-6 py-3 rounded-2xl shadow-xl flex items-center gap-3">
-                 <Lock className="w-5 h-5 text-slate-400" />
-                 <span className="text-sm font-black text-slate-900 uppercase tracking-tight">Mapa Bloqueado (Pulsa Editar)</span>
-               </div>
-            </div>
-          )}
-          <MapContainer center={center} zoom={13} style={{ height: '100%', width: '100%' }}>
+        {/* Leaflet map Container (60vh) */}
+        <div className="lg:col-span-2 rounded-3xl border border-slate-100 shadow-sm overflow-hidden h-[60vh] relative z-0">
+          <MapContainer center={[position.lat, position.lng]} zoom={13} style={{ height: '100%', width: '100%' }}>
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-            <LocationMarker position={position} setPosition={setPosition} isDraggable={isEditing} />
+            <LocationMarker position={position} setPosition={setPosition} isEditing={isEditing} />
           </MapContainer>
         </div>
-
       </div>
-    </div>
+    </PageShell>
   );
 };
 
