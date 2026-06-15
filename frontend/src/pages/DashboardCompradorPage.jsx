@@ -4,22 +4,33 @@ import axios from 'axios';
 import {
   Store, ShoppingCart, Clock, Bell, MapPin, TrendingUp, ChevronRight,
   Package, Truck, Search, ArrowUpRight, Wallet, CheckCircle2, AlertCircle,
-  Leaf, Calendar
+  Leaf, Calendar, Star, Apple, Wheat, CircleDot, Beef, Milk, Flower2, Droplets
 } from 'lucide-react';
 import CartContext from '../context/CartContext';
 import PageShell from '../components/ui/PageShell';
 import MetricCard from '../components/ui/MetricCard';
 import { useToast } from '../context/ToastContext';
 
-// Categorías populares con gradientes e íconos grandes
+const iconosPorCategoria = {
+  'Frutas': Apple,
+  'Verduras': Leaf,
+  'Granos': Wheat,
+  'Tubérculos': CircleDot,
+  'Carnes': Beef,
+  'Lácteos': Milk,
+  'Flores': Flower2,
+  'Aceites': Droplets,
+};
+
 const POPULAR_CATEGORIES = [
-  { id: 'Frutas', label: 'Frutas 🍎', gradient: 'from-orange-400 to-amber-500', icon: '🍎' },
-  { id: 'Verduras', label: 'Verduras 🥬', gradient: 'from-emerald-400 to-teal-500', icon: '🥬' },
-  { id: 'Granos', label: 'Granos 🌾', gradient: 'from-yellow-400 to-amber-600', icon: '🌾' },
-  { id: 'Tubérculos', label: 'Tubérculos 🥔', gradient: 'from-amber-600 to-amber-800', icon: '🥔' },
-  { id: 'Carnes', label: 'Carnes 🥩', gradient: 'from-red-400 to-rose-600', icon: '🥩' },
-  { id: 'Lácteos', label: 'Lácteos 🥛', gradient: 'from-blue-300 to-indigo-500', icon: '🥛' }
+  { id: 'Frutas', label: "Frutas", gradient: 'from-orange-400 to-amber-500' },
+  { id: 'Verduras', label: "Verduras", gradient: 'from-emerald-400 to-teal-500' },
+  { id: 'Granos', label: "Granos", gradient: 'from-yellow-400 to-amber-600' },
+  { id: 'Tubérculos', label: "Tubérculos", gradient: 'from-amber-600 to-amber-800' },
+  { id: 'Carnes', label: "Carnes", gradient: 'from-red-400 to-rose-600' },
+  { id: 'Lácteos', label: "Lácteos", gradient: 'from-blue-300 to-indigo-500' }
 ];
+
 
 const DashboardCompradorPage = () => {
   const navigate = useNavigate();
@@ -30,18 +41,18 @@ const DashboardCompradorPage = () => {
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchVal, setSearchVal] = useState('');
-  
+
   // Productos mock para carruseles
   const [nearbyProducts, setNearbyProducts] = useState([
-    { id: '101', nombre: 'Soya Grano de Oro', precio: 120, unidad: 'Quintal', distancia: 2.4, foto_url: null, productor: 'Asociación Montero' },
-    { id: '102', nombre: 'Tomate Santa Cruz', precio: 28, unidad: 'Caja', distancia: 4.8, foto_url: null, productor: 'Finca El Sol' },
-    { id: '103', nombre: 'Yuca Harinosa', precio: 14, unidad: 'Arroba', distancia: 8.1, foto_url: null, productor: 'Hacienda Warnes' }
-  ]);
+  { id: '101', nombre: 'Soya Grano de Oro', precio: 120, unidad: 'Quintal', distancia: 2.4, foto_url: null, productor: 'Asociación Montero' },
+  { id: '102', nombre: 'Tomate Santa Cruz', precio: 28, unidad: 'Caja', distancia: 4.8, foto_url: null, productor: 'Finca El Sol' },
+  { id: '103', nombre: 'Yuca Harinosa', precio: 14, unidad: 'Arroba', distancia: 8.1, foto_url: null, productor: 'Hacienda Warnes' }]
+  );
 
   const [preventas, setPreventas] = useState([
-    { id: '201', nombre: 'Achachairú Dulce', precio: 35, unidad: 'Caja', diasRestantes: 5, foto_url: null, productor: 'Huerta Florida' },
-    { id: '202', nombre: 'Papa Harinosa', precio: 18, unidad: 'Arroba', diasRestantes: 3, foto_url: null, productor: 'Vallegrande Agrícola' }
-  ]);
+  { id: '201', nombre: 'Achachairú Dulce', precio: 35, unidad: 'Caja', diasRestantes: 5, foto_url: null, productor: 'Huerta Florida' },
+  { id: '202', nombre: 'Papa Harinosa', precio: 18, unidad: 'Arroba', diasRestantes: 3, foto_url: null, productor: 'Vallegrande Agrícola' }]
+  );
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -50,41 +61,41 @@ const DashboardCompradorPage = () => {
       try {
         const headers = { Authorization: `Bearer ${token}` };
         const [perfilRes, pedidosRes, marketplaceRes] = await Promise.all([
-          axios.get('http://localhost:5000/api/usuarios/mi-perfil', { headers }),
-          axios.get('http://localhost:5000/api/pedidos/comprador', { headers }).catch(() => ({ data: [] })),
-          axios.get('http://localhost:5000/api/marketplace/productos', { headers }).catch(() => ({ data: [] }))
-        ]);
-        
+        axios.get('http://localhost:5000/api/usuarios/mi-perfil', { headers }),
+        axios.get('http://localhost:5000/api/pedidos/comprador', { headers }).catch(() => ({ data: [] })),
+        axios.get('http://localhost:5000/api/marketplace/productos', { headers }).catch(() => ({ data: [] }))]
+        );
+
         setUserData(perfilRes.data);
         setPedidos(pedidosRes.data || []);
-        
+
         const marketplaceProducts = marketplaceRes.data || [];
         if (marketplaceProducts.length > 0) {
           // Filtrar preventas reales y productos cercanos
-          const realPreventas = marketplaceProducts
-            .filter(p => p.es_preventa)
-            .map(p => ({
-              id: p.cosecha_id || p.id,
-              nombre: p.nombre_producto,
-              precio: Number(p.precio_unitario),
-              unidad: p.unidad_medida,
-              diasRestantes: 5, // Default mock days
-              foto_url: p.foto_url,
-              productor: p.nombre_finca || 'Productor Verificado'
-            }));
+          const realPreventas = marketplaceProducts.
+          filter((p) => p.es_preventa).
+          map((p) => ({
+            id: p.cosecha_id || p.id,
+            nombre: p.nombre_producto,
+            precio: Number(p.precio_unitario),
+            unidad: p.unidad_medida,
+            diasRestantes: 5, // Default mock days
+            foto_url: p.foto_url,
+            productor: p.nombre_finca || 'Productor Verificado'
+          }));
           if (realPreventas.length > 0) setPreventas(realPreventas);
 
-          const realNearby = marketplaceProducts
-            .filter(p => !p.es_preventa)
-            .map((p, idx) => ({
-              id: p.cosecha_id || p.id,
-              nombre: p.nombre_producto,
-              precio: Number(p.precio_unitario),
-              unidad: p.unidad_medida,
-              distancia: Number((idx * 2.3 + 1.2).toFixed(1)),
-              foto_url: p.foto_url,
-              productor: p.nombre_finca || 'Productor Verificado'
-            }));
+          const realNearby = marketplaceProducts.
+          filter((p) => !p.es_preventa).
+          map((p, idx) => ({
+            id: p.cosecha_id || p.id,
+            nombre: p.nombre_producto,
+            precio: Number(p.precio_unitario),
+            unidad: p.unidad_medida,
+            distancia: Number((idx * 2.3 + 1.2).toFixed(1)),
+            foto_url: p.foto_url,
+            productor: p.nombre_finca || 'Productor Verificado'
+          }));
           if (realNearby.length > 0) setNearbyProducts(realNearby);
         }
 
@@ -122,8 +133,8 @@ const DashboardCompradorPage = () => {
     return (
       <span className={`uppercase tracking-wide ${states[estado] || 'bg-gray-50 text-gray-600 rounded-full px-3 py-1 text-xs font-semibold border'}`}>
         {estado}
-      </span>
-    );
+      </span>);
+
   };
 
   const cartItemCount = carrito.reduce((acc, item) => acc + item.cantidad, 0);
@@ -137,8 +148,8 @@ const DashboardCompradorPage = () => {
           </div>
           <p className="text-slate-500 font-medium text-sm">Cargando ofertas y pedidos...</p>
         </div>
-      </div>
-    );
+      </div>);
+
   }
 
   const firstName = userData.nombre_completo?.split(' ')[0] || 'Comprador';
@@ -151,7 +162,7 @@ const DashboardCompradorPage = () => {
         <div className="relative z-10 max-w-2xl space-y-6">
           <div>
             <h1 className="text-3xl sm:text-4xl font-black tracking-tight">
-              Hola, {firstName} 👋
+              Hola, {firstName} <Star size={16} className="inline-block mr-1" />
             </h1>
             <p className="text-indigo-100 text-sm mt-2 font-medium">
               ¿Qué buscás hoy? Adquirí alimentos frescos directamente desde el chaco cruceño.
@@ -166,28 +177,28 @@ const DashboardCompradorPage = () => {
               value={searchVal}
               onChange={(e) => setSearchVal(e.target.value)}
               placeholder="Buscar tomates, papas, mangos..."
-              className="w-full pl-12 pr-28 py-3.5 bg-white text-slate-800 rounded-2xl text-sm font-semibold outline-none focus:ring-4 focus:ring-indigo-500/20 transition-all border-none"
-            />
-            <button 
-              type="submit" 
-              className="absolute right-2 top-1/2 -translate-y-1/2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-xl text-xs font-bold transition-all shadow-md"
-            >
+              className="w-full pl-12 pr-28 py-3.5 bg-white text-slate-800 rounded-2xl text-sm font-semibold outline-none focus:ring-4 focus:ring-indigo-500/20 transition-all border-none" />
+            
+            <button
+              type="submit"
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-xl text-xs font-bold transition-all shadow-md">
+              
               Buscar
             </button>
           </form>
 
           {/* Chips de Categorías */}
           <div className="flex flex-wrap gap-2 pt-2">
-            {['Frutas', 'Verduras', 'Granos', 'Tubérculos', 'Carnes'].map(cat => (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => selectCategory(cat)}
-                className="px-4 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-full text-xs font-bold border border-white/10 transition-colors"
-              >
+            {['Frutas', 'Verduras', 'Granos', 'Tubérculos', 'Carnes'].map((cat) =>
+            <button
+              key={cat}
+              type="button"
+              onClick={() => selectCategory(cat)}
+              className="px-4 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-full text-xs font-bold border border-white/10 transition-colors">
+              
                 {cat}
               </button>
-            ))}
+            )}
           </div>
         </div>
       </div>
@@ -196,18 +207,20 @@ const DashboardCompradorPage = () => {
       <div className="space-y-4">
         <h2 className="text-lg font-extrabold text-[#111827] tracking-tight">Categorías populares</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          {POPULAR_CATEGORIES.map((cat) => (
-            <div
-              key={cat.id}
-              onClick={() => selectCategory(cat.id)}
-              className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col items-center justify-center text-center cursor-pointer hover:-translate-y-1 hover:shadow-md transition-all group"
-            >
-              <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${cat.gradient} flex items-center justify-center text-2xl shadow-sm group-hover:scale-110 transition-transform duration-300`}>
-                {cat.icon}
+          {POPULAR_CATEGORIES.map((cat) => {
+            const Icono = iconosPorCategoria[cat.id] || Package;
+            return (
+              <div
+                key={cat.id}
+                onClick={() => selectCategory(cat.id)}
+                className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col items-center justify-center text-center cursor-pointer hover:-translate-y-1 hover:shadow-md transition-all group">
+                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${cat.gradient} flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-300`}>
+                  <Icono size={32} className="text-white" />
+                </div>
+                <span className="text-xs font-bold text-slate-800 mt-3">{cat.label}</span>
               </div>
-              <span className="text-xs font-bold text-slate-800 mt-3">{cat.label}</span>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -221,19 +234,36 @@ const DashboardCompradorPage = () => {
         </div>
 
         <div className="flex gap-6 overflow-x-auto pb-4 hide-scrollbar snap-x snap-mandatory">
-          {nearbyProducts.map((prod) => (
-            <div
-              key={prod.id}
-              onClick={() => navigate(`/producto/${prod.id}`)}
-              className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm min-w-[240px] sm:min-w-[260px] snap-start hover:shadow-md cursor-pointer transition-all flex flex-col justify-between shrink-0"
-            >
+          {nearbyProducts.map((prod) =>
+          <div
+            key={prod.id}
+            onClick={() => navigate(`/producto/${prod.id}`)}
+            className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm min-w-[240px] sm:min-w-[260px] snap-start hover:shadow-md cursor-pointer transition-all flex flex-col justify-between shrink-0">
+            
               <div>
                 <div className="h-32 bg-slate-100 rounded-xl relative overflow-hidden flex items-center justify-center mb-4">
-                  {prod.foto_url ? (
-                    <img src={`http://localhost:5000${prod.foto_url}`} className="w-full h-full object-cover" alt={prod.nombre} />
-                  ) : (
+                  {prod.foto_url ?
+                    <img 
+                      src={
+                        prod.foto_url?.startsWith('http') 
+                          ? prod.foto_url
+                          : `http://localhost:5000${prod.foto_url}`
+                      }
+                      onError={(e) => {
+                        const fallbacks = {
+                          'Verduras': 'https://images.unsplash.com/photo-1546470427-e26264be0b0d?w=400',
+                          'Frutas': 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=400',
+                          'Granos': 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400',
+                          'Tubérculos': 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=400',
+                        };
+                        e.target.src = fallbacks[prod.categoria] || 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=400';
+                        e.target.onerror = null;
+                      }}
+                      className="w-full h-full object-cover" 
+                      alt={prod.nombre} 
+                    /> :
                     <Leaf className="w-8 h-8 text-emerald-200" />
-                  )}
+                  }
                   {/* Distance badge */}
                   <span className="absolute top-2 left-2 bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-lg text-[9px] font-black flex items-center gap-1 shadow-sm">
                     <MapPin className="w-3 h-3" />
@@ -248,39 +278,11 @@ const DashboardCompradorPage = () => {
                 <span className="text-[10px] font-bold text-indigo-600">Comprar direct</span>
               </div>
             </div>
-          ))}
+          )}
         </div>
       </div>
 
-      {/* Sección Preventas disponibles (Countdown) */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-extrabold text-[#111827] tracking-tight">Preventas disponibles</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {preventas.map((prod) => (
-            <div
-              key={prod.id}
-              onClick={() => navigate(`/producto/${prod.id}`)}
-              className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm flex items-center justify-between cursor-pointer hover:-translate-y-0.5 hover:shadow-md transition-all"
-            >
-              <div className="flex gap-4 items-center">
-                <div className="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
-                  <Calendar className="w-6 h-6 text-indigo-600 animate-float" />
-                </div>
-                <div>
-                  <h4 className="font-extrabold text-slate-800 text-sm">{prod.nombre}</h4>
-                  <p className="text-[10px] text-slate-400 font-bold">{prod.productor}</p>
-                  <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-lg text-[9px] font-black mt-2">
-                    Disponible en {prod.diasRestantes} días
-                  </span>
-                </div>
-              </div>
-              <span className="text-lg font-black text-slate-900 shrink-0 ml-4">
-                Bs. {prod.precio} / {prod.unidad}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
+
 
       {/* Pedidos recientes */}
       <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden p-6 space-y-4">
@@ -291,12 +293,12 @@ const DashboardCompradorPage = () => {
           </Link>
         </div>
 
-        {pedidos.length === 0 ? (
-          <p className="text-slate-400 text-xs py-4 text-center font-semibold">No tenés pedidos registrados todavía.</p>
-        ) : (
-          <div className="divide-y divide-slate-50">
-            {pedidos.slice(0, 3).map((ped) => (
-              <div key={ped.id} className="py-3.5 flex items-center justify-between text-xs font-semibold text-slate-700">
+        {pedidos.length === 0 ?
+        <p className="text-slate-400 text-xs py-4 text-center font-semibold">No tenés pedidos registrados todavía.</p> :
+
+        <div className="divide-y divide-slate-50">
+            {pedidos.slice(0, 3).map((ped) =>
+          <div key={ped.id} className="py-3.5 flex items-center justify-between text-xs font-semibold text-slate-700">
                 <div className="flex items-center gap-3">
                   <Package className="w-5 h-5 text-slate-400 shrink-0" />
                   <div>
@@ -311,12 +313,12 @@ const DashboardCompradorPage = () => {
                   {getStatusBadge(ped.estado)}
                 </div>
               </div>
-            ))}
+          )}
           </div>
-        )}
+        }
       </div>
-    </PageShell>
-  );
+    </PageShell>);
+
 };
 
 export default DashboardCompradorPage;

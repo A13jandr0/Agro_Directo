@@ -1,34 +1,34 @@
-﻿import React, { useState } from 'react';
+import { Check } from "lucide-react";import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
 const RegisterCompradorPage = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
-  
+
   const [formData, setFormData] = useState({
     nombreCompleto: '', correo: '', contrasena: '', confirmContrasena: '', celular: '',
-    tipoComprador: '', nombreNegocio: '', ciudadPrincipal: '', 
+    tipoComprador: '', nombreNegocio: '', ciudadPrincipal: '',
     aceptaTerminos: false, aceptaPrivacidad: false
   });
-  
+
   const [categorias, setCategorias] = useState([]);
-  
+
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Lista de categorías
   const categoriasDisponibles = [
-    { id: 'Verduras', label: '🥬 Verduras' },
-    { id: 'Frutas', label: '🍎 Frutas' },
-    { id: 'Granos', label: '🌽 Granos' },
-    { id: 'Tubérculos', label: '🥔 Tubérculos' },
-  ];
+  { id: 'Verduras', label: "Verduras" },
+  { id: 'Frutas', label: "Frutas" },
+  { id: 'Granos', label: "Granos" },
+  { id: 'Tubérculos', label: "Tub\xE9rculos" }];
+
 
   const handleCategoriaToggle = (id) => {
-    setCategorias(prev => 
-      prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
+    setCategorias((prev) =>
+    prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
     );
   };
 
@@ -37,7 +37,7 @@ const RegisterCompradorPage = () => {
   const hasMinLen = formData.contrasena.length >= 8;
   const hasUpper = /[A-Z]/.test(formData.contrasena);
   const hasNumber = /\d/.test(formData.contrasena);
-  
+
   const getPasswordStrength = () => {
     let score = 0;
     if (hasMinLen) score++;
@@ -51,15 +51,15 @@ const RegisterCompradorPage = () => {
   // Contador de campos
   const countCompletedFields = () => {
     const fieldsToCount = ['nombreCompleto', 'correo', 'contrasena', 'celular', 'tipoComprador', 'ciudadPrincipal'];
-    return fieldsToCount.filter(field => formData[field].trim() !== '').length;
+    return fieldsToCount.filter((field) => formData[field].trim() !== '').length;
   };
   const totalFields = 6;
   const completedFields = countCompletedFields();
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
-    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
+    setFormData((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
   const handleNext = () => {
@@ -96,7 +96,7 @@ const RegisterCompradorPage = () => {
     setServerError('');
 
     try {
-      const payload = { 
+      const payload = {
         nombre_completo: formData.nombreCompleto,
         correo: formData.correo,
         contrasena: formData.contrasena,
@@ -111,12 +111,12 @@ const RegisterCompradorPage = () => {
         categorias_interes: categorias
       };
       const res = await axios.post('http://localhost:5000/api/auth/registro', payload);
-      
+
       const token = res.data.token;
       localStorage.setItem('token', token);
 
       // Simulamos dashboard/comprador 
-      navigate('/dashboard/comprador'); 
+      navigate('/dashboard/comprador');
     } catch (error) {
       setServerError(error.response?.data?.error || 'Error al registrar');
       setIsSubmitting(false);
@@ -160,8 +160,8 @@ const RegisterCompradorPage = () => {
         {serverError && <div className="mb-6 bg-red-50 text-red-600 p-4 rounded-lg text-sm border border-red-200">{serverError}</div>}
 
         {/* PASO 1 */}
-        {step === 1 && (
-          <div className="animate-fade-in space-y-5">
+        {step === 1 &&
+        <div className="animate-fade-in space-y-5">
             
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Nombre Completo</label>
@@ -189,12 +189,12 @@ const RegisterCompradorPage = () => {
                 
                 {/* Indicador de fortaleza */}
                 <div className="mt-2 flex h-1.5 w-full bg-gray-200 rounded overflow-hidden">
-                  <div className={`h-full transition-all duration-300 ${strengthColors[strength]}`} style={{ width: `${(strength / 3) * 100}%` }}></div>
+                  <div className={`h-full transition-all duration-300 ${strengthColors[strength]}`} style={{ width: `${strength / 3 * 100}%` }}></div>
                 </div>
                 <div className="flex gap-2 mt-1 text-[10px] sm:text-xs">
-                  <span className={hasMinLen ? "text-emerald-600 font-medium" : "text-gray-400"}>✓ 8 caracteres</span>
-                  <span className={hasUpper ? "text-emerald-600 font-medium" : "text-gray-400"}>✓ 1 mayúscula</span>
-                  <span className={hasNumber ? "text-emerald-600 font-medium" : "text-gray-400"}>✓ 1 número</span>
+                  <span className={hasMinLen ? "text-emerald-600 font-medium" : "text-gray-400"}><Check size={16} className="inline-block mr-1" /> 8 caracteres</span>
+                  <span className={hasUpper ? "text-emerald-600 font-medium" : "text-gray-400"}><Check size={16} className="inline-block mr-1" /> 1 mayúscula</span>
+                  <span className={hasNumber ? "text-emerald-600 font-medium" : "text-gray-400"}><Check size={16} className="inline-block mr-1" /> 1 número</span>
                 </div>
               </div>
               <div>
@@ -210,15 +210,15 @@ const RegisterCompradorPage = () => {
               </button>
             </div>
           </div>
-        )}
+        }
 
         {/* PASO 2 */}
-        {step === 2 && (
-          <div className="animate-fade-in space-y-6">
+        {step === 2 &&
+        <div className="animate-fade-in space-y-6">
             
             {/* VENTAJA VISIBLE */}
             <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-lg flex items-center gap-3">
-              <span className="text-[#378ADD] text-2xl">✓</span>
+              <span className="text-[#378ADD] text-2xl"><Check size={16} className="inline-block mr-1" /></span>
               <p className="text-emerald-800 text-sm font-medium">Los compradores tienen acceso inmediato a la plataforma. No necesitas esperar ningún proceso de verificación.</p>
             </div>
 
@@ -226,31 +226,31 @@ const RegisterCompradorPage = () => {
               <label className="block text-sm font-semibold text-gray-700 mb-3">¿Qué tipo de comprador eres?</label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {[
-                  { id: 'Persona', icon: '👤', label: 'Persona Natural' },
-                  { id: 'Negocio', icon: '🏪', label: 'Negocio Local' },
-                  { id: 'Empresa', icon: '🏢', label: 'Empresa / Mayorista' }
-                ].map(tipo => (
-                  <div 
-                    key={tipo.id}
-                    onClick={() => { setFormData(p => ({...p, tipoComprador: tipo.id})); setErrors(p => ({...p, tipoComprador: ''})) }}
-                    className={`border-2 p-4 rounded-xl cursor-pointer text-center transition-all ${formData.tipoComprador === tipo.id ? 'border-[#378ADD] bg-emerald-50 shadow-sm' : 'border-gray-200 hover:border-emerald-300'}`}
-                  >
+              { id: 'Persona', icon: "", label: 'Persona Natural' },
+              { id: 'Negocio', icon: "", label: 'Negocio Local' },
+              { id: 'Empresa', icon: "", label: 'Empresa / Mayorista' }].
+              map((tipo) =>
+              <div
+                key={tipo.id}
+                onClick={() => {setFormData((p) => ({ ...p, tipoComprador: tipo.id }));setErrors((p) => ({ ...p, tipoComprador: '' }));}}
+                className={`border-2 p-4 rounded-xl cursor-pointer text-center transition-all ${formData.tipoComprador === tipo.id ? 'border-[#378ADD] bg-emerald-50 shadow-sm' : 'border-gray-200 hover:border-emerald-300'}`}>
+                
                     <div className="text-3xl mb-2">{tipo.icon}</div>
                     <div className="font-bold text-gray-800">{tipo.label}</div>
                   </div>
-                ))}
+              )}
               </div>
               {errors.tipoComprador && <p className="text-red-500 text-xs mt-1">{errors.tipoComprador}</p>}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {['Negocio', 'Empresa'].includes(formData.tipoComprador) && (
-                <div className="animate-fade-in">
+              {['Negocio', 'Empresa'].includes(formData.tipoComprador) &&
+            <div className="animate-fade-in">
                   <label className="block text-sm font-semibold text-gray-700 mb-1">Nombre del Negocio</label>
                   <input type="text" name="nombreNegocio" value={formData.nombreNegocio} onChange={handleChange} placeholder="Ej. Verdulería Doña María" className={`w-full p-3 border rounded focus:ring-1 focus:ring-[#378ADD] outline-none ${errors.nombreNegocio ? 'border-red-500' : 'border-gray-300'}`} />
                   {errors.nombreNegocio && <p className="text-red-500 text-xs mt-1">{errors.nombreNegocio}</p>}
                 </div>
-              )}
+            }
               
               <div className={formData.tipoComprador === 'Persona' || !formData.tipoComprador ? 'md:col-span-2' : ''}>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Ciudad Principal</label>
@@ -270,15 +270,15 @@ const RegisterCompradorPage = () => {
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-3">¿Qué productos te interesan? <span className="text-gray-400 font-normal">(Opcional)</span></label>
               <div className="flex flex-wrap gap-2">
-                {categoriasDisponibles.map(cat => (
-                  <button
-                    key={cat.id}
-                    onClick={() => handleCategoriaToggle(cat.id)}
-                    className={`px-4 py-2 rounded-full border text-sm transition-colors ${categorias.includes(cat.id) ? 'bg-[#378ADD] text-white border-[#378ADD]' : 'bg-white text-gray-600 border-gray-300 hover:border-[#378ADD]'}`}
-                  >
+                {categoriasDisponibles.map((cat) =>
+              <button
+                key={cat.id}
+                onClick={() => handleCategoriaToggle(cat.id)}
+                className={`px-4 py-2 rounded-full border text-sm transition-colors ${categorias.includes(cat.id) ? 'bg-[#378ADD] text-white border-[#378ADD]' : 'bg-white text-gray-600 border-gray-300 hover:border-[#378ADD]'}`}>
+                
                     {cat.label}
                   </button>
-                ))}
+              )}
               </div>
             </div>
 
@@ -302,15 +302,15 @@ const RegisterCompradorPage = () => {
               </button>
               
               <button onClick={handleSubmit} disabled={isSubmitting} className="px-8 py-3 bg-[#378ADD] text-white font-bold rounded-lg shadow-lg hover:bg-emerald-600 transition-colors disabled:opacity-70 flex items-center gap-2">
-                {isSubmitting ? 'Creando...' : '¡Empezar a comprar! 🚀'}
+                {isSubmitting ? 'Creando...' : "\xA1Empezar a comprar!"}
               </button>
             </div>
           </div>
-        )}
+        }
 
       </div>
-    </div>
-  );
+    </div>);
+
 };
 
 export default RegisterCompradorPage;

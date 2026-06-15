@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
-import { Leaf, Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Leaf, Mail, Lock, Eye, EyeOff, Loader2, ArrowRight } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
 const LoginPage = () => {
@@ -80,209 +80,194 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex w-full font-sans bg-[#f4f6f9]">
-      {/* LADO IZQUIERDO — Hero (bg gradiente emerald-700 to-emerald-900) */}
-      <div className="hidden lg:flex w-1/2 flex-col justify-between relative overflow-hidden bg-gradient-to-br from-emerald-700 via-emerald-800 to-emerald-900 text-white p-12">
-        {/* Overlay con gradient placeholder verde que simula el campo agrícola boliviano */}
-        <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/90 via-emerald-900/40 to-emerald-800/20 mix-blend-multiply z-10" />
-        <div 
-          className="absolute inset-0 bg-cover bg-center opacity-30 z-0 transform scale-105 transition-transform duration-10000"
-          style={{ 
-            backgroundImage: "url('https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&q=80&w=1000')" 
-          }} 
+    <div className="min-h-screen flex w-full font-sans" style={{ backgroundColor: '#060f07' }}>
+
+      {/* PANEL IZQUIERDO */}
+      <div className="hidden lg:flex w-[52%] relative flex-col overflow-hidden">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1574943320219-553eb213f72d?q=80&w=1920&auto=format&fit=crop')" }}
         />
-        
-        {/* Patrón de puntos superpuesto (rgba blanco 0.04) */}
-        <div className="absolute inset-0 bg-radial-gradient-dots opacity-40 z-10" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#060f07]/95 via-[#060f07]/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#060f07]/80 via-transparent to-[#060f07]/30" />
 
-        {/* Floating gradient circles */}
-        <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl animate-float z-10" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-emerald-400/15 rounded-full blur-3xl animate-float z-10" style={{ animationDelay: '2s' }} />
-
-        {/* Top Header */}
-        <div className="relative z-20 flex items-center gap-3">
-          <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20">
-            <Leaf className="w-6 h-6 text-white" />
+        <div className="relative z-10 flex flex-col h-full p-12">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#16a34a22', border: '1px solid #16a34a44' }}>
+              <Leaf className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div>
+              <span className="text-white text-base font-black tracking-tight block leading-none">AgroDirecto</span>
+              <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-500 block mt-0.5">Santa Cruz · Bolivia</span>
+            </div>
           </div>
-          <div>
-            <span className="text-2xl font-black tracking-tight block">AgroDirecto</span>
-            <span className="text-[10px] font-bold tracking-widest text-emerald-300 uppercase">Santa Cruz</span>
+
+          <div className="my-auto max-w-sm">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-8" style={{ backgroundColor: '#16a34a18', border: '1px solid #16a34a30' }}>
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-widest">Plataforma agropecuaria</span>
+            </div>
+            <h1 className="text-[2.8rem] font-black text-white leading-[1.08] tracking-tight mb-6">
+              Del campo<br />
+              <span className="text-emerald-400">a tu mesa.</span>
+            </h1>
+            <p className="text-[14px] text-white/50 leading-relaxed font-medium max-w-[300px]">
+              Conectamos productores bolivianos directamente con compradores, eliminando intermediarios y asegurando precios justos.
+            </p>
           </div>
-        </div>
 
-        {/* Central Content */}
-        <div className="relative z-20 max-w-md my-auto animate-slide-up">
-          <h2 className="text-4xl font-extrabold tracking-tight leading-tight mb-4">
-            Conectamos el campo con la ciudad
-          </h2>
-          <p className="text-emerald-100/80 text-base leading-relaxed mb-10">
-            Comprá directamente a productores cruceños y optimizá tu cadena de suministro con precios justos y transporte coordinado.
-          </p>
-
-          {/* Estadísticas animadas */}
-          <div className="grid grid-cols-3 gap-4">
-            {[
-              { label: 'Productores', value: '500+' },
-              { label: 'Provincias', value: '12' },
-              { label: 'Intermediarios', value: '30% menos' },
-            ].map((stat, i) => (
-              <div 
-                key={i} 
-                className="bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl p-4 transition-all hover:bg-white/15 cursor-default group"
-              >
-                <div className="text-xl font-black text-white group-hover:scale-105 transition-transform duration-300">
-                  {stat.value}
-                </div>
-                <div className="text-[10px] font-bold text-emerald-200/70 uppercase tracking-wide mt-1">
-                  {stat.label}
-                </div>
+          <div className="flex items-center gap-6">
+            {[{ value: '500+', label: 'Productores' }, { value: '12', label: 'Provincias' }, { value: '0', label: 'Intermediarios' }].map((s, i) => (
+              <div key={i} className="flex flex-col">
+                <span className="text-2xl font-black text-white leading-none">{s.value}</span>
+                <span className="text-[10px] font-bold text-white/30 uppercase tracking-wide mt-1">{s.label}</span>
               </div>
             ))}
           </div>
         </div>
-
-        {/* Footer */}
-        <div className="relative z-20 text-xs text-emerald-200/50">
-          © 2026 AgroDirecto Santa Cruz — Plataforma Agropecuaria Digital Boliviana.
-        </div>
       </div>
 
-      {/* LADO DERECHO — Formulario */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-16 relative">
-        {/* Decorative background blur */}
-        <div className="absolute top-1/4 right-1/4 w-80 h-80 bg-emerald-100 rounded-full blur-3xl opacity-30 pointer-events-none" />
+      {/* PANEL DERECHO */}
+      <div className="flex-1 flex items-center justify-center p-8 relative" style={{ backgroundColor: '#060f07' }}>
+        <div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full pointer-events-none"
+          style={{ background: 'radial-gradient(circle, #16a34a08 0%, transparent 70%)' }}
+        />
 
-        <div className={`w-full max-w-md relative z-10 ${shake ? 'animate-shake' : ''}`}>
+        <div className={`w-full max-w-[380px] relative z-10 ${shake ? 'animate-shake' : ''}`}>
+
           {/* Mobile logo */}
-          <div className="lg:hidden flex items-center justify-center gap-2.5 mb-8">
-            <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-600/20">
-              <Leaf className="w-5 h-5 text-white" />
+          <div className="lg:hidden flex items-center gap-2.5 mb-10">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#16a34a22', border: '1px solid #16a34a44' }}>
+              <Leaf className="w-4 h-4 text-emerald-400" />
             </div>
-            <span className="text-2xl font-black text-slate-900 tracking-tight">AgroDirecto</span>
+            <span className="text-white text-base font-black tracking-tight">AgroDirecto</span>
           </div>
 
-          <div className="bg-white p-8 sm:p-10 rounded-3xl shadow-xl shadow-slate-900/[0.03] border border-slate-100 animate-slide-up">
-            <div className="mb-8">
-              <h1 className="text-3xl font-extrabold tracking-tight text-[#111827]">Bienvenido de nuevo</h1>
-              <p className="text-sm text-slate-400 mt-2">Ingresá con tu cuenta registrada</p>
+          <div className="mb-9">
+            <h2 className="text-[28px] font-black text-white tracking-tight leading-tight">Iniciar sesión</h2>
+            <p className="text-[13px] text-white/35 mt-2 font-medium">Ingresá con tu cuenta registrada en AgroDirecto</p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-5">
+
+            {/* Email */}
+            <div>
+              <label className="block text-[12px] font-bold text-white/50 uppercase tracking-widest mb-2">
+                Correo electrónico
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Mail className={`w-4 h-4 ${errors.correo ? 'text-rose-400' : 'text-white/20'}`} />
+                </div>
+                <input
+                  type="email"
+                  name="correo"
+                  value={formData.correo}
+                  onChange={handleChange}
+                  placeholder="ejemplo@correo.com"
+                  className={`w-full pl-11 pr-4 py-3.5 text-[13px] font-medium text-white placeholder-white/20 rounded-xl outline-none transition-all ${
+                    errors.correo
+                      ? 'border border-rose-500/50 focus:ring-1 focus:ring-rose-500/30'
+                      : 'border border-white/10 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20'
+                  }`}
+                  style={{ backgroundColor: '#ffffff08', caretColor: '#16a34a' }}
+                />
+              </div>
+              {errors.correo && (
+                <p className="text-rose-400 text-[11px] font-semibold mt-1.5">{errors.correo}</p>
+              )}
             </div>
 
-            <form onSubmit={handleLogin} className="space-y-6">
-              {/* Campo Email */}
-              <div className="relative group">
-                <label className="block text-[13px] font-bold text-slate-700 mb-1.5">
-                  Correo electrónico
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-500 transition-colors">
-                    <Mail className="w-4.5 h-4.5" />
-                  </div>
-                  <input
-                    type="email"
-                    name="correo"
-                    value={formData.correo}
-                    onChange={handleChange}
-                    placeholder="ejemplo@correo.com"
-                    className={`w-full pl-11 pr-4 py-3.5 bg-gray-50 border rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all duration-200 ${
-                      errors.correo ? 'border-rose-300 ring-2 ring-rose-100 bg-rose-50/20' : 'border-slate-200'
-                    }`}
-                  />
+            {/* Contraseña */}
+            <div>
+              <label className="block text-[12px] font-bold text-white/50 uppercase tracking-widest mb-2">
+                Contraseña
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Lock className={`w-4 h-4 ${errors.contrasena ? 'text-rose-400' : 'text-white/20'}`} />
                 </div>
-                {errors.correo && (
-                  <p className="text-rose-600 text-xs font-semibold mt-1.5 animate-slide-up">
-                    {errors.correo}
-                  </p>
-                )}
-              </div>
-
-              {/* Campo Contraseña */}
-              <div className="relative group">
-                <label className="block text-[13px] font-bold text-slate-700 mb-1.5">
-                  Contraseña
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-500 transition-colors">
-                    <Lock className="w-4.5 h-4.5" />
-                  </div>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    name="contrasena"
-                    value={formData.contrasena}
-                    onChange={handleChange}
-                    placeholder="Tus 8 caracteres de seguridad"
-                    className={`w-full pl-11 pr-12 py-3.5 bg-gray-50 border rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all duration-200 ${
-                      errors.contrasena ? 'border-rose-300 ring-2 ring-rose-100 bg-rose-50/20' : 'border-slate-200'
-                    }`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-emerald-600 transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
-                  </button>
-                </div>
-                {errors.contrasena && (
-                  <p className="text-rose-600 text-xs font-semibold mt-1.5 animate-slide-up">
-                    {errors.contrasena}
-                  </p>
-                )}
-              </div>
-
-              {/* Recordarme + Olvidaste Contraseña */}
-              <div className="flex items-center justify-between text-xs sm:text-sm">
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input 
-                    type="checkbox" 
-                    className="w-4 h-4 rounded text-emerald-600 border-slate-300 focus:ring-emerald-500 focus:ring-offset-0 transition-all cursor-pointer"
-                  />
-                  <span className="font-semibold text-slate-600">Recordarme</span>
-                </label>
-                <a 
-                  href="#" 
-                  className="font-bold text-emerald-600 hover:text-emerald-700 transition-colors"
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  name="contrasena"
+                  value={formData.contrasena}
+                  onChange={handleChange}
+                  placeholder="Mínimo 8 caracteres"
+                  className={`w-full pl-11 pr-12 py-3.5 text-[13px] font-medium text-white placeholder-white/20 rounded-xl outline-none transition-all ${
+                    errors.contrasena
+                      ? 'border border-rose-500/50 focus:ring-1 focus:ring-rose-500/30'
+                      : 'border border-white/10 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20'
+                  }`}
+                  style={{ backgroundColor: '#ffffff08', caretColor: '#16a34a' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-white/20 hover:text-white/60 transition-colors"
                 >
-                  ¿Olvidaste tu contraseña?
-                </a>
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
+              {errors.contrasena && (
+                <p className="text-rose-400 text-[11px] font-semibold mt-1.5">{errors.contrasena}</p>
+              )}
+            </div>
 
-              {/* Botón Ingresar */}
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl py-3.5 font-bold text-sm shadow-lg shadow-emerald-600/20 hover:shadow-xl hover:shadow-emerald-600/30 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed group hover:-translate-y-0.5 active:translate-y-0"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Iniciando sesión...</span>
-                  </>
-                ) : (
+            {/* Recordarme + Olvidé */}
+            <div className="flex items-center justify-between pt-1">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  className="w-3.5 h-3.5 rounded text-emerald-600 border-white/20 focus:ring-0 cursor-pointer"
+                  style={{ backgroundColor: '#ffffff08' }}
+                />
+                <span className="text-[12px] font-semibold text-white/35">Recordarme</span>
+              </label>
+              <a href="#" className="text-[12px] font-bold text-emerald-500 hover:text-emerald-400 transition-colors">
+                ¿Olvidaste tu contraseña?
+              </a>
+            </div>
+
+            {/* Botón */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-3.5 rounded-xl font-bold text-[14px] flex items-center justify-center gap-2 transition-all duration-200 mt-2 group disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: '#16a34a', color: '#ffffff' }}
+              onMouseEnter={e => { if (!isLoading) e.currentTarget.style.backgroundColor = '#15803d'; }}
+              onMouseLeave={e => { if (!isLoading) e.currentTarget.style.backgroundColor = '#16a34a'; }}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Iniciando sesión...</span>
+                </>
+              ) : (
+                <>
                   <span>Ingresar</span>
-                )}
-              </button>
-            </form>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                </>
+              )}
+            </button>
+          </form>
 
-            {/* Separador */}
-            <div className="mt-8 flex items-center gap-4">
-              <div className="flex-1 h-px bg-slate-100" />
-              <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">o</span>
-              <div className="flex-1 h-px bg-slate-100" />
-            </div>
-
-            {/* Link Registro */}
-            <div className="mt-6 text-center">
-              <p className="text-sm text-slate-500 font-medium">
-                ¿No tenés cuenta?{' '}
-                <Link 
-                  to="/registro" 
-                  className="font-bold text-emerald-600 hover:underline transition-colors"
-                >
-                  Registrate aquí
-                </Link>
-              </p>
-            </div>
+          <div className="flex items-center gap-4 my-7">
+            <div className="flex-1 h-px" style={{ backgroundColor: '#ffffff0a' }} />
+            <span className="text-[10px] font-bold text-white/20 uppercase tracking-widest">o</span>
+            <div className="flex-1 h-px" style={{ backgroundColor: '#ffffff0a' }} />
           </div>
+
+          <p className="text-center text-[13px] text-white/30 font-medium">
+            ¿No tenés cuenta?{' '}
+            <Link to="/registro" className="font-bold text-emerald-500 hover:text-emerald-400 transition-colors">
+              Registrate aquí
+            </Link>
+          </p>
+
+          <p className="text-center text-[10px] text-white/15 font-medium mt-10">
+            © 2026 AgroDirecto · Santa Cruz, Bolivia
+          </p>
         </div>
       </div>
     </div>

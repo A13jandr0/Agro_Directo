@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { 
-  Users, Package, TrendingUp, ShieldCheck, MapPin, BarChart3, 
-  Calendar, Layers, CheckCircle2, UserCheck, AlertTriangle, Settings, ArrowUpRight
-} from 'lucide-react';
+import {
+  Users, Package, TrendingUp, ShieldCheck, MapPin, BarChart3,
+  Calendar, Layers, CheckCircle2, UserCheck, AlertTriangle, Settings, ArrowUpRight, Star } from
+'lucide-react';
 import PageShell from '../components/ui/PageShell';
 import { useToast } from '../context/ToastContext';
 
@@ -24,32 +24,32 @@ const AdminDashboardPage = () => {
 
   // Province distribution data for Pie Chart
   const [provincias, setProvincias] = useState([
-    { nombre: 'Andrés Ibáñez', valor: 45 },
-    { nombre: 'Obispo Santistevan', valor: 25 },
-    { nombre: 'Warnes', valor: 15 },
-    { nombre: 'Ichilo', valor: 10 },
-    { nombre: 'Vallegrande', valor: 5 }
-  ]);
+  { nombre: 'Andrés Ibáñez', valor: 45 },
+  { nombre: 'Obispo Santistevan', valor: 25 },
+  { nombre: 'Warnes', valor: 15 },
+  { nombre: 'Ichilo', valor: 10 },
+  { nombre: 'Vallegrande', valor: 5 }]
+  );
 
   // Last 6 months orders for Bar Chart
   const [pedidosMensuales, setPedidosMensuales] = useState([
-    { mes: 'Ene', cantidad: 85 },
-    { mes: 'Feb', cantidad: 110 },
-    { mes: 'Mar', cantidad: 145 },
-    { mes: 'Abr', cantidad: 130 },
-    { mes: 'May', cantidad: 180 },
-    { mes: 'Jun', cantidad: 224 }
-  ]);
+  { mes: 'Ene', cantidad: 85 },
+  { mes: 'Feb', cantidad: 110 },
+  { mes: 'Mar', cantidad: 145 },
+  { mes: 'Abr', cantidad: 130 },
+  { mes: 'May', cantidad: 180 },
+  { mes: 'Jun', cantidad: 224 }]
+  );
 
   // Weekly registration trends for Line Chart
   const [registrosSemanales, setRegistrosSemanales] = useState([
-    { semana: 'Sem 1', cantidad: 12 },
-    { semana: 'Sem 2', cantidad: 25 },
-    { semana: 'Sem 3', cantidad: 18 },
-    { semana: 'Sem 4', cantidad: 35 },
-    { semana: 'Sem 5', cantidad: 22 },
-    { semana: 'Sem 6', cantidad: 45 }
-  ]);
+  { semana: 'Sem 1', cantidad: 12 },
+  { semana: 'Sem 2', cantidad: 25 },
+  { semana: 'Sem 3', cantidad: 18 },
+  { semana: 'Sem 4', cantidad: 35 },
+  { semana: 'Sem 5', cantidad: 22 },
+  { semana: 'Sem 6', cantidad: 45 }]
+  );
 
   useEffect(() => {
     const fetchBIData = async () => {
@@ -57,13 +57,13 @@ const AdminDashboardPage = () => {
       try {
         const token = localStorage.getItem('token');
         const headers = { Authorization: `Bearer ${token}` };
-        
+
         // Asynchronously try fetching real numbers from admin/bi backend routes
         const res = await axios.get('http://localhost:5000/api/admin/verificaciones', { headers }).catch(() => null);
         if (res && res.data) {
+
           // If we want to dynamically count real users in verification list, etc.
-        }
-      } catch (e) {
+        }} catch (e) {
         console.error(e);
       } finally {
         setLoading(false);
@@ -79,7 +79,7 @@ const AdminDashboardPage = () => {
   const linePoints = registrosSemanales.map((r, i) => {
     const x = 20 + i * 32;
     // Map value (max 50) to height (range 10 to 70, where 70 is bottom and 10 is top)
-    const y = 70 - (r.cantidad / 50) * 60;
+    const y = 70 - r.cantidad / 50 * 60;
     return `${x},${y}`;
   }).join(' ');
 
@@ -89,7 +89,7 @@ const AdminDashboardPage = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <span className="inline-flex bg-slate-900 text-white px-3 py-1 rounded-full text-xs font-bold border border-slate-800">
-            📊 BI & Analytics
+            <Star size={16} className="inline-block mr-1" /> BI & Analytics
           </span>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mt-2">Dashboard Administrativo</h1>
           <p className="text-sm text-slate-400 mt-1">Monitoreo de actividad, transacciones e indicadores clave del sistema</p>
@@ -112,21 +112,21 @@ const AdminDashboardPage = () => {
           {/* Proportion progress bar */}
           <div className="space-y-2 pt-2">
             <div className="h-2 w-full rounded-full bg-slate-100 flex overflow-hidden">
-              <div 
-                style={{ width: `${(kpis.usuariosProductor / totalUsuarios) * 100}%` }} 
-                className="bg-emerald-500" 
-                title={`Productor: ${kpis.usuariosProductor}`}
-              />
-              <div 
-                style={{ width: `${(kpis.usuariosComprador / totalUsuarios) * 100}%` }} 
-                className="bg-blue-500" 
-                title={`Comprador: ${kpis.usuariosComprador}`}
-              />
-              <div 
-                style={{ width: `${(kpis.usuariosTransportista / totalUsuarios) * 100}%` }} 
-                className="bg-amber-500" 
-                title={`Transportista: ${kpis.usuariosTransportista}`}
-              />
+              <div
+                style={{ width: `${kpis.usuariosProductor / totalUsuarios * 100}%` }}
+                className="bg-emerald-500"
+                title={`Productor: ${kpis.usuariosProductor}`} />
+              
+              <div
+                style={{ width: `${kpis.usuariosComprador / totalUsuarios * 100}%` }}
+                className="bg-blue-500"
+                title={`Comprador: ${kpis.usuariosComprador}`} />
+              
+              <div
+                style={{ width: `${kpis.usuariosTransportista / totalUsuarios * 100}%` }}
+                className="bg-amber-500"
+                title={`Transportista: ${kpis.usuariosTransportista}`} />
+              
             </div>
             <div className="flex justify-between text-[9px] font-black text-slate-400 uppercase">
               <span className="text-emerald-600">Prod: {kpis.usuariosProductor}</span>
@@ -165,14 +165,14 @@ const AdminDashboardPage = () => {
             <span className="text-[10px] text-slate-400 font-bold block mt-1">Con publicaciones en el marketplace</span>
           </div>
           <div className="w-full bg-slate-100 rounded-full h-1.5">
-            <div 
-              style={{ width: `${(kpis.productoresActivos / kpis.usuariosProductor) * 100}%` }} 
-              className="bg-emerald-600 h-1.5 rounded-full"
-            />
+            <div
+              style={{ width: `${kpis.productoresActivos / kpis.usuariosProductor * 100}%` }}
+              className="bg-emerald-600 h-1.5 rounded-full" />
+            
           </div>
           <div className="text-[9px] font-bold text-slate-400 flex justify-between">
             <span>Tasa de publicación:</span>
-            <span>{((kpis.productoresActivos / kpis.usuariosProductor) * 100).toFixed(0)}%</span>
+            <span>{(kpis.productoresActivos / kpis.usuariosProductor * 100).toFixed(0)}%</span>
           </div>
         </div>
 
@@ -211,19 +211,19 @@ const AdminDashboardPage = () => {
 
             {pedidosMensuales.map((item, idx) => {
               // Calculate height proportion (max = 250)
-              const pct = (item.cantidad / 250) * 100;
+              const pct = item.cantidad / 250 * 100;
               return (
                 <div key={idx} className="flex flex-col items-center gap-2 w-full group relative z-10">
                   <span className="text-[10px] font-black text-slate-700 opacity-0 group-hover:opacity-100 transition-opacity absolute -top-5 bg-slate-900 text-white px-1.5 py-0.5 rounded shadow">
                     {item.cantidad}
                   </span>
-                  <div 
-                    style={{ height: `${pct}%` }} 
-                    className="w-8 bg-indigo-500 group-hover:bg-indigo-600 rounded-t-lg transition-all duration-300 min-h-[4px] shadow-sm"
-                  />
+                  <div
+                    style={{ height: `${pct}%` }}
+                    className="w-8 bg-indigo-500 group-hover:bg-indigo-600 rounded-t-lg transition-all duration-300 min-h-[4px] shadow-sm" />
+                  
                   <span className="text-[10px] font-bold text-slate-400 mt-2">{item.mes}</span>
-                </div>
-              );
+                </div>);
+
             })}
           </div>
         </div>
@@ -252,18 +252,18 @@ const AdminDashboardPage = () => {
 
             <div className="space-y-2.5 text-xs font-semibold text-slate-600">
               {[
-                { name: 'A. Ibáñez', color: 'bg-blue-500', val: 45 },
-                { name: 'Santistevan', color: 'bg-emerald-500', val: 25 },
-                { name: 'Warnes', color: 'bg-amber-500', val: 15 },
-                { name: 'Ichilo', color: 'bg-pink-500', val: 10 },
-                { name: 'Otros', color: 'bg-indigo-500', val: 5 }
-              ].map((prov, i) => (
-                <div key={i} className="flex items-center gap-2">
+              { name: 'A. Ibáñez', color: 'bg-blue-500', val: 45 },
+              { name: 'Santistevan', color: 'bg-emerald-500', val: 25 },
+              { name: 'Warnes', color: 'bg-amber-500', val: 15 },
+              { name: 'Ichilo', color: 'bg-pink-500', val: 10 },
+              { name: 'Otros', color: 'bg-indigo-500', val: 5 }].
+              map((prov, i) =>
+              <div key={i} className="flex items-center gap-2">
                   <span className={`w-2.5 h-2.5 rounded-full ${prov.color}`} />
                   <span className="text-[11px] text-slate-700">{prov.name}:</span>
                   <span className="font-black text-slate-800 ml-auto">{prov.val}%</span>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>
@@ -280,8 +280,8 @@ const AdminDashboardPage = () => {
               {/* Area fill gradient */}
               <defs>
                 <linearGradient id="gradArea" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.2"/>
-                  <stop offset="100%" stopColor="#4f46e5" stopOpacity="0.0"/>
+                  <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.2" />
+                  <stop offset="100%" stopColor="#4f46e5" stopOpacity="0.0" />
                 </linearGradient>
               </defs>
               
@@ -299,24 +299,24 @@ const AdminDashboardPage = () => {
               {/* Points */}
               {registrosSemanales.map((r, i) => {
                 const x = 20 + i * 32;
-                const y = 70 - (r.cantidad / 50) * 60;
+                const y = 70 - r.cantidad / 50 * 60;
                 return (
-                  <circle key={i} cx={x} cy={y} r="2.5" fill="#4f46e5" stroke="white" strokeWidth="1" />
-                );
+                  <circle key={i} cx={x} cy={y} r="2.5" fill="#4f46e5" stroke="white" strokeWidth="1" />);
+
               })}
             </svg>
             
             <div className="flex justify-between px-2 text-[9px] font-black text-slate-400 uppercase tracking-wide">
-              {registrosSemanales.map((r, i) => (
-                <span key={i}>{r.semana}</span>
-              ))}
+              {registrosSemanales.map((r, i) =>
+              <span key={i}>{r.semana}</span>
+              )}
             </div>
           </div>
         </div>
 
       </div>
-    </PageShell>
-  );
+    </PageShell>);
+
 };
 
 export default AdminDashboardPage;

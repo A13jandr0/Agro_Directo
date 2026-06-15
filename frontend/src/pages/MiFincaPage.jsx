@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  MapPin, Edit2, Save, Info, AlertTriangle, CheckCircle2, Navigation, Loader2, Check
-} from 'lucide-react';
+import {
+  MapPin, Edit2, Save, Info, AlertTriangle, CheckCircle2, Navigation, Loader2, Check, Star } from
+'lucide-react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import axios from 'axios';
@@ -15,7 +15,7 @@ delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png'
 });
 
 const LocationMarker = ({ position, setPosition, isEditing }) => {
@@ -24,28 +24,28 @@ const LocationMarker = ({ position, setPosition, isEditing }) => {
       if (isEditing) {
         setPosition(e.latlng);
       }
-    },
+    }
   });
 
-  return position === null ? null : (
-    <Marker 
-      draggable={isEditing} 
-      position={position} 
-      eventHandlers={{
-        dragend(e) {
-          if (isEditing) {
-            setPosition(e.target.getLatLng());
-          }
+  return position === null ? null :
+  <Marker
+    draggable={isEditing}
+    position={position}
+    eventHandlers={{
+      dragend(e) {
+        if (isEditing) {
+          setPosition(e.target.getLatLng());
         }
-      }}
-    />
-  );
+      }
+    }} />;
+
+
 };
 
 const MiFincaPage = () => {
   const navigate = useNavigate();
   const toast = useToast();
-  
+
   const [position, setPosition] = useState({ lat: -17.3639, lng: -63.2505 }); // Montero, Santa Cruz default
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -65,9 +65,9 @@ const MiFincaPage = () => {
         });
         setUserData(res.data);
         if (res.data.latitud && res.data.longitud) {
-          setPosition({ 
-            lat: parseFloat(res.data.latitud), 
-            lng: parseFloat(res.data.longitud) 
+          setPosition({
+            lat: parseFloat(res.data.latitud),
+            lng: parseFloat(res.data.longitud)
           });
         }
       } catch (err) {
@@ -87,7 +87,7 @@ const MiFincaPage = () => {
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       toast.success('Ubicación de tu finca registrada con éxito');
       setIsEditing(false);
     } catch (err) {
@@ -102,7 +102,7 @@ const MiFincaPage = () => {
       toast.error('Tu navegador no soporta la geolocalización de dispositivo');
       return;
     }
-    
+
     toast.info('Obteniendo coordenadas actuales...');
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -125,7 +125,7 @@ const MiFincaPage = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
           <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold border border-emerald-100">
-            🗺️ Geolocalización
+            <Star size={16} className="inline-block mr-1" /><Star size={16} className="inline-block mr-1" /> Geolocalización
           </span>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mt-2">Mi Finca</h1>
           <p className="text-sm text-slate-400 mt-1">Registrá las coordenadas de tu centro de producción agrícola</p>
@@ -134,29 +134,29 @@ const MiFincaPage = () => {
         <div className="flex gap-3">
           <button
             onClick={handleUseCurrentLocation}
-            className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all shadow-sm hover:bg-slate-50"
-          >
+            className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all shadow-sm hover:bg-slate-50">
+            
             <Navigation className="w-4 h-4 text-emerald-600" />
             Usar mi ubicación actual
           </button>
-          {!isEditing ? (
-            <button
-              onClick={() => setIsEditing(true)}
-              className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md"
-            >
+          {!isEditing ?
+          <button
+            onClick={() => setIsEditing(true)}
+            className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md">
+            
               <Edit2 className="w-4 h-4" />
               Actualizar ubicación
-            </button>
-          ) : (
-            <button
-              onClick={handleSaveLocation}
-              disabled={isSaving}
-              className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md disabled:opacity-50"
-            >
+            </button> :
+
+          <button
+            onClick={handleSaveLocation}
+            disabled={isSaving}
+            className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md disabled:opacity-50">
+            
               {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               Guardar ubicación
             </button>
-          )}
+          }
         </div>
       </div>
 
@@ -197,16 +197,16 @@ const MiFincaPage = () => {
             </div>
 
             {/* Guardar Ubicación Button (If editing) */}
-            {isEditing && (
-              <button
-                onClick={handleSaveLocation}
-                disabled={isSaving}
-                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold shadow-lg shadow-emerald-600/10 transition-all flex items-center justify-center gap-2"
-              >
+            {isEditing &&
+            <button
+              onClick={handleSaveLocation}
+              disabled={isSaving}
+              className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold shadow-lg shadow-emerald-600/10 transition-all flex items-center justify-center gap-2">
+              
                 {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                 Guardar ubicación
               </button>
-            )}
+            }
 
             <div className="pt-4 border-t border-slate-100 flex gap-3">
               <Info className="w-5 h-5 text-slate-400 shrink-0 mt-0.5" />
@@ -225,8 +225,8 @@ const MiFincaPage = () => {
           </MapContainer>
         </div>
       </div>
-    </PageShell>
-  );
+    </PageShell>);
+
 };
 
 export default MiFincaPage;

@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   User, CheckCircle2, AlertCircle, Camera, Lock, Save, X, Eye, EyeOff, Mail, Phone,
-  MapPin, Landmark, ShieldCheck, Sparkles, BellRing
-} from 'lucide-react';
+  MapPin, Landmark, ShieldCheck, Sparkles, BellRing, Star } from
+'lucide-react';
 import axios from 'axios';
 import PageShell from '../components/ui/PageShell';
 import { useToast } from '../context/ToastContext';
@@ -37,7 +37,7 @@ const MiPerfilCompradorPage = () => {
   });
 
   const handleToggleAlerta = (key) => {
-    setAlertas(prev => ({
+    setAlertas((prev) => ({
       ...prev,
       [key]: !prev[key]
     }));
@@ -80,7 +80,7 @@ const MiPerfilCompradorPage = () => {
     setIsSaving(true);
     try {
       const token = localStorage.getItem('token');
-      
+
       // Update profile
       await axios.put('http://localhost:5000/api/usuarios/perfil', {
         nombre_completo: nombre,
@@ -118,8 +118,8 @@ const MiPerfilCompradorPage = () => {
           <div className="w-10 h-10 border-[3px] border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
           <p className="text-xs text-slate-400 font-bold">Cargando perfil...</p>
         </div>
-      </div>
-    );
+      </div>);
+
   }
 
   return (
@@ -127,7 +127,7 @@ const MiPerfilCompradorPage = () => {
       {/* Page Header */}
       <div>
         <span className="inline-flex bg-blue-50 text-blue-700 border border-blue-100 px-3 py-1 rounded-full text-xs font-bold">
-          👤 Mi Cuenta
+          <Star size={16} className="inline-block mr-1" /> Mi Cuenta
         </span>
         <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mt-2">Mi Perfil</h1>
         <p className="text-sm text-slate-400 mt-1">Administrá tu información de contacto, facturación y alertas</p>
@@ -161,37 +161,37 @@ const MiPerfilCompradorPage = () => {
           {/* Tabs */}
           <div className="flex border-b border-slate-100 bg-slate-50/50">
             {[
-              { id: 'Personal', label: 'Información Personal' },
-              { id: 'Alertas', label: 'Alertas de Estacionalidad' }
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-6 py-4 text-xs font-bold transition-all border-b-2 whitespace-nowrap ${
-                  activeTab === tab.id 
-                    ? 'border-indigo-600 text-indigo-600 font-extrabold bg-white' 
-                    : 'border-transparent text-slate-400 hover:text-slate-600'
-                }`}
-              >
+            { id: 'Personal', label: 'Información Personal' },
+            { id: 'Alertas', label: 'Alertas de Estacionalidad' }].
+            map((tab) =>
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-6 py-4 text-xs font-bold transition-all border-b-2 whitespace-nowrap ${
+              activeTab === tab.id ?
+              'border-indigo-600 text-indigo-600 font-extrabold bg-white' :
+              'border-transparent text-slate-400 hover:text-slate-600'}`
+              }>
+              
                 {tab.label}
               </button>
-            ))}
+            )}
           </div>
 
           <div className="p-6 sm:p-8">
             {/* TAB: Personal info */}
-            {activeTab === 'Personal' && (
-              <div className="space-y-6 animate-fade-in">
+            {activeTab === 'Personal' &&
+            <div className="space-y-6 animate-fade-in">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Nombre */}
                   <div className="space-y-2">
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Nombre Completo *</label>
                     <input
-                      type="text"
-                      value={nombre}
-                      onChange={e => setNombre(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    />
+                    type="text"
+                    value={nombre}
+                    onChange={(e) => setNombre(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                  
                   </div>
 
                   {/* Email */}
@@ -201,43 +201,43 @@ const MiPerfilCompradorPage = () => {
                       <span className="text-[9px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded font-black uppercase">Único</span>
                     </label>
                     <input
-                      type="email"
-                      value={email}
-                      disabled
-                      className="w-full px-4 py-3 bg-slate-50/50 text-slate-400 border border-slate-200 rounded-xl text-xs font-semibold cursor-not-allowed"
-                    />
+                    type="email"
+                    value={email}
+                    disabled
+                    className="w-full px-4 py-3 bg-slate-50/50 text-slate-400 border border-slate-200 rounded-xl text-xs font-semibold cursor-not-allowed" />
+                  
                   </div>
 
                   {/* Teléfono */}
                   <div className="space-y-2">
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Número de Celular *</label>
                     <input
-                      type="text"
-                      value={telefono}
-                      onChange={e => setTelefono(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    />
+                    type="text"
+                    value={telefono}
+                    onChange={(e) => setTelefono(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                  
                   </div>
 
                   {/* Ciudad */}
                   <div className="space-y-2">
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Ciudad / Municipio *</label>
                     <input
-                      type="text"
-                      value={ciudad}
-                      onChange={e => setCiudad(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    />
+                    type="text"
+                    value={ciudad}
+                    onChange={(e) => setCiudad(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                  
                   </div>
 
                   {/* Tipo de negocio */}
                   <div className="space-y-2">
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Tipo de Negocio</label>
                     <select
-                      value={tipoNegocio}
-                      onChange={e => setTipoNegocio(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    >
+                    value={tipoNegocio}
+                    onChange={(e) => setTipoNegocio(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
+                    
                       <option value="Particular">Particular / Consumidor final</option>
                       <option value="Tienda">Tienda de barrio / Frial</option>
                       <option value="Restaurante">Restaurante / Pensión</option>
@@ -250,12 +250,12 @@ const MiPerfilCompradorPage = () => {
                   <div className="space-y-2">
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">NIT (Para Facturación / Recibo)</label>
                     <input
-                      type="text"
-                      value={nit}
-                      onChange={e => setNit(e.target.value)}
-                      placeholder="Ej. 10203040025"
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    />
+                    type="text"
+                    value={nit}
+                    onChange={(e) => setNit(e.target.value)}
+                    placeholder="Ej. 10203040025"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                  
                   </div>
                 </div>
 
@@ -263,87 +263,62 @@ const MiPerfilCompradorPage = () => {
                 <div className="space-y-2 pt-2">
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Dirección predeterminada de entrega</label>
                   <input
-                    type="text"
-                    value={direccion}
-                    onChange={e => setDireccion(e.target.value)}
-                    placeholder="Calle, Barrio, Referencia detallada..."
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  />
+                  type="text"
+                  value={direccion}
+                  onChange={(e) => setDireccion(e.target.value)}
+                  placeholder="Calle, Barrio, Referencia detallada..."
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                
                 </div>
               </div>
-            )}
+            }
 
-            {/* TAB: Seasonal alerts */}
-            {activeTab === 'Alertas' && (
-              <div className="space-y-6 animate-fade-in">
-                <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-4 flex gap-3 text-xs leading-relaxed">
-                  <BellRing className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="font-black text-slate-800 uppercase tracking-wider text-[10px]">Recibí alertas cuando lleguen productos de temporada</h4>
-                    <p className="text-slate-500 font-semibold mt-1">
-                      Te enviaremos avisos en tiempo real cuando tus cosechas favoritas alcancen la madurez en el chaco cruceño.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {Object.keys(alertas).map((categoryKey) => {
-                    const isActive = alertas[categoryKey];
-                    return (
-                      <div
-                        key={categoryKey}
-                        className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-slate-100/50 transition-colors"
-                      >
-                        <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">
-                          {categoryKey === 'Maiz' ? 'Maíz' : categoryKey === 'Platanos' ? 'Plátanos' : categoryKey}
-                        </span>
-                        
-                        <button
-                          type="button"
-                          onClick={() => handleToggleAlerta(categoryKey)}
-                          className={`w-10 h-6 rounded-full p-0.5 transition-colors shrink-0 ${
-                            isActive ? 'bg-emerald-500' : 'bg-slate-200'
-                          }`}
-                        >
-                          <div className={`w-5 h-5 bg-white rounded-full transition-transform shadow-md ${
-                            isActive ? 'translate-x-4' : ''
-                          }`} />
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
+            {/* TAB: Seasonal alerts (US08 Redirect) */}
+            {activeTab === 'Alertas' &&
+            <div className="space-y-6 animate-fade-in flex flex-col items-center justify-center py-10 text-center">
+                <BellRing className="w-16 h-16 text-blue-200 mb-4" />
+                <h3 className="text-lg font-black text-slate-800">Gestioná tus alertas de categorías</h3>
+                <p className="text-sm text-slate-500 max-w-md mx-auto mt-2">
+                  Hemos mejorado la gestión de alertas. Ahora podés suscribirte por categorías completas para recibir notificaciones en tiempo real.
+                </p>
+                <button
+                onClick={() => navigate('/suscripciones')}
+                className="mt-6 px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-md hover:bg-indigo-700 transition-all flex items-center gap-2">
+                
+                  <BellRing className="w-4 h-4" />
+                  Ir a Mis Alertas
+                </button>
               </div>
-            )}
+            }
           </div>
 
           {/* Form Actions Footer */}
-          {activeTab === 'Personal' && (
-            <div className="p-5 border-t border-slate-100 bg-slate-50/50 flex items-center justify-end gap-3 mt-auto">
+          {activeTab === 'Personal' &&
+          <div className="p-5 border-t border-slate-100 bg-slate-50/50 flex items-center justify-end gap-3 mt-auto">
               <button
-                onClick={fetchProfile}
-                className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50 transition-colors"
-              >
+              onClick={fetchProfile}
+              className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50 transition-colors">
+              
                 Restaurar
               </button>
               <button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-600/10 flex items-center gap-2"
-              >
-                {isSaving ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <Save className="w-4 h-4" />
-                )}
+              onClick={handleSave}
+              disabled={isSaving}
+              className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-600/10 flex items-center gap-2">
+              
+                {isSaving ?
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> :
+
+              <Save className="w-4 h-4" />
+              }
                 Guardar cambios
               </button>
             </div>
-          )}
+          }
         </div>
       </div>
-    </PageShell>
-  );
+    </PageShell>);
+
 };
 
 export default MiPerfilCompradorPage;

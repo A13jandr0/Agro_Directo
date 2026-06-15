@@ -10,6 +10,7 @@ import CartContext from '../context/CartContext';
 import PageShell from '../components/ui/PageShell';
 import ProductorMapPreview from '../components/ProductorMapPreview';
 import { useToast } from '../context/ToastContext';
+import { getImageUrl, handleImageError } from '../utils/imageUtils';
 
 const ProductoDetallePage = () => {
   const { id } = useParams();
@@ -99,13 +100,20 @@ const ProductoDetallePage = () => {
           
           {/* COLUMNA IZQUIERDA: Galería de fotos */}
           <div className="space-y-4">
+            {console.log("Datos de producto:", producto, "URL fotos:", fotos)}
             <div className="aspect-video bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center overflow-hidden relative">
               {fotos.length > 0 ? (
-                <img 
-                  src={`http://localhost:5000${fotos[fotoActiva]}`} 
-                  className="w-full h-full object-cover" 
-                  alt={producto.nombre_producto} 
-                />
+                <>
+                  <img 
+                    src={getImageUrl(fotos[fotoActiva])} 
+                    className="w-full h-full object-cover" 
+                    alt={producto.nombre_producto} 
+                    onError={handleImageError}
+                  />
+                  <div className="w-full h-full bg-slate-50 hidden items-center justify-center">
+                    <Leaf className="w-16 h-16 text-emerald-200" />
+                  </div>
+                </>
               ) : (
                 <Leaf className="w-16 h-16 text-emerald-200" />
               )}
@@ -116,11 +124,19 @@ const ProductoDetallePage = () => {
                   <button
                     key={idx}
                     onClick={() => setFotoActiva(idx)}
-                    className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${
+                    className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all relative flex items-center justify-center bg-slate-50 ${
                       fotoActiva === idx ? 'border-blue-600' : 'border-slate-200 opacity-60'
                     }`}
                   >
-                    <img src={`http://localhost:5000${url}`} className="w-full h-full object-cover" alt="" />
+                    <img 
+                      src={getImageUrl(url)} 
+                      className="w-full h-full object-cover z-10" 
+                      alt="" 
+                      onError={handleImageError}
+                    />
+                    <div className="w-full h-full bg-slate-50 hidden items-center justify-center absolute inset-0 z-0">
+                      <Leaf className="w-6 h-6 text-emerald-200" />
+                    </div>
                   </button>
                 ))}
               </div>
@@ -146,6 +162,7 @@ const ProductoDetallePage = () => {
               <span className="text-sm font-semibold text-slate-400 ml-1">/ {producto.unidad_medida}</span>
             </div>
 
+
             {/* Disponibilidad */}
             <div>
               {stockMax > 0 ? (
@@ -159,18 +176,6 @@ const ProductoDetallePage = () => {
               )}
             </div>
 
-            {/* Si es preventa: banner azul */}
-            {esPreventa && (
-              <div className="bg-blue-50 border border-blue-200 text-blue-900 rounded-2xl p-4 flex items-start gap-3">
-                <Clock className="w-5 h-5 text-blue-600 shrink-0 mt-0.5 animate-float" />
-                <div>
-                  <h4 className="text-xs font-black uppercase tracking-wider">Preventa Disponible</h4>
-                  <p className="text-xs text-blue-800/80 leading-normal font-semibold mt-1">
-                    Disponible en 5 días 14 horas. Reserva hoy pagando solo el 50% de anticipo.
-                  </p>
-                </div>
-              </div>
-            )}
 
             {/* Selector de cantidad */}
             <div className="flex items-center gap-3">
@@ -239,7 +244,7 @@ const ProductoDetallePage = () => {
               Distancia estimada: <span className="text-blue-600 font-extrabold">{distance.toFixed(0)} km</span>
             </div>
             <button 
-              onClick={() => navigate('/marketplace')}
+              onClick={() => navigate(`/marketplace?productor_id=${producto.productor_usuario_id}`)}
               className="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl text-xs font-bold transition-all shadow-sm"
             >
               Ver todos sus productos

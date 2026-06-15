@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Package, Search, Calendar, MapPin, Eye, ArrowLeft, RefreshCw, ShoppingBag } from 'lucide-react';
+import { Package, Search, Calendar, MapPin, Eye, ArrowLeft, RefreshCw, ShoppingBag, Star } from 'lucide-react';
 import PageShell from '../components/ui/PageShell';
 import { useToast } from '../context/ToastContext';
 
@@ -18,7 +18,7 @@ const AdminPedidosPage = () => {
       const res = await axios.get('http://localhost:5000/api/pedidos/comprador', {
         headers: { Authorization: `Bearer ${token}` }
       }).catch(() => ({ data: [] }));
-      
+
       setPedidos(res.data || []);
     } catch (error) {
       console.error(error);
@@ -44,13 +44,13 @@ const AdminPedidosPage = () => {
     return (
       <span className={`badge uppercase text-[10px] font-black border ${states[estado] || 'bg-slate-50 text-slate-700 border-slate-200'}`}>
         {estado}
-      </span>
-    );
+      </span>);
+
   };
 
-  const filtered = pedidos.filter(p => 
-    p.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    (p.nombre_finca && p.nombre_finca.toLowerCase().includes(searchQuery.toLowerCase()))
+  const filtered = pedidos.filter((p) =>
+  p.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  p.nombre_finca && p.nombre_finca.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -58,7 +58,7 @@ const AdminPedidosPage = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <span className="inline-flex bg-slate-900 text-white px-3 py-1 rounded-full text-xs font-bold">
-            📦 Pedidos Globales
+            <Star size={16} className="inline-block mr-1" /> Pedidos Globales
           </span>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mt-2">Monitoreo de Pedidos</h1>
           <p className="text-sm text-slate-400 mt-1">Supervisá todas las órdenes activas y finalizadas en AgroDirecto</p>
@@ -71,34 +71,34 @@ const AdminPedidosPage = () => {
               type="text"
               placeholder="Buscar por ID o productor..."
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 w-full sm:w-56"
-            />
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 w-full sm:w-56" />
+            
           </div>
           <button
             onClick={fetchPedidos}
-            className="p-2 border border-slate-200 bg-white text-slate-500 rounded-xl hover:text-blue-600 transition-colors"
-          >
+            className="p-2 border border-slate-200 bg-white text-slate-500 rounded-xl hover:text-blue-600 transition-colors">
+            
             <RefreshCw className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      {loading ? (
-        <div className="py-24 text-center">
+      {loading ?
+      <div className="py-24 text-center">
           <div className="w-8 h-8 border-[3px] border-slate-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-3"></div>
           <p className="text-xs text-slate-400 font-bold">Cargando transacciones...</p>
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="bg-white rounded-3xl border border-slate-200/60 py-16 flex flex-col items-center justify-center text-center px-6 shadow-sm max-w-lg mx-auto">
+        </div> :
+      filtered.length === 0 ?
+      <div className="bg-white rounded-3xl border border-slate-200/60 py-16 flex flex-col items-center justify-center text-center px-6 shadow-sm max-w-lg mx-auto">
           <ShoppingBag className="w-10 h-10 text-slate-300 mb-4" />
           <h3 className="text-base font-extrabold text-slate-800">No se encontraron pedidos</h3>
           <p className="text-xs text-slate-400 mt-2 font-semibold">
             Actualmente no hay pedidos registrados o que coincidan con la búsqueda.
           </p>
-        </div>
-      ) : (
-        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+        </div> :
+
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -112,8 +112,8 @@ const AdminPedidosPage = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
-                {filtered.map(p => (
-                  <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
+                {filtered.map((p) =>
+              <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-6 py-4 text-indigo-600 font-black">#{p.id.substring(0, 8).toUpperCase()}</td>
                     <td className="px-6 py-4 font-bold text-slate-500">
                       {new Date(p.fecha_pedido).toLocaleDateString()}
@@ -127,14 +127,14 @@ const AdminPedidosPage = () => {
                       </button>
                     </td>
                   </tr>
-                ))}
+              )}
               </tbody>
             </table>
           </div>
         </div>
-      )}
-    </PageShell>
-  );
+      }
+    </PageShell>);
+
 };
 
 export default AdminPedidosPage;

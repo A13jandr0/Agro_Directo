@@ -369,10 +369,15 @@ exports.getCosechaById = async (req, res) => {
                     u.nombre_completo AS nombre_productor,
                     u.id AS productor_usuario_id,
                     (SELECT COUNT(*) FROM Cosechas c2 
-                     WHERE c2.productor_id = p.id AND c2.estado_publicacion = 'Activo') AS productos_publicados
+                     WHERE c2.productor_id = p.id AND c2.estado_publicacion = 'Activo') AS productos_publicados,
+                    pma.precio_promedio_bs AS precio_mercado_abasto,
+                    (c.precio_unitario - pma.precio_promedio_bs) AS diferencia_precio,
+                    ((c.precio_unitario - pma.precio_promedio_bs) / NULLIF(pma.precio_promedio_bs, 0) * 100) AS porcentaje_diferencia
                 FROM Cosechas c
                 LEFT JOIN perfil_productor p ON c.productor_id = p.id
                 LEFT JOIN usuarios u ON p.usuario_id = u.id
+                LEFT JOIN Precios_Mercado_Abasto pma 
+                  ON pma.nombre_producto LIKE '%' + SUBSTRING(c.nombre_producto, 1, 5) + '%'
                 WHERE c.id = @id AND c.estado_publicacion NOT IN ('Inactivo', 'Eliminado')
             `);
 
@@ -407,3 +412,64 @@ exports.getCosechaById = async (req, res) => {
         res.status(500).json({ error: 'Error interno al obtener el detalle del producto.' });
     }
 };
+
+// GET /api/precios-abasto
+exports.getPreciosAbasto = async (req, res) => {
+    try {
+        const pool = await getPool();
+        const result = await pool.request().query(`
+            SELECT nombre_producto, precio_promedio_bs, fecha_actualizacion 
+            FROM Precios_Mercado_Abasto 
+            ORDER BY nombre_producto
+        `);
+        res.json(result.recordset);
+    } catch (error) {
+        console.error('getPreciosAbasto Error:', error);
+        res.status(500).json({ error: 'Error interno al obtener precios del abasto.' });
+    }
+};
+
+// GET /api/cosechas/comparador?busqueda=Tomate&lat=-17.7&lng=-63.1
+exports.compararCosechas = async (req, res) => {
+    try {
+        const { busqueda, lat, lng } = req.query;
+        const pool = await getPool();
+
+        let query = `
+            SELECT 
+                c.id AS cosecha_id, c.nombre_producto, c.precio_unitario, c.unidad_medida, c.foto_url,
+                p.nombre_finca, p.municipio, u.nombre_completo AS productor_nombre,
+                pma.precio_promedio_bs AS precio_mercado_abasto,
+                ((c.precio_unitario - pma.precio_promedio_bs) / NULLIF(pma.precio_promedio_bs, 0) * 100) AS porcentaje_diferencia
+        `;
+
+        if (lat && lng && !Number.isNaN(parseFloat(lat)) && !Number.isNaN(parseFloat(lng))) {
+            query += `, geography::Point(${parseFloat(lat)}, ${parseFloat(lng)}, 4326).STDistance(p.ubicacion_gps) / 1000 AS distancia_km `;
+        } else {
+            query += `, NULL AS distancia_km `;
+        }
+
+        query += `
+            FROM Cosechas c
+            INNER JOIN perfil_productor p ON c.productor_id = p.id
+            INNER JOIN usuarios u ON p.usuario_id = u.id
+            LEFT JOIN Precios_Mercado_Abasto pma ON pma.nombre_producto LIKE '%' + SUBSTRING(c.nombre_producto, 1, 5) + '%'
+            WHERE c.estado_publicacion = 'Activo'
+        `;
+
+        const request = pool.request();
+        if (busqueda) {
+            query += ` AND c.nombre_producto LIKE '%' + @busqueda + '%'`;
+            request.input('busqueda', sql.VarChar(100), busqueda);
+        }
+
+        query += ` ORDER BY c.precio_unitario ASC`;
+
+        const result = await request.query(query);
+        res.json(result.recordset);
+    } catch (error) {
+        console.error('compararCosechas Error:', error);
+        res.status(500).json({ error: 'Error interno al comparar cosechas.' });
+    }
+};
+

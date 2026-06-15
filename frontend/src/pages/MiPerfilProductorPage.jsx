@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { 
-  User, CheckCircle2, AlertCircle, Camera, FileText, Upload, 
-  Mail, Phone, Lock, Save, X, Eye, EyeOff, Loader2, Sparkles, CreditCard, Clock
-} from 'lucide-react';
+import {
+  User, CheckCircle2, AlertCircle, Camera, FileText, Upload,
+  Mail, Phone, Lock, Save, X, Eye, EyeOff, Loader2, Sparkles, CreditCard, Clock, Check } from
+'lucide-react';
 import { useToast } from '../context/ToastContext';
 import PageShell from '../components/ui/PageShell';
 
 const MiPerfilProductorPage = () => {
   const navigate = useNavigate();
   const toast = useToast();
-  
+
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -75,7 +75,7 @@ const MiPerfilProductorPage = () => {
   }, [navigate]);
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleFileUpload = (file, field) => {
@@ -171,8 +171,8 @@ const MiPerfilProductorPage = () => {
     return (
       <div className="py-24 text-center">
         <Loader2 className="w-10 h-10 animate-spin text-emerald-600 mx-auto" />
-      </div>
-    );
+      </div>);
+
   }
 
   const estado = userData?.estado || 'PENDIENTE_VERIFICACION';
@@ -188,11 +188,11 @@ const MiPerfilProductorPage = () => {
           <div className="w-24 h-24 rounded-full bg-emerald-600 text-white flex items-center justify-center text-3xl font-black border-4 border-emerald-50 shadow-md">
             {getInitials(formData.nombre_completo)}
           </div>
-          <button 
-            type="button" 
+          <button
+            type="button"
             className="absolute bottom-0 right-0 bg-white border border-slate-200 p-1.5 rounded-full text-slate-600 hover:text-emerald-600 shadow-md transition-colors"
-            title="Cambiar foto de perfil"
-          >
+            title="Cambiar foto de perfil">
+            
             <Camera className="w-4 h-4" />
           </button>
         </div>
@@ -200,19 +200,19 @@ const MiPerfilProductorPage = () => {
         <div className="text-center md:text-left flex-1 min-w-0">
           <div className="flex flex-col md:flex-row md:items-center gap-2">
             <h2 className="text-2xl font-black text-slate-900 tracking-tight">{formData.nombre_completo}</h2>
-            {isVerified ? (
-              <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border-emerald-200 px-3 py-1 rounded-full text-xs font-bold w-fit mx-auto md:mx-0">
+            {isVerified ?
+            <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border-emerald-200 px-3 py-1 rounded-full text-xs font-bold w-fit mx-auto md:mx-0">
                 <CheckCircle2 className="w-3.5 h-3.5" /> Verificado
-              </span>
-            ) : isRejected ? (
-              <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 border-rose-200 px-3 py-1 rounded-full text-xs font-bold w-fit mx-auto md:mx-0">
+              </span> :
+            isRejected ?
+            <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 border-rose-200 px-3 py-1 rounded-full text-xs font-bold w-fit mx-auto md:mx-0">
                 <AlertCircle className="w-3.5 h-3.5" /> Rechazado
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border-amber-200 px-3 py-1 rounded-full text-xs font-bold w-fit mx-auto md:mx-0">
+              </span> :
+
+            <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border-amber-200 px-3 py-1 rounded-full text-xs font-bold w-fit mx-auto md:mx-0">
                 <Clock className="w-3.5 h-3.5 animate-pulse" /> Pendiente Verificación
               </span>
-            )}
+            }
           </div>
           <p className="text-sm text-slate-400 mt-1">Finca: {formData.nombre_finca || 'Sin Finca Registrada'} — {formData.municipio}, {formData.departamento}</p>
         </div>
@@ -235,8 +235,8 @@ const MiPerfilProductorPage = () => {
                   type="text"
                   value={formData.nombre_completo}
                   onChange={(e) => handleInputChange('nombre_completo', e.target.value)}
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-slate-200 rounded-xl text-sm font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                />
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-slate-200 rounded-xl text-sm font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                
               </div>
 
               <div>
@@ -249,8 +249,8 @@ const MiPerfilProductorPage = () => {
                     type="email"
                     value={formData.correo}
                     disabled
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-sm font-semibold text-slate-500 cursor-not-allowed"
-                  />
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-sm font-semibold text-slate-500 cursor-not-allowed" />
+                  
                 </div>
               </div>
 
@@ -264,8 +264,8 @@ const MiPerfilProductorPage = () => {
                     type="tel"
                     value={formData.celular}
                     onChange={(e) => handleInputChange('celular', e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-slate-200 rounded-xl text-sm font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                  />
+                    className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-slate-200 rounded-xl text-sm font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                  
                 </div>
               </div>
 
@@ -275,8 +275,8 @@ const MiPerfilProductorPage = () => {
                   type="text"
                   value={formData.nombre_finca}
                   onChange={(e) => handleInputChange('nombre_finca', e.target.value)}
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-slate-200 rounded-xl text-sm font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                />
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-slate-200 rounded-xl text-sm font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                
               </div>
             </div>
 
@@ -286,16 +286,16 @@ const MiPerfilProductorPage = () => {
                 value={formData.bio}
                 onChange={(e) => handleInputChange('bio', e.target.value)}
                 rows="3"
-                className="w-full px-4 py-3 bg-gray-50 border border-slate-200 rounded-xl text-sm font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none"
-              />
+                className="w-full px-4 py-3 bg-gray-50 border border-slate-200 rounded-xl text-sm font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none" />
+              
             </div>
 
             <div className="pt-4 border-t border-slate-100 flex justify-end">
               <button
                 type="submit"
                 disabled={isSaving}
-                className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-md transition-all disabled:opacity-50"
-              >
+                className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-md transition-all disabled:opacity-50">
+                
                 {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 Guardar cambios
               </button>
@@ -311,8 +311,8 @@ const MiPerfilProductorPage = () => {
           </div>
 
           {/* Banners informativos según estado */}
-          {isPending && (
-            <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl p-4 space-y-1.5">
+          {isPending &&
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl p-4 space-y-1.5">
               <h4 className="text-xs font-bold flex items-center gap-1.5">
                 <Clock className="w-4 h-4 animate-pulse" /> Documentación pendiente de revisión
               </h4>
@@ -320,22 +320,22 @@ const MiPerfilProductorPage = () => {
                 Tus credenciales están siendo revisadas. Puedes subir nuevos archivos si faltaba alguno.
               </p>
             </div>
-          )}
+          }
 
-          {isVerified && (
-            <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl p-4 flex items-start gap-3">
+          {isVerified &&
+          <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl p-4 flex items-start gap-3">
               <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 shrink-0" />
               <div>
-                <h4 className="text-xs font-bold">✓ Cuenta verificada</h4>
+                <h4 className="text-xs font-bold"><Check size={16} className="inline-block mr-1" /> Cuenta verificada</h4>
                 <p className="text-[11px] text-emerald-800/80 leading-normal font-semibold mt-1">
                   Tu acreditación está completada. Puedes publicar y vender en el marketplace de AgroDirecto.
                 </p>
               </div>
             </div>
-          )}
+          }
 
-          {isRejected && (
-            <div className="bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl p-4 space-y-2">
+          {isRejected &&
+          <div className="bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl p-4 space-y-2">
               <h4 className="text-xs font-bold flex items-center gap-1.5">
                 <AlertCircle className="w-4 h-4" /> Solicitud rechazada
               </h4>
@@ -343,85 +343,85 @@ const MiPerfilProductorPage = () => {
                 Motivo: {userData?.motivo_rechazo || 'Acreditaciones inválidas o borrosas. Por favor, subí nuevamente.'}
               </p>
             </div>
-          )}
+          }
 
           {/* Formulario de carga de documentos si no está verificado */}
-          {!isVerified && (
-            <div className="space-y-4 pt-2">
+          {!isVerified &&
+          <div className="space-y-4 pt-2">
               {/* Documento 1: Carnet de Identidad */}
               <div className="space-y-2">
                 <span className="text-xs font-bold text-slate-600 block">Carnet de Identidad (ambos lados)</span>
-                <div 
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    handleFileUpload(e.dataTransfer.files[0], 'ci');
-                  }}
-                  className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors bg-slate-50"
-                >
+                <div
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  handleFileUpload(e.dataTransfer.files[0], 'ci');
+                }}
+                className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors bg-slate-50">
+                
                   <input
-                    type="file"
-                    id="ci-upload"
-                    accept=".jpg,.jpeg,.png,.pdf"
-                    onChange={(e) => handleFileUpload(e.target.files[0], 'ci')}
-                    className="hidden"
-                  />
+                  type="file"
+                  id="ci-upload"
+                  accept=".jpg,.jpeg,.png,.pdf"
+                  onChange={(e) => handleFileUpload(e.target.files[0], 'ci')}
+                  className="hidden" />
+                
                   <label htmlFor="ci-upload" className="cursor-pointer text-center flex flex-col items-center">
                     <Upload className="w-6 h-6 text-slate-400 mb-1" />
                     <span className="text-[11px] font-bold text-emerald-600">Subir CI</span>
                   </label>
                 </div>
-                {fileCI && (
-                  <div className="text-[10px] text-slate-500 truncate font-semibold bg-slate-100 p-1.5 rounded-lg flex items-center justify-between">
+                {fileCI &&
+              <div className="text-[10px] text-slate-500 truncate font-semibold bg-slate-100 p-1.5 rounded-lg flex items-center justify-between">
                     <span className="truncate">{fileCI.name}</span>
                     <button type="button" onClick={() => setFileCI(null)} className="text-rose-600 hover:bg-rose-50 p-0.5 rounded"><X className="w-3.5 h-3.5" /></button>
                   </div>
-                )}
+              }
               </div>
 
               {/* Documento 2: RAU */}
               <div className="space-y-2">
                 <span className="text-xs font-bold text-slate-600 block">Registro Agrario Único (RAU)</span>
-                <div 
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    handleFileUpload(e.dataTransfer.files[0], 'rau');
-                  }}
-                  className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors bg-slate-50"
-                >
+                <div
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  handleFileUpload(e.dataTransfer.files[0], 'rau');
+                }}
+                className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors bg-slate-50">
+                
                   <input
-                    type="file"
-                    id="rau-upload"
-                    accept=".jpg,.jpeg,.png,.pdf"
-                    onChange={(e) => handleFileUpload(e.target.files[0], 'rau')}
-                    className="hidden"
-                  />
+                  type="file"
+                  id="rau-upload"
+                  accept=".jpg,.jpeg,.png,.pdf"
+                  onChange={(e) => handleFileUpload(e.target.files[0], 'rau')}
+                  className="hidden" />
+                
                   <label htmlFor="rau-upload" className="cursor-pointer text-center flex flex-col items-center">
                     <Upload className="w-6 h-6 text-slate-400 mb-1" />
                     <span className="text-[11px] font-bold text-emerald-600">Subir RAU</span>
                   </label>
                 </div>
-                {fileRAU && (
-                  <div className="text-[10px] text-slate-500 truncate font-semibold bg-slate-100 p-1.5 rounded-lg flex items-center justify-between">
+                {fileRAU &&
+              <div className="text-[10px] text-slate-500 truncate font-semibold bg-slate-100 p-1.5 rounded-lg flex items-center justify-between">
                     <span className="truncate">{fileRAU.name}</span>
                     <button type="button" onClick={() => setFileRAU(null)} className="text-rose-600 hover:bg-rose-50 p-0.5 rounded"><X className="w-3.5 h-3.5" /></button>
                   </div>
-                )}
+              }
               </div>
 
               {/* Submit Docs */}
               <button
-                type="button"
-                onClick={handleUploadDocs}
-                disabled={isUploadingDocs || (!fileCI && !fileRAU)}
-                className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-extrabold transition-all shadow-md disabled:opacity-50 flex items-center justify-center gap-1.5"
-              >
+              type="button"
+              onClick={handleUploadDocs}
+              disabled={isUploadingDocs || !fileCI && !fileRAU}
+              className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-extrabold transition-all shadow-md disabled:opacity-50 flex items-center justify-center gap-1.5">
+              
                 {isUploadingDocs && <Loader2 className="w-4 h-4 animate-spin" />}
                 Enviar acreditaciones
               </button>
             </div>
-          )}
+          }
 
         </div>
 
@@ -441,8 +441,8 @@ const MiPerfilProductorPage = () => {
                 <select
                   value={banco}
                   onChange={(e) => setBanco(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-slate-200 rounded-xl text-sm font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                >
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-slate-200 rounded-xl text-sm font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                  
                   <option value="BNB">BNB</option>
                   <option value="Banco Unión">Banco Unión</option>
                   <option value="Tigo Money">Tigo Money</option>
@@ -460,8 +460,8 @@ const MiPerfilProductorPage = () => {
                   value={titular}
                   onChange={(e) => setTitular(e.target.value)}
                   placeholder="Ej. Juan Pérez Mamani"
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-slate-200 rounded-xl text-sm font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                />
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-slate-200 rounded-xl text-sm font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                
               </div>
 
               <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-2xl p-4 space-y-2">
@@ -476,45 +476,45 @@ const MiPerfilProductorPage = () => {
 
             <div className="space-y-4">
               <span className="text-xs font-bold text-slate-600 block">Mi código QR de cobro</span>
-              <div 
+              <div
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
                   e.preventDefault();
                   handleQRUpload(e.dataTransfer.files[0]);
                 }}
                 className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors bg-slate-50 relative overflow-hidden"
-                style={{ minHeight: '200px' }}
-              >
+                style={{ minHeight: '200px' }}>
+                
                 <input
                   type="file"
                   id="qr-upload"
                   accept=".jpg,.jpeg,.png"
                   onChange={(e) => handleQRUpload(e.target.files[0])}
-                  className="hidden"
-                />
+                  className="hidden" />
                 
-                {qrImagePreview ? (
-                  <div className="flex flex-col items-center">
+                
+                {qrImagePreview ?
+                <div className="flex flex-col items-center">
                     <img src={qrImagePreview} alt="QR de cobro" className="w-32 h-32 object-contain border border-slate-200 rounded-xl bg-white p-2 shadow-sm mb-3" />
                     <label htmlFor="qr-upload" className="cursor-pointer text-xs font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full">
                       Cambiar foto de QR
                     </label>
-                  </div>
-                ) : (
-                  <label htmlFor="qr-upload" className="cursor-pointer text-center flex flex-col items-center w-full h-full justify-center">
+                  </div> :
+
+                <label htmlFor="qr-upload" className="cursor-pointer text-center flex flex-col items-center w-full h-full justify-center">
                     <Camera className="w-8 h-8 text-slate-400 mb-2" />
                     <span className="text-sm font-bold text-slate-600">Subí la foto de tu QR bancario</span>
                     <span className="text-[10px] text-slate-400 mt-1">PNG, JPG hasta 5MB</span>
                   </label>
-                )}
+                }
               </div>
 
               <div className="pt-2 flex justify-end">
                 <button
                   type="button"
                   onClick={handleSaveQR}
-                  className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-md transition-all flex items-center gap-2"
-                >
+                  className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-md transition-all flex items-center gap-2">
+                  
                   <Save className="w-4 h-4" />
                   Guardar datos de cobro
                 </button>
@@ -524,8 +524,8 @@ const MiPerfilProductorPage = () => {
         </div>
 
       </div>
-    </PageShell>
-  );
+    </PageShell>);
+
 };
 
 export default MiPerfilProductorPage;

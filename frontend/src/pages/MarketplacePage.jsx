@@ -3,27 +3,29 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import {
   MapPin, Search, Filter, ShoppingCart, Leaf, CheckCircle2,
-  SlidersHorizontal, X, Sparkles, Star, Eye, ArrowUpRight, ArrowDownUp, Check, Minus, Plus, Loader2
-} from 'lucide-react';
+  SlidersHorizontal, X, Sparkles, Star, Eye, ArrowUpRight, ArrowDownUp, Check, Minus, Plus, Loader2 } from
+'lucide-react';
 import CartContext from '../context/CartContext';
 import PageShell from '../components/ui/PageShell';
 import { useToast } from '../context/ToastContext';
+import { getImageUrl, handleImageError } from '../utils/imageUtils';
 
 const SANTA_CRUZ_PROVINCES = [
-  'Andrés Ibáñez',
-  'Obispo Santistevan',
-  'Warnes',
-  'Ichilo',
-  'Sara',
-  'Chiquitos',
-  'Cordillera',
-  'Vallegrande'
-];
+'Andrés Ibáñez',
+'Obispo Santistevan',
+'Warnes',
+'Ichilo',
+'Sara',
+'Chiquitos',
+'Cordillera',
+'Vallegrande'];
+
 
 const MarketplacePage = () => {
   const navigate = useNavigate();
   const toast = useToast();
   const [searchParams] = useSearchParams();
+  const productorIdFiltro = searchParams.get('productor_id');
   const { carrito, agregarAlCarritoConVerificacion, actualizarCantidad, eliminarDelCarrito } = useContext(CartContext);
 
   // States
@@ -45,7 +47,7 @@ const MarketplacePage = () => {
 
   useEffect(() => {
     fetchProductos();
-  }, [maxDistance]);
+  }, []);
 
   const fetchProductos = async () => {
     setLoading(true);
@@ -56,7 +58,7 @@ const MarketplacePage = () => {
         params: {
           lat_comprador: latComprador,
           lng_comprador: lngComprador,
-          radio_km: maxDistance
+          radio_km: 200 // Obtener todos hasta 200km para filtrar dinámicamente en el frontend
         }
       });
       const data = res.data || [];
@@ -64,7 +66,7 @@ const MarketplacePage = () => {
       const currentIds = data.map((p) => p.cosecha_id);
       const nuevos = currentIds.filter((id) => !knownIds.includes(id)).length;
       if (knownIds.length > 0 && nuevos > 0) {
-        toast.info('✨ Productos nuevos', `Hay ${nuevos} producto${nuevos > 1 ? 's' : ''} nuevo${nuevos > 1 ? 's' : ''} desde tu última visita`);
+        toast.info("Productos nuevos", `Hay ${nuevos} producto${nuevos > 1 ? 's' : ''} nuevo${nuevos > 1 ? 's' : ''} desde tu última visita`);
       }
       sessionStorage.setItem('marketplace_known_ids', JSON.stringify(currentIds));
       setProductos(data);
@@ -78,14 +80,14 @@ const MarketplacePage = () => {
 
   // Checkbox handlers
   const handleCategoryChange = (cat) => {
-    setSelectedCategories(prev => 
-      prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
+    setSelectedCategories((prev) =>
+    prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
     );
   };
 
   const handleProvinceChange = (prov) => {
-    setSelectedProvinces(prev => 
-      prev.includes(prov) ? prev.filter(p => p !== prov) : [...prev, prov]
+    setSelectedProvinces((prev) =>
+    prev.includes(prov) ? prev.filter((p) => p !== prov) : [...prev, prov]
     );
   };
 
@@ -101,32 +103,44 @@ const MarketplacePage = () => {
   };
 
   const getCartQuantity = (prodId) => {
-    const item = carrito.find(it => (it.cosecha_id || it.id) === prodId);
+    const item = carrito.find((it) => (it.cosecha_id || it.id) === prodId);
     return item ? item.cantidad : 0;
   };
 
   // Filter logic in memory
-  const filteredProducts = productos.filter(p => {
+  const filteredProducts = productos.filter((p) => {
     const matchesSearch = p.nombre_producto.toLowerCase().includes(searchVal.toLowerCase());
     const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(p.categoria);
     const matchesPrice = Number(p.precio_unitario) <= maxPrice;
-    
-    const distance = typeof p.distancia_km === 'number' ? p.distancia_km : Number.POSITIVE_INFINITY;
-    const matchesDistance = distance <= maxDistance;
-    
-    const matchesModalidad = modalidad === 'Todos' || 
-      (modalidad === 'Inmediata' && !p.es_preventa) || 
-      (modalidad === 'Preventas' && p.es_preventa);
-      
+
+    const distance = p.distancia_km !== null && p.distancia_km !== undefined ?
+    parseFloat(p.distancia_km) :
+    Number.POSITIVE_INFINITY;
+    const matchesDistance = Number.isFinite(distance) ?
+    distance <= maxDistance :
+    maxDistance >= 200;
+
+    const matchesModalidad = modalidad === 'Todos' ||
+    modalidad === 'Inmediata' && !p.es_preventa ||
+    modalidad === 'Preventas' && p.es_preventa;
+
     // En el mockup se asume provincia y verificación
     const province = p.provincia || 'Andrés Ibáñez';
     const matchesProvince = selectedProvinces.length === 0 || selectedProvinces.includes(province);
-    
-    // Verificación
-    const matchesVerified = !verifiedOnly || (p.productor_verificado || true);
 
-    return matchesSearch && matchesCategory && matchesPrice && matchesDistance && matchesModalidad && matchesProvince && matchesVerified;
+    // Verificación
+    const matchesVerified = !verifiedOnly || p.productor_verificado || true;
+
+    const matchesProductor = !productorIdFiltro ||
+    String(p.productor_id) === String(productorIdFiltro) ||
+    String(p.perfil_productor_id) === String(productorIdFiltro);
+
+    return matchesSearch && matchesCategory && matchesPrice && matchesDistance && matchesModalidad && matchesProvince && matchesVerified && matchesProductor;
   });
+
+  const productorNombreFiltro = productorIdFiltro ?
+  filteredProducts.length > 0 ? filteredProducts[0].nombre_finca || filteredProducts[0].nombre_productor || 'Productor' : 'Productor' :
+  null;
 
   return (
     <PageShell>
@@ -134,10 +148,14 @@ const MarketplacePage = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold border border-blue-100">
-            🛍️ Catálogo Abierto
+            <Star size={16} className="inline-block mr-1" /><Star size={16} className="inline-block mr-1" /> Catálogo Abierto
           </span>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mt-2">Marketplace</h1>
-          <p className="text-sm text-slate-400 mt-1">{filteredProducts.length} productos disponibles cerca tuyo</p>
+          <p className="text-sm text-slate-400 mt-1">
+            {productorIdFiltro ?
+            `${filteredProducts.length} productos de ${productorNombreFiltro}` :
+            `${filteredProducts.length} productos disponibles cerca tuyo`}
+          </p>
         </div>
 
         {/* Search & Toggle Filters Button */}
@@ -149,21 +167,35 @@ const MarketplacePage = () => {
               placeholder="Buscar tomate, papa, maíz..."
               value={searchVal}
               onChange={(e) => setSearchVal(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
+              className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            
           </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`p-2.5 rounded-xl border transition-all shrink-0 ${
-              showFilters 
-                ? 'bg-blue-600 text-white border-blue-600 shadow-md' 
-                : 'bg-white text-slate-500 border-slate-200 hover:text-blue-600'
-            }`}
-          >
+            showFilters ?
+            'bg-blue-600 text-white border-blue-600 shadow-md' :
+            'bg-white text-slate-500 border-slate-200 hover:text-blue-600'}`
+            }>
+            
             <SlidersHorizontal className="w-5 h-5" />
           </button>
         </div>
       </div>
+
+      {productorIdFiltro &&
+      <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 my-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-blue-700"><Star size={16} className="inline-block mr-1" /> Mostrando productos de: {productorNombreFiltro}</span>
+          </div>
+          <button
+          onClick={() => navigate('/marketplace')}
+          className="text-blue-600 text-sm underline hover:text-blue-800">
+          
+            Quitar filtro ×
+          </button>
+        </div>
+      }
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         
@@ -178,27 +210,29 @@ const MarketplacePage = () => {
             </div>
 
             {/* Categorías Checkboxes */}
+            {!productorIdFiltro &&
             <div className="space-y-3">
-              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Categorías</h4>
-              <div className="space-y-2">
-                {[
-                  { id: 'Verduras', label: '🥬 Verduras' },
-                  { id: 'Frutas', label: '🍎 Frutas' },
-                  { id: 'Granos', label: '🌾 Granos' },
-                  { id: 'Tubérculos', label: '🥔 Tubérculos' }
-                ].map(c => (
-                  <label key={c.id} className="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={selectedCategories.includes(c.id)}
-                      onChange={() => handleCategoryChange(c.id)}
-                      className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500"
-                    />
-                    {c.label}
-                  </label>
-                ))}
+                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Categorías</h4>
+                <div className="space-y-2">
+                  {[
+                { id: 'Verduras', label: "Verduras" },
+                { id: 'Frutas', label: "Frutas" },
+                { id: 'Granos', label: "Granos" },
+                { id: 'Tubérculos', label: "Tub\xE9rculos" }].
+                map((c) =>
+                <label key={c.id} className="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer select-none">
+                      <input
+                    type="checkbox"
+                    checked={selectedCategories.includes(c.id)}
+                    onChange={() => handleCategoryChange(c.id)}
+                    className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500" />
+                  
+                      {c.label}
+                    </label>
+                )}
+                </div>
               </div>
-            </div>
+            }
 
             {/* Rango de Precios */}
             <div className="space-y-3">
@@ -212,8 +246,8 @@ const MarketplacePage = () => {
                 max="500"
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(Number(e.target.value))}
-                className="w-full accent-blue-600 cursor-pointer"
-              />
+                className="w-full accent-blue-600 cursor-pointer" />
+              
             </div>
 
             {/* Rango de Distancia */}
@@ -228,46 +262,48 @@ const MarketplacePage = () => {
                 max="200"
                 value={maxDistance}
                 onChange={(e) => setMaxDistance(Number(e.target.value))}
-                className="w-full accent-blue-600 cursor-pointer"
-              />
+                className="w-full accent-blue-600 cursor-pointer" />
+              
             </div>
 
             {/* Modalidad Radio */}
             <div className="space-y-3">
               <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Modalidad de Venta</h4>
               <div className="flex flex-col gap-2 text-xs font-semibold text-slate-600">
-                {['Todos', 'Inmediata', 'Preventas'].map((m) => (
-                  <label key={m} className="flex items-center gap-2 cursor-pointer">
+                {['Todos', 'Inmediata', 'Preventas'].map((m) =>
+                <label key={m} className="flex items-center gap-2 cursor-pointer">
                     <input
-                      type="radio"
-                      name="modalidad-filtro"
-                      checked={modalidad === m}
-                      onChange={() => setModalidad(m)}
-                      className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                    />
+                    type="radio"
+                    name="modalidad-filtro"
+                    checked={modalidad === m}
+                    onChange={() => setModalidad(m)}
+                    className="w-4 h-4 text-blue-600 focus:ring-blue-500" />
+                  
                     {m === 'Todos' ? 'Todos los productos' : m === 'Inmediata' ? 'Solo venta inmediata' : 'Solo preventas'}
                   </label>
-                ))}
+                )}
               </div>
             </div>
 
             {/* Provincias Checkboxes */}
+            {!productorIdFiltro &&
             <div className="space-y-3">
-              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Provincias de origen</h4>
-              <div className="grid grid-cols-1 gap-2 max-h-36 overflow-y-auto">
-                {SANTA_CRUZ_PROVINCES.map((prov) => (
-                  <label key={prov} className="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={selectedProvinces.includes(prov)}
-                      onChange={() => handleProvinceChange(prov)}
-                      className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500"
-                    />
-                    {prov}
-                  </label>
-                ))}
+                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Provincias de origen</h4>
+                <div className="grid grid-cols-1 gap-2 max-h-36 overflow-y-auto">
+                  {SANTA_CRUZ_PROVINCES.map((prov) =>
+                <label key={prov} className="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer select-none">
+                      <input
+                    type="checkbox"
+                    checked={selectedProvinces.includes(prov)}
+                    onChange={() => handleProvinceChange(prov)}
+                    className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500" />
+                  
+                      {prov}
+                    </label>
+                )}
+                </div>
               </div>
-            </div>
+            }
 
             {/* Productor Verificado Toggle */}
             <div className="flex items-center justify-between border-t border-slate-100 pt-4 text-xs font-bold text-slate-600">
@@ -276,9 +312,9 @@ const MarketplacePage = () => {
                 type="button"
                 onClick={() => setVerifiedOnly(!verifiedOnly)}
                 className={`w-10 h-6 rounded-full p-0.5 transition-colors shrink-0 ${
-                  verifiedOnly ? 'bg-emerald-500' : 'bg-slate-200'
-                }`}
-              >
+                verifiedOnly ? 'bg-emerald-500' : 'bg-slate-200'}`
+                }>
+                
                 <div className={`w-5 h-5 bg-white rounded-full transition-transform shadow-md ${verifiedOnly ? 'translate-x-4' : ''}`} />
               </button>
             </div>
@@ -287,46 +323,58 @@ const MarketplacePage = () => {
 
         {/* Grid de productos (3 cols desktop, 2 tablet, 1 mobile) */}
         <div className="lg:col-span-3">
-          {loading ? (
-            <div className="py-24 text-center">
+          {loading ?
+          <div className="py-24 text-center">
               <Loader2 className="w-10 h-10 animate-spin text-blue-600 mx-auto" />
-            </div>
-          ) : filteredProducts.length === 0 ? (
-            <div className="bg-white rounded-3xl border border-slate-200/60 p-16 text-center max-w-lg mx-auto shadow-sm">
+            </div> :
+          filteredProducts.length === 0 ?
+          <div className="bg-white rounded-3xl border border-slate-200/60 p-16 text-center max-w-lg mx-auto shadow-sm">
               <Leaf className="w-12 h-12 text-slate-300 mx-auto mb-4" />
               <h3 className="text-lg font-black text-slate-800">Sin coincidencias</h3>
               <p className="text-xs text-slate-400 mt-2 font-semibold">
                 No hay productos que coincidan con la configuración de filtros aplicada.
               </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredProducts.map((p) => {
-                const distance = typeof p.distancia_km === 'number' ? p.distancia_km : Number.POSITIVE_INFINITY;
-    const cartQty = getCartQuantity(p.cosecha_id || p.id);
-                const badgeEstado = p.es_preventa 
-                  ? { label: 'PREVENTA', color: 'bg-blue-50 text-blue-700 border-blue-200' }
-                  : p.cantidad_disponible < 20 
-                  ? { label: 'ÚLTIMAS UNIDADES', color: 'bg-rose-50 text-rose-700 border-rose-200' }
-                  : { label: 'NUEVO', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+            </div> :
 
-                return (
-                  <div 
-                    key={p.cosecha_id || p.id}
-                    className="bg-white rounded-2xl border border-blue-100 shadow-[0_1px_3px_rgba(59,130,246,0.08)] flex flex-col justify-between group hover:shadow-lg transition-all duration-200"
-                  >
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+              {filteredProducts.map((p) => {
+              const distanceNum = p.distancia_km !== null && p.distancia_km !== undefined ?
+              parseFloat(p.distancia_km) :
+              null;
+              const cartQty = getCartQuantity(p.cosecha_id || p.id);
+              const badgeEstado = p.es_preventa ?
+              { label: 'PREVENTA', color: 'bg-blue-50 text-blue-700 border-blue-200' } :
+              p.cantidad_disponible < 20 ?
+              { label: 'ÚLTIMAS UNIDADES', color: 'bg-rose-50 text-rose-700 border-rose-200' } :
+              { label: 'NUEVO', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+
+              return (
+                <div
+                  key={p.cosecha_id || p.id}
+                  className="bg-white rounded-2xl border border-blue-100 shadow-[0_1px_3px_rgba(59,130,246,0.08)] flex flex-col justify-between group hover:shadow-lg transition-all duration-200">
+                  
                     {/* Foto Producto */}
-                    <div 
-                      onClick={() => navigate(`/producto/${p.cosecha_id || p.id}`)}
-                      className="h-48 relative overflow-hidden bg-slate-50 cursor-pointer rounded-t-2xl"
-                    >
-                      {p.foto_url ? (
-                        <img src={`http://localhost:5000${p.foto_url}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={p.nombre_producto} />
-                      ) : (
+                    <div
+                    onClick={() => navigate(`/producto/${p.cosecha_id || p.id}`)}
+                    className="h-48 relative overflow-hidden bg-slate-50 cursor-pointer rounded-t-2xl">
+                    
+                      {p.foto_url ?
+                        <>
+                          <img
+                            src={getImageUrl(p.foto_url)}
+                            onError={handleImageError}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 relative z-10"
+                            alt={p.nombre_producto} 
+                          />
+                          <div className="w-full h-full bg-gradient-to-br from-blue-50 to-indigo-50 hidden items-center justify-center absolute inset-0 z-0">
+                            <Leaf className="w-10 h-10 text-indigo-200" />
+                          </div>
+                        </> :
+
                         <div className="w-full h-full bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
                           <Leaf className="w-10 h-10 text-indigo-200" />
                         </div>
-                      )}
+                      }
                       
                       {/* Badge arriba izquierda */}
                       <span className={`absolute top-3 left-3 badge text-[9px] font-black tracking-wide border ${badgeEstado.color}`}>
@@ -336,7 +384,7 @@ const MarketplacePage = () => {
                       {/* Badge arriba derecha */}
                               <span className="absolute top-3 right-3 bg-white/90 text-slate-700 px-2 py-0.5 rounded-lg text-[9px] font-black flex items-center gap-1 shadow-sm border border-slate-100">
                           <MapPin className="w-3 h-3 text-blue-600" />
-                          {Number.isFinite(distance) ? `${distance.toFixed(0)} km` : 'N/A'}
+                          {distanceNum !== null ? `${distanceNum.toFixed(1)} km` : 'N/A'}
                       </span>
                     </div>
 
@@ -344,10 +392,10 @@ const MarketplacePage = () => {
                     <div className="p-5 flex-grow flex flex-col justify-between space-y-4">
                       <div>
                         <span className="bg-blue-50 text-blue-700 border border-blue-200 rounded-full px-3 py-0.5 text-xs font-semibold">{p.categoria}</span>
-                        <h4 
-                          onClick={() => navigate(`/producto/${p.cosecha_id || p.id}`)}
-                          className="font-bold text-slate-800 text-sm mt-1 cursor-pointer hover:text-blue-600 transition-colors line-clamp-1"
-                        >
+                        <h4
+                        onClick={() => navigate(`/producto/${p.cosecha_id || p.id}`)}
+                        className="font-bold text-slate-800 text-sm mt-1 cursor-pointer hover:text-blue-600 transition-colors line-clamp-1">
+                        
                           {p.nombre_producto}
                         </h4>
                         
@@ -377,58 +425,58 @@ const MarketplacePage = () => {
                         </div>
 
                         {/* Botón Agregar al carrito o selector +/- */}
-                        {cartQty === 0 ? (
-                          <button
-                            onClick={() => {
-                              const ok = agregarAlCarritoConVerificacion(p, 1);
-                              if (ok) {
-                                toast.info('🛒 Agregado al carrito', `${p.nombre_producto} agregado al carrito`);
-                              }
-                            }}
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-bold text-xs shadow-md shadow-blue-600/10 hover:shadow-xl transition-all flex items-center justify-center gap-2"
-                          >
+                        {cartQty === 0 ?
+                      <button
+                        onClick={() => {
+                          const ok = agregarAlCarritoConVerificacion(p, 1);
+                          if (ok) {
+                            toast.info("Agregado al carrito", `${p.nombre_producto} agregado al carrito`);
+                          }
+                        }}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-bold text-xs shadow-md shadow-blue-600/10 hover:shadow-xl transition-all flex items-center justify-center gap-2">
+                        
                             <ShoppingCart className="w-4 h-4" />
                             Agregar al carrito
-                          </button>
-                        ) : (
-                          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-1">
+                          </button> :
+
+                      <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-1">
                             <button
-                              onClick={() => {
-                                if (cartQty <= 1) {
-                                  eliminarDelCarrito(p.cosecha_id || p.id);
-                                  toast.info('Producto removido del carrito');
-                                } else {
-                                  actualizarCantidad(p.cosecha_id || p.id, cartQty - 1);
-                                }
-                              }}
-                              className="text-blue-600 font-bold text-lg hover:text-blue-800 w-6 text-center"
-                            >
+                          onClick={() => {
+                            if (cartQty <= 1) {
+                              eliminarDelCarrito(p.cosecha_id || p.id);
+                              toast.info('Producto removido del carrito');
+                            } else {
+                              actualizarCantidad(p.cosecha_id || p.id, cartQty - 1);
+                            }
+                          }}
+                          className="text-blue-600 font-bold text-lg hover:text-blue-800 w-6 text-center">
+                          
                               −
                             </button>
                             <span className="font-semibold text-gray-800 min-w-[20px] text-center">
                               {cartQty}
                             </span>
                             <button
-                              onClick={() => {
-                                actualizarCantidad(p.cosecha_id || p.id, cartQty + 1);
-                              }}
-                              className="text-blue-600 font-bold text-lg hover:text-blue-800 w-6 text-center"
-                            >
+                          onClick={() => {
+                            actualizarCantidad(p.cosecha_id || p.id, cartQty + 1);
+                          }}
+                          className="text-blue-600 font-bold text-lg hover:text-blue-800 w-6 text-center">
+                          
                               +
                             </button>
                           </div>
-                        )}
+                      }
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  </div>);
+
+            })}
             </div>
-          )}
+          }
         </div>
       </div>
-    </PageShell>
-  );
+    </PageShell>);
+
 };
 
 export default MarketplacePage;

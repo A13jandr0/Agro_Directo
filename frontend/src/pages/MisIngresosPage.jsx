@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { 
+import {
   History, TrendingUp, Calendar, Eye, Download, Info,
-  DollarSign, CheckCircle, Clock, AlertTriangle, ShieldCheck
-} from 'lucide-react';
+  DollarSign, CheckCircle, Clock, AlertTriangle, ShieldCheck, Star } from
+'lucide-react';
 import { useToast } from '../context/ToastContext';
 import PageShell from '../components/ui/PageShell';
 
@@ -13,7 +13,7 @@ const MisIngresosPage = () => {
   const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [periodo, setPeriodo] = useState('Este mes');
-  
+
   // Data State
   const [stats, setStats] = useState({
     totalMes: 2450,
@@ -23,33 +23,56 @@ const MisIngresosPage = () => {
   });
 
   const [historial, setHistorial] = useState([
-    { id: '1', fecha: new Date(Date.now() - 2 * 3600 * 1000), pedido: '#PED-001', comprador: 'Mercado Fama', monto: 175, estado: 'Cobrado' },
-    { id: '2', fecha: new Date(Date.now() - 24 * 3600 * 1000), pedido: '#PED-002', comprador: 'Restaurante El Aljibe', monto: 350, estado: 'Cobrado' },
-    { id: '3', fecha: new Date(Date.now() - 48 * 3600 * 1000), pedido: '#PED-003', comprador: 'Supermercado Fidalga', monto: 1200, estado: 'Pendiente' },
-    { id: '4', fecha: new Date(Date.now() - 72 * 3600 * 1000), pedido: '#PED-004', comprador: 'Distribuidora Abasto', monto: 725, estado: 'Cobrado' }
-  ]);
+  { id: '1', fecha: new Date(Date.now() - 2 * 3600 * 1000), pedido: '#PED-001', comprador: 'Mercado Fama', monto: 175, estado: 'Cobrado' },
+  { id: '2', fecha: new Date(Date.now() - 24 * 3600 * 1000), pedido: '#PED-002', comprador: 'Restaurante El Aljibe', monto: 350, estado: 'Cobrado' },
+  { id: '3', fecha: new Date(Date.now() - 48 * 3600 * 1000), pedido: '#PED-003', comprador: 'Supermercado Fidalga', monto: 1200, estado: 'Pendiente' },
+  { id: '4', fecha: new Date(Date.now() - 72 * 3600 * 1000), pedido: '#PED-004', comprador: 'Distribuidora Abasto', monto: 725, estado: 'Cobrado' }]
+  );
 
-  const [ingresosMensuales, setIngresosMensuales] = useState([
-    { mes: 'Ene', ingresos: 1200 },
-    { mes: 'Feb', ingresos: 2100 },
-    { mes: 'Mar', ingresos: 1800 },
-    { mes: 'Abr', ingresos: 3100 },
-    { mes: 'May', ingresos: 2800 },
-    { mes: 'Jun', ingresos: 2450 }
-  ]);
+  // Calculamos los ingresos mensuales dinámicamente a partir del historial
+  const ingresosMensualesCalculados = React.useMemo(() => {
+    const mesesStr = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const now = new Date();
+    const data = [];
+    
+    // Inicializar los últimos 6 meses en 0
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      data.push({
+        mes: mesesStr[d.getMonth()],
+        ingresos: 0,
+        month: d.getMonth(),
+        year: d.getFullYear()
+      });
+    }
+
+    // Sumar montos del historial
+    historial.forEach(t => {
+      const tDate = new Date(t.fecha);
+      const tMonth = tDate.getMonth();
+      const tYear = tDate.getFullYear();
+      
+      const monthObj = data.find(m => m.month === tMonth && m.year === tYear);
+      if (monthObj) {
+        monthObj.ingresos += t.monto;
+      }
+    });
+
+    return data.map(d => ({ mes: d.mes, ingresos: d.ingresos }));
+  }, [historial]);
 
   useEffect(() => {
     const fetchIngresosData = async () => {
       const token = localStorage.getItem('token');
       if (!token) return navigate('/login');
       try {
-        const headers = { Authorization: `Bearer={token}` };
+        const headers = { Authorization: `Bearer ${token}` };
         // Si hay una API de BI implementada, cargamos los datos
         const res = await axios.get('http://localhost:5000/api/bi/productor/ventas', { headers }).catch(() => null);
         if (res && res.data) {
+
           // Si el endpoint responde correctamente, parseamos los datos
-        }
-      } catch (err) {
+        }} catch (err) {
         console.error(err);
       } finally {
         setLoading(false);
@@ -59,9 +82,9 @@ const MisIngresosPage = () => {
   }, [navigate]);
 
   const getBadgeColor = (estado) => {
-    return estado === 'Cobrado' 
-      ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-      : 'bg-amber-50 text-amber-700 border-amber-200';
+    return estado === 'Cobrado' ?
+    'bg-emerald-50 text-emerald-700 border-emerald-200' :
+    'bg-amber-50 text-amber-700 border-amber-200';
   };
 
   const handleExport = () => {
@@ -69,7 +92,7 @@ const MisIngresosPage = () => {
   };
 
   // Encontrar el valor máximo de ingresos para escalar las barras del gráfico
-  const maxIngreso = Math.max(...ingresosMensuales.map(i => i.ingresos), 1);
+  const maxIngreso = Math.max(...ingresosMensualesCalculados.map((i) => i.ingresos), 1);
 
   return (
     <PageShell>
@@ -77,26 +100,26 @@ const MisIngresosPage = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
           <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold border border-emerald-100">
-            💰 Finanzas & Facturación
+            <Star size={16} className="inline-block mr-1" /> Finanzas & Facturación
           </span>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mt-2">Mis Ingresos</h1>
           <p className="text-sm text-slate-400 mt-1">Monitoreá tus ganancias brutas y liquidaciones de preventas</p>
         </div>
 
         <div className="flex items-center gap-3">
-          <select 
-            value={periodo} 
+          <select
+            value={periodo}
             onChange={(e) => setPeriodo(e.target.value)}
-            className="py-2.5 px-4 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer shadow-sm"
-          >
+            className="py-2.5 px-4 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer shadow-sm">
+            
             <option value="Este mes">Este mes</option>
             <option value="Últimos 3 meses">Últimos 3 meses</option>
             <option value="Este año">Este año</option>
           </select>
-          <button 
+          <button
             onClick={handleExport}
-            className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white py-2.5 px-5 rounded-xl text-xs font-bold transition-all shadow-md hover:-translate-y-0.5 active:translate-y-0"
-          >
+            className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white py-2.5 px-5 rounded-xl text-xs font-bold transition-all shadow-md hover:-translate-y-0.5 active:translate-y-0">
+            
             <Download className="w-4 h-4" /> Exportar CSV
           </button>
         </div>
@@ -105,11 +128,11 @@ const MisIngresosPage = () => {
       {/* Cards resumen: Total mes | Total año | Pendiente cobro | Transacciones completadas */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: 'Total Mes', value: `Bs. ${stats.totalMes.toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600 bg-emerald-50' },
-          { label: 'Total Año', value: `Bs. ${stats.totalAnio.toLocaleString()}`, icon: ShieldCheck, color: 'text-emerald-700 bg-emerald-50' },
-          { label: 'Pendiente Cobro', value: `Bs. ${stats.pendienteCobro.toLocaleString()}`, icon: Clock, color: 'text-amber-600 bg-amber-50' },
-          { label: 'Transacciones Completadas', value: stats.completadosCount, icon: CheckCircle, color: 'text-blue-600 bg-blue-50' },
-        ].map((card, i) => {
+        { label: 'Total Mes', value: `Bs. ${stats.totalMes.toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600 bg-emerald-50' },
+        { label: 'Total Año', value: `Bs. ${stats.totalAnio.toLocaleString()}`, icon: ShieldCheck, color: 'text-emerald-700 bg-emerald-50' },
+        { label: 'Pendiente Cobro', value: `Bs. ${stats.pendienteCobro.toLocaleString()}`, icon: Clock, color: 'text-amber-600 bg-amber-50' },
+        { label: 'Transacciones Completadas', value: stats.completadosCount, icon: CheckCircle, color: 'text-blue-600 bg-blue-50' }].
+        map((card, i) => {
           const Icon = card.icon;
           return (
             <div key={i} className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex items-center justify-between">
@@ -120,8 +143,8 @@ const MisIngresosPage = () => {
               <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${card.color}`}>
                 <Icon className="w-6 h-6" />
               </div>
-            </div>
-          );
+            </div>);
+
         })}
       </div>
 
@@ -140,25 +163,29 @@ const MisIngresosPage = () => {
 
           {/* Gráfico SVG/HTML */}
           <div className="flex items-end justify-between h-56 pt-4 px-2 select-none border-b border-slate-100">
-            {ingresosMensuales.map((item, idx) => {
-              const heightPercent = (item.ingresos / maxIngreso) * 100;
+            {console.log("Datos del gráfico:", ingresosMensualesCalculados)}
+            {ingresosMensualesCalculados.map((item, idx) => {
+              const heightPercent = item.ingresos / maxIngreso * 100;
               return (
-                <div key={idx} className="flex flex-col items-center group w-12 sm:w-16">
-                  {/* Tooltip flotante al hacer hover */}
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute mb-2 bg-slate-900 text-white text-[10px] font-black px-2 py-1 rounded-md shadow-md -translate-y-12">
-                    Bs. {item.ingresos}
+                <div key={idx} className="flex flex-col items-center group w-12 sm:w-16 h-full">
+                  {/* Contenedor de la barra para resolver alturas porcentuales */}
+                  <div className="relative w-full flex-grow flex items-end justify-center">
+                    {/* Tooltip flotante al hacer hover */}
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute bg-slate-900 text-white text-[10px] font-black px-2 py-1 rounded-md shadow-md -top-8 pointer-events-none whitespace-nowrap z-10">
+                      Bs. {item.ingresos}
+                    </div>
+                    {/* Barra animada */}
+                    <div
+                      className="w-full bg-emerald-600 rounded-t-lg transition-all duration-700 ease-out group-hover:bg-emerald-700 cursor-pointer shadow-md shadow-emerald-600/10 hover:shadow-emerald-600/20"
+                      style={{ height: `${heightPercent}%` }} />
                   </div>
-                  {/* Barra animada */}
-                  <div 
-                    className="w-full bg-emerald-600 rounded-t-lg transition-all duration-700 ease-out group-hover:bg-emerald-700 cursor-pointer shadow-md shadow-emerald-600/10 hover:shadow-emerald-600/20"
-                    style={{ height: `${heightPercent}%` }}
-                  />
+                  
                   {/* Label inferior */}
                   <span className="text-[10px] font-bold text-slate-400 uppercase mt-2.5 block">
                     {item.mes}
                   </span>
-                </div>
-              );
+                </div>);
+
             })}
           </div>
         </div>
@@ -215,8 +242,8 @@ const MisIngresosPage = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700">
-              {historial.map(tr => (
-                <tr key={tr.id} className="hover:bg-slate-50/50 transition-colors">
+              {historial.map((tr) =>
+              <tr key={tr.id} className="hover:bg-slate-50/50 transition-colors">
                   <td className="px-6 py-4 text-xs text-slate-400 font-semibold">
                     {tr.fecha.toLocaleDateString('es-BO', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </td>
@@ -229,21 +256,21 @@ const MisIngresosPage = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button 
-                      onClick={() => navigate('/dashboard/productor/pedidos')}
-                      className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
-                    >
+                    <button
+                    onClick={() => navigate('/dashboard/productor/pedidos')}
+                    className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all">
+                    
                       <Eye className="w-4 h-4" />
                     </button>
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
       </div>
-    </PageShell>
-  );
+    </PageShell>);
+
 };
 
 export default MisIngresosPage;

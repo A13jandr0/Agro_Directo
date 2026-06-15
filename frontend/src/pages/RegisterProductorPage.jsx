@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import { Star, Check } from "lucide-react";import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
@@ -22,7 +22,7 @@ const RegisterProductorPage = () => {
   const hasMinLen = formData.contrasena.length >= 8;
   const hasUpper = /[A-Z]/.test(formData.contrasena);
   const hasNumber = /\d/.test(formData.contrasena);
-  
+
   const getPasswordStrength = () => {
     let score = 0;
     if (hasMinLen) score++;
@@ -36,21 +36,21 @@ const RegisterProductorPage = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
-    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
+    setFormData((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    
+
     if (file.size > 5 * 1024 * 1024) {
-      setErrors(prev => ({...prev, file: 'El archivo excede los 5MB'}));
+      setErrors((prev) => ({ ...prev, file: 'El archivo excede los 5MB' }));
       return;
     }
-    
+
     setDocumentFile(file);
-    if (errors.file) setErrors(prev => ({ ...prev, file: '' }));
+    if (errors.file) setErrors((prev) => ({ ...prev, file: '' }));
 
     // Preview
     if (file.type.startsWith('image/')) {
@@ -80,10 +80,10 @@ const RegisterProductorPage = () => {
       setErrors(newErrors);
       return;
     }
-    setStep(prev => prev + 1);
+    setStep((prev) => prev + 1);
   };
 
-  const handlePrev = () => setStep(prev => prev - 1);
+  const handlePrev = () => setStep((prev) => prev - 1);
 
   const handleSubmit = async () => {
     const newErrors = {};
@@ -102,7 +102,7 @@ const RegisterProductorPage = () => {
 
     try {
       // 1. Registrar usuario
-      const payload = { 
+      const payload = {
         nombre_completo: formData.nombreCompleto,
         correo: formData.correo,
         contrasena: formData.contrasena,
@@ -121,7 +121,7 @@ const RegisterProductorPage = () => {
         numero_documento: formData.numeroDocumento
       };
       const res = await axios.post('http://localhost:5000/api/auth/register', payload);
-      
+
       const token = res.data.token;
       localStorage.setItem('token', token);
 
@@ -130,7 +130,7 @@ const RegisterProductorPage = () => {
         const fileData = new FormData();
         fileData.append('documento', documentFile);
         await axios.post('http://localhost:5000/api/upload/document', fileData, {
-          headers: { 
+          headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'multipart/form-data'
           }
@@ -138,7 +138,7 @@ const RegisterProductorPage = () => {
       }
 
       // Éxito, redirigir
-      navigate('/dashboard/productor'); 
+      navigate('/dashboard/productor');
     } catch (error) {
       setServerError(error.response?.data?.error || 'Error al registrar');
       setIsSubmitting(false);
@@ -157,17 +157,17 @@ const RegisterProductorPage = () => {
           <div className="absolute left-0 top-1/2 transform -translate-y-1/2 h-1 bg-[#1D9E75] z-0 transition-all duration-500" style={{ width: step === 1 ? '0%' : step === 2 ? '50%' : '100%' }}></div>
           
           {[
-            { num: 1, label: 'Tu cuenta', icon: '👤' },
-            { num: 2, label: 'Tu finca', icon: '🏡' },
-            { num: 3, label: 'Documentos', icon: '📄' }
-          ].map(s => (
-            <div key={s.num} className="relative z-10 flex flex-col items-center">
+          { num: 1, label: 'Tu cuenta', icon: "" },
+          { num: 2, label: 'Tu finca', icon: "" },
+          { num: 3, label: 'Documentos', icon: "" }].
+          map((s) =>
+          <div key={s.num} className="relative z-10 flex flex-col items-center">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-colors duration-300 ${step >= s.num ? 'bg-[#1D9E75] text-white shadow-md' : 'bg-gray-200 text-gray-500'}`}>
-                {step > s.num ? '✓' : s.num}
+                {step > s.num ? "" : s.num}
               </div>
               <span className={`mt-2 text-xs font-semibold ${step >= s.num ? 'text-[#1D9E75]' : 'text-gray-400'}`}>{s.label}</span>
             </div>
-          ))}
+          )}
         </div>
       </div>
 
@@ -175,9 +175,9 @@ const RegisterProductorPage = () => {
         {serverError && <div className="mb-6 bg-red-50 text-red-600 p-4 rounded-lg text-sm border border-red-200">{serverError}</div>}
 
         {/* PASO 1 */}
-        {step === 1 && (
-          <div className="animate-fade-in space-y-5">
-            <h3 className="text-xl font-bold text-gray-700 flex items-center gap-2 mb-4"><span className="text-2xl">👤</span> Datos de tu cuenta</h3>
+        {step === 1 &&
+        <div className="animate-fade-in space-y-5">
+            <h3 className="text-xl font-bold text-gray-700 flex items-center gap-2 mb-4"><span className="text-2xl"><Star size={16} className="inline-block mr-1" /></span> Datos de tu cuenta</h3>
             
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Nombre Completo</label>
@@ -205,12 +205,12 @@ const RegisterProductorPage = () => {
                 
                 {/* Indicador de fortaleza */}
                 <div className="mt-2 flex h-1.5 w-full bg-gray-200 rounded overflow-hidden">
-                  <div className={`h-full transition-all duration-300 ${strengthColors[strength]}`} style={{ width: `${(strength / 3) * 100}%` }}></div>
+                  <div className={`h-full transition-all duration-300 ${strengthColors[strength]}`} style={{ width: `${strength / 3 * 100}%` }}></div>
                 </div>
                 <div className="flex gap-2 mt-1 text-[10px] sm:text-xs">
-                  <span className={hasMinLen ? "text-green-600 font-medium" : "text-gray-400"}>✓ 8 caracteres</span>
-                  <span className={hasUpper ? "text-green-600 font-medium" : "text-gray-400"}>✓ 1 mayúscula</span>
-                  <span className={hasNumber ? "text-green-600 font-medium" : "text-gray-400"}>✓ 1 número</span>
+                  <span className={hasMinLen ? "text-green-600 font-medium" : "text-gray-400"}><Check size={16} className="inline-block mr-1" /> 8 caracteres</span>
+                  <span className={hasUpper ? "text-green-600 font-medium" : "text-gray-400"}><Check size={16} className="inline-block mr-1" /> 1 mayúscula</span>
+                  <span className={hasNumber ? "text-green-600 font-medium" : "text-gray-400"}><Check size={16} className="inline-block mr-1" /> 1 número</span>
                 </div>
                 {errors.contrasena && <p className="text-red-500 text-xs mt-1">{errors.contrasena}</p>}
               </div>
@@ -221,15 +221,15 @@ const RegisterProductorPage = () => {
               </div>
             </div>
           </div>
-        )}
+        }
 
         {/* PASO 2 */}
-        {step === 2 && (
-          <div className="animate-fade-in space-y-5">
-            <h3 className="text-xl font-bold text-gray-700 flex items-center gap-2 mb-4"><span className="text-2xl">🏡</span> Detalles de tu finca</h3>
+        {step === 2 &&
+        <div className="animate-fade-in space-y-5">
+            <h3 className="text-xl font-bold text-gray-700 flex items-center gap-2 mb-4"><span className="text-2xl"><Star size={16} className="inline-block mr-1" /></span> Detalles de tu finca</h3>
             
             <div className="bg-green-50 border border-green-200 text-green-800 p-3 rounded flex items-start gap-2 text-sm mb-4">
-              <span>📍</span> <span><strong>Nota:</strong> Podrás marcar la ubicación exacta de tu finca en el mapa interactivo después de completar este registro.</span>
+              <span><Star size={16} className="inline-block mr-1" /></span> <span><strong>Nota:</strong> Podrás marcar la ubicación exacta de tu finca en el mapa interactivo después de completar este registro.</span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -273,18 +273,18 @@ const RegisterProductorPage = () => {
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Años de Experiencia Agrícola</label>
               <div className="flex items-center w-32 border border-gray-300 rounded overflow-hidden">
-                <button type="button" onClick={() => setFormData(p => ({...p, aniosExperiencia: Math.max(1, p.aniosExperiencia - 1)}))} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold">-</button>
+                <button type="button" onClick={() => setFormData((p) => ({ ...p, aniosExperiencia: Math.max(1, p.aniosExperiencia - 1) }))} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold">-</button>
                 <input type="number" readOnly value={formData.aniosExperiencia} className="w-full text-center p-2 outline-none" />
-                <button type="button" onClick={() => setFormData(p => ({...p, aniosExperiencia: Math.min(60, p.aniosExperiencia + 1)}))} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold">+</button>
+                <button type="button" onClick={() => setFormData((p) => ({ ...p, aniosExperiencia: Math.min(60, p.aniosExperiencia + 1) }))} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold">+</button>
               </div>
             </div>
           </div>
-        )}
+        }
 
         {/* PASO 3 */}
-        {step === 3 && (
-          <div className="animate-fade-in space-y-5">
-            <h3 className="text-xl font-bold text-gray-700 flex items-center gap-2 mb-4"><span className="text-2xl">📄</span> Documentos de Respaldo</h3>
+        {step === 3 &&
+        <div className="animate-fade-in space-y-5">
+            <h3 className="text-xl font-bold text-gray-700 flex items-center gap-2 mb-4"><span className="text-2xl"><Star size={16} className="inline-block mr-1" /></span> Documentos de Respaldo</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
@@ -303,36 +303,36 @@ const RegisterProductorPage = () => {
             </div>
 
             {/* Zona de carga de archivo */}
-            <div 
-              className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors ${errors.file ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
-              onClick={() => fileInputRef.current?.click()}
-            >
+            <div
+            className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors ${errors.file ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
+            onClick={() => fileInputRef.current?.click()}>
+            
               <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".pdf,.jpg,.jpeg,.png" className="hidden" />
               
-              {!documentFile ? (
-                <>
-                  <div className="text-4xl mb-2 text-gray-400">☁️</div>
+              {!documentFile ?
+            <>
+                  <div className="text-4xl mb-2 text-gray-400"><Star size={16} className="inline-block mr-1" /><Star size={16} className="inline-block mr-1" /></div>
                   <p className="font-semibold text-gray-700">Haz clic aquí para seleccionar tu documento</p>
                   <p className="text-xs text-gray-500 mt-1">Formatos aceptados: PDF, JPG, PNG (máx. 5MB)</p>
-                </>
-              ) : (
-                <div className="flex flex-col items-center">
-                  {documentPreview ? (
-                    <img src={documentPreview} alt="Preview" className="h-24 object-contain mb-2 rounded shadow-sm" />
-                  ) : (
-                    <div className="text-4xl mb-2">📄</div>
-                  )}
+                </> :
+
+            <div className="flex flex-col items-center">
+                  {documentPreview ?
+              <img src={documentPreview} alt="Preview" className="h-24 object-contain mb-2 rounded shadow-sm" /> :
+
+              <div className="text-4xl mb-2"><Star size={16} className="inline-block mr-1" /></div>
+              }
                   <p className="font-semibold text-[#1D9E75]">{documentFile.name}</p>
                   <p className="text-xs text-gray-500">{(documentFile.size / 1024 / 1024).toFixed(2)} MB</p>
-                  <button type="button" onClick={(e) => { e.stopPropagation(); setDocumentFile(null); setDocumentPreview(null); }} className="text-red-500 text-xs font-bold mt-2 hover:underline">Quitar archivo</button>
+                  <button type="button" onClick={(e) => {e.stopPropagation();setDocumentFile(null);setDocumentPreview(null);}} className="text-red-500 text-xs font-bold mt-2 hover:underline">Quitar archivo</button>
                 </div>
-              )}
+            }
             </div>
             {errors.file && <p className="text-red-500 text-xs text-center">{errors.file}</p>}
 
             {/* AVISO FINAL */}
             <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-lg mt-6 text-sm flex gap-3 items-start">
-              <span className="text-xl">⚠️</span>
+              <span className="text-xl"><Star size={16} className="inline-block mr-1" /><Star size={16} className="inline-block mr-1" /></span>
               <p>Tu cuenta quedará en estado <strong>'Pendiente de verificación'</strong> hasta que el equipo de AgroDirecto valide tus documentos. Mientras tanto, podrás explorar la plataforma y marcar la ubicación de tu finca en el mapa.</p>
             </div>
 
@@ -350,30 +350,30 @@ const RegisterProductorPage = () => {
               {errors.aceptaPrivacidad && <p className="text-red-500 text-xs ml-6">{errors.aceptaPrivacidad}</p>}
             </div>
           </div>
-        )}
+        }
 
         {/* BOTONERA */}
         <div className="mt-8 pt-6 border-t border-gray-100 flex justify-between items-center">
-          {step > 1 ? (
-            <button onClick={handlePrev} disabled={isSubmitting} className="px-6 py-2 border border-gray-300 text-gray-600 font-bold rounded hover:bg-gray-50 transition-colors">
+          {step > 1 ?
+          <button onClick={handlePrev} disabled={isSubmitting} className="px-6 py-2 border border-gray-300 text-gray-600 font-bold rounded hover:bg-gray-50 transition-colors">
               ← Anterior
-            </button>
-          ) : <div></div>}
+            </button> :
+          <div></div>}
           
-          {step < 3 ? (
-            <button onClick={handleNext} className="px-8 py-2 bg-[#1D9E75] text-white font-bold rounded shadow hover:bg-green-700 transition-colors">
+          {step < 3 ?
+          <button onClick={handleNext} className="px-8 py-2 bg-[#1D9E75] text-white font-bold rounded shadow hover:bg-green-700 transition-colors">
               Siguiente →
+            </button> :
+
+          <button onClick={handleSubmit} disabled={isSubmitting} className="px-8 py-3 bg-[#1D9E75] text-white font-bold rounded-lg shadow-lg hover:bg-green-700 transition-colors disabled:opacity-70 flex items-center gap-2">
+              {isSubmitting ? 'Creando cuenta...' : "Crear mi cuenta de Productor"}
             </button>
-          ) : (
-            <button onClick={handleSubmit} disabled={isSubmitting} className="px-8 py-3 bg-[#1D9E75] text-white font-bold rounded-lg shadow-lg hover:bg-green-700 transition-colors disabled:opacity-70 flex items-center gap-2">
-              {isSubmitting ? 'Creando cuenta...' : 'Crear mi cuenta de Productor ✓'}
-            </button>
-          )}
+          }
         </div>
 
       </div>
-    </div>
-  );
+    </div>);
+
 };
 
 export default RegisterProductorPage;

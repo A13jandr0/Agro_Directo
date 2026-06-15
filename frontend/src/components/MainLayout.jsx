@@ -116,6 +116,7 @@ const MainLayout = () => {
   const compradorMenu = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard/comprador' },
     { id: 'marketplace', label: 'Marketplace', icon: Store, path: '/marketplace' },
+    { id: 'comparador', label: 'Comparador', icon: BarChart3, path: '/comparador' },
     { id: 'carrito', label: 'Mi Carrito', icon: ShoppingCart, path: '/carrito' },
     { id: 'pedidos', label: 'Mis Pedidos', icon: Package, path: '/dashboard/comprador/mis-pedidos' },
     { id: 'mapa', label: 'Mapa Productores', icon: MapPin, path: '/dashboard/comprador/mapa' },
@@ -140,22 +141,60 @@ const MainLayout = () => {
   const menuItems = userData?.rol === 'ADMINISTRADOR'
     ? adminMenu
     : userData?.rol === 'COMPRADOR'
-    ? compradorMenu.map((m) => m.id === 'carrito' ? { ...m, badgeCount: carrito.length } : m.id === 'pedidos' ? { ...m, badgeKey: 'pedidos_pendientes' } : m)
+    ? compradorMenu.map((m) => m.id === 'carrito' ? { ...m, badgeCount: (carrito?.length || 0) } : m.id === 'pedidos' ? { ...m, badgeKey: 'pedidos_pendientes' } : m)
     : userData?.rol === 'TRANSPORTISTA'
     ? transportistaMenu
     : productorMenu.map((m) => m.id === 'pedidos' ? { ...m, badgeKey: 'pedidos_pendientes' } : m);
 
-  // Background gradients for sidebar based on role
-  const getSidebarBg = () => {
-    if (userData?.rol === 'ADMINISTRADOR') return 'from-[#1e293b] to-[#334155]';
-    if (userData?.rol === 'COMPRADOR') return 'from-[#2563eb] to-[#1d4ed8]';
-    if (userData?.rol === 'TRANSPORTISTA') return 'from-[#f59e0b] to-[#d97706]';
-    return 'from-[#0d9f6e] to-[#0b8a5e]';
+  // ─── SOLO DISEÑO: paleta por rol ───────────────────────────────────────────
+  const roleTheme = {
+    PRODUCTOR: {
+      sidebar: 'bg-[#0a2e1a]',
+      accent: '#16a34a',
+      accentLight: '#bbf7d0',
+      activeBg: 'bg-[#16a34a]/20',
+      activeText: 'text-[#86efac]',
+      hoverBg: 'hover:bg-white/5',
+      avatarBg: 'bg-[#16a34a]',
+      dot: 'bg-[#4ade80]',
+      label: 'Panel del Productor',
+    },
+    COMPRADOR: {
+      sidebar: 'bg-[#0d1f3c]',
+      accent: '#3b82f6',
+      accentLight: '#bfdbfe',
+      activeBg: 'bg-[#3b82f6]/20',
+      activeText: 'text-[#93c5fd]',
+      hoverBg: 'hover:bg-white/5',
+      avatarBg: 'bg-[#3b82f6]',
+      dot: 'bg-[#60a5fa]',
+      label: 'Panel del Comprador',
+    },
+    TRANSPORTISTA: {
+      sidebar: 'bg-[#1c1400]',
+      accent: '#f59e0b',
+      accentLight: '#fde68a',
+      activeBg: 'bg-[#f59e0b]/20',
+      activeText: 'text-[#fcd34d]',
+      hoverBg: 'hover:bg-white/5',
+      avatarBg: 'bg-[#f59e0b]',
+      dot: 'bg-[#fbbf24]',
+      label: 'Panel del Transportista',
+    },
+    ADMINISTRADOR: {
+      sidebar: 'bg-[#0f172a]',
+      accent: '#6366f1',
+      accentLight: '#c7d2fe',
+      activeBg: 'bg-[#6366f1]/20',
+      activeText: 'text-[#a5b4fc]',
+      hoverBg: 'hover:bg-white/5',
+      avatarBg: 'bg-[#6366f1]',
+      dot: 'bg-[#818cf8]',
+      label: 'Panel de Administración',
+    },
   };
 
-  const activeNavClass = userData?.rol === 'COMPRADOR' 
-    ? 'bg-white/20 text-white font-semibold shadow-md' 
-    : 'bg-white/25 text-white shadow-md font-semibold';
+  const theme = roleTheme[userData?.rol] || roleTheme.PRODUCTOR;
 
   const getInitials = (name) => {
     if (!name) return 'U';
@@ -164,16 +203,15 @@ const MainLayout = () => {
     return name.substring(0, 2).toUpperCase();
   };
 
-  // Colors based on user state
   const isPending = userData?.estado === 'PENDIENTE_VERIFICACION';
   const isRejected = userData?.estado === 'RECHAZADO';
   const isVerified = userData?.estado === 'VERIFICADO' || userData?.estado === 'REGISTRADO';
   const stateLabel = isPending ? 'Pendiente' : isRejected ? 'Rechazado' : isVerified ? 'Verificado' : userData?.estado || '';
   const stateBadgeClass = isPending
-    ? 'bg-amber-50 text-amber-700 border-amber-200 animate-pulse'
+    ? 'bg-amber-50 text-amber-700 border border-amber-200 animate-pulse'
     : isRejected
-    ? 'bg-rose-50 text-rose-700 border-rose-200'
-    : 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    ? 'bg-rose-50 text-rose-700 border border-rose-200'
+    : 'bg-emerald-50 text-emerald-700 border border-emerald-200';
 
   const getMenuBadge = (item) => {
     if (item.badgeCount > 0) return item.badgeCount;
@@ -181,12 +219,10 @@ const MainLayout = () => {
     return 0;
   };
 
-
   const getRelativeTime = (date) => {
     const diffMs = Date.now() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMins / 60);
-    
     if (diffMins < 1) return 'Ahora mismo';
     if (diffMins < 60) return `Hace ${diffMins} min`;
     if (diffHours < 24) return `Hace ${diffHours} hr`;
@@ -196,16 +232,16 @@ const MainLayout = () => {
   const getNotifDetails = (tipo) => {
     switch (tipo) {
       case 'success':
-        return { border: 'border-l-4 border-l-[#0d9f6e]', icon: <Check className="w-4 h-4 text-[#0d9f6e]" />, iconBg: 'bg-emerald-50' };
+        return { border: 'border-l-2 border-l-emerald-400', icon: <Check className="w-3.5 h-3.5 text-emerald-600" />, iconBg: 'bg-emerald-50' };
       case 'error':
-        return { border: 'border-l-4 border-l-[#9b2335]', icon: <XCircle className="w-4 h-4 text-[#9b2335]" />, iconBg: 'bg-rose-50' };
+        return { border: 'border-l-2 border-l-rose-400', icon: <XCircle className="w-3.5 h-3.5 text-rose-600" />, iconBg: 'bg-rose-50' };
       case 'warning':
-        return { border: 'border-l-4 border-l-[#f59e0b]', icon: <AlertTriangle className="w-4 h-4 text-[#f59e0b]" />, iconBg: 'bg-amber-50' };
+        return { border: 'border-l-2 border-l-amber-400', icon: <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />, iconBg: 'bg-amber-50' };
       case 'celebration':
-        return { border: 'border-l-4 border-l-[#0d9f6e]', icon: <Sparkles className="w-4 h-4 text-[#0d9f6e]" />, iconBg: 'bg-emerald-100/50' };
+        return { border: 'border-l-2 border-l-emerald-400', icon: <Sparkles className="w-3.5 h-3.5 text-emerald-600" />, iconBg: 'bg-emerald-50' };
       case 'info':
       default:
-        return { border: 'border-l-4 border-l-[#3b82f6]', icon: <Info className="w-4 h-4 text-[#3b82f6]" />, iconBg: 'bg-blue-50' };
+        return { border: 'border-l-2 border-l-blue-400', icon: <Info className="w-3.5 h-3.5 text-blue-600" />, iconBg: 'bg-blue-50' };
     }
   };
 
@@ -213,95 +249,101 @@ const MainLayout = () => {
     const today = [];
     const thisWeek = [];
     const older = [];
-
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const startOfWeek = new Date(startOfToday.getTime() - 7 * 24 * 3600 * 1000);
-
     notifs.forEach(n => {
       const d = new Date(n.fecha);
-      if (d >= startOfToday) {
-        today.push(n);
-      } else if (d >= startOfWeek) {
-        thisWeek.push(n);
-      } else {
-        older.push(n);
-      }
+      if (d >= startOfToday) today.push(n);
+      else if (d >= startOfWeek) thisWeek.push(n);
+      else older.push(n);
     });
-
     return { today, thisWeek, older };
   };
 
   return (
-    <div className="flex h-screen bg-[#f4f6f9] font-sans overflow-hidden text-slate-900">
+    <div className="flex h-screen bg-slate-50 font-sans overflow-hidden text-slate-900">
+
       {/* MOBILE OVERLAY */}
       {isMobileMenuOpen && (
-        <div 
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden animate-fade-in" 
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
 
-      {/* SIDEBAR (W-64) */}
+      {/* ── SIDEBAR ─────────────────────────────────────────────────────── */}
       <aside className={`
-        fixed lg:static inset-y-0 left-0 w-64 z-50 
-        transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 
-        transition-transform duration-300 ease-out 
+        fixed lg:static inset-y-0 left-0 w-60 z-50
+        transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0
+        transition-transform duration-300 ease-out
         flex flex-col
-        bg-gradient-to-b ${getSidebarBg()}
-        text-white
-        shadow-2xl shadow-emerald-950/20
+        ${theme.sidebar}
+        border-r border-white/5
       `}>
+
         {/* Logo */}
-        <div className="h-20 flex items-center gap-3 px-6 shrink-0 border-b border-white/10">
-          <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center border border-white/20">
-            <Leaf className="w-5 h-5 text-white" />
+        <div className="h-16 flex items-center gap-3 px-5 shrink-0 border-b border-white/5">
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+            style={{ backgroundColor: theme.accent + '22', border: `1px solid ${theme.accent}44` }}
+          >
+            <Leaf className="w-4 h-4" style={{ color: theme.accent }} />
           </div>
           <div>
-            <span className="text-lg font-black tracking-tight block">AgroDirecto</span>
-            <span className="block text-[10px] font-bold text-emerald-300 uppercase tracking-widest leading-none mt-0.5">Santa Cruz</span>
+            <span className="text-white text-sm font-black tracking-tight block leading-none">AgroDirecto</span>
+            <span className="text-[9px] font-bold uppercase tracking-widest mt-0.5 block" style={{ color: theme.accent }}>Santa Cruz</span>
           </div>
         </div>
 
         {/* User Card */}
-        <div className="mx-4 mt-6 p-4 rounded-2xl bg-white/10 border border-white/10 backdrop-blur-md">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white text-emerald-700 flex items-center justify-center font-black text-sm shadow-md">
+        <div className="mx-3 mt-4 p-3 rounded-xl border border-white/8 bg-white/4">
+          <div className="flex items-center gap-2.5">
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs text-white shrink-0"
+              style={{ backgroundColor: theme.accent }}
+            >
               {getInitials(userData?.nombre_completo)}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold truncate leading-tight">{userData?.nombre_completo || 'Cargando...'}</p>
-              <p className="text-[10px] font-bold text-emerald-200 mt-1 uppercase tracking-wide">{getRoleLabel()}</p>
+              <p className="text-[12px] font-bold text-white truncate leading-tight">{userData?.nombre_completo || '—'}</p>
+              <p className="text-[9px] font-bold uppercase tracking-widest mt-0.5" style={{ color: theme.accent }}>{getRoleLabel()}</p>
             </div>
+            {/* online dot */}
+            <span className={`w-2 h-2 rounded-full shrink-0 ${theme.dot}`} />
           </div>
         </div>
-        
+
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-6 px-4">
-          <ul className="space-y-2">
+        <nav className="flex-1 overflow-y-auto py-4 px-3">
+          {/* Menu label */}
+          <p className="text-[9px] font-black uppercase tracking-widest text-white/25 px-3 mb-3">Menú</p>
+          <ul className="space-y-0.5">
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
               return (
                 <li key={item.id}>
-                  <Link 
+                  <Link
                     to={item.path}
                     onClick={() => setIsMobileMenuOpen(false)}
                     className={`
-                      group flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl
-                      transition-all duration-200
+                      group flex items-center gap-3 px-3 py-2.5 text-[13px] font-semibold rounded-lg
+                      transition-all duration-150
                       ${isActive
-                        ? 'bg-white/25 text-white shadow-md font-semibold'
-                        : 'text-emerald-100 hover:text-white hover:bg-white/10'
+                        ? `${theme.activeBg} ${theme.activeText}`
+                        : `text-white/50 ${theme.hoverBg} hover:text-white/90`
                       }
                     `}
                   >
-                    <Icon className="w-4.5 h-4.5 shrink-0" />
-                    <span className="flex-1">{item.label}</span>
+                    <Icon className={`w-4 h-4 shrink-0 ${isActive ? '' : 'opacity-60 group-hover:opacity-100'}`} />
+                    <span className="flex-1 truncate">{item.label}</span>
                     {getMenuBadge(item) > 0 && (
-                      <span className={`text-[10px] font-black h-5 min-w-[1.25rem] px-1 rounded-full flex items-center justify-center ${
-                        item.id === 'pedidos' ? 'bg-rose-500 text-white animate-pulse' : 'bg-white/25 text-white'
-                      }`}>
+                      <span className={`text-[10px] font-black h-4.5 min-w-[1.1rem] px-1 rounded-full flex items-center justify-center ${
+                        item.id === 'pedidos' ? 'bg-rose-500 text-white' : 'text-white/80'
+                      }`}
+                        style={item.id !== 'pedidos' ? { backgroundColor: theme.accent + '55' } : {}}
+                      >
                         {getMenuBadge(item)}
                       </span>
                     )}
@@ -309,20 +351,17 @@ const MainLayout = () => {
                 </li>
               );
             })}
-            
-            {/* Sidebar Notifications Link */}
+
+            {/* Notifications */}
             <li>
-              <button 
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  setIsNotifDrawerOpen(true);
-                }}
-                className="w-full group flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl text-emerald-100 hover:text-white hover:bg-white/10 transition-all text-left"
+              <button
+                onClick={() => { setIsMobileMenuOpen(false); setIsNotifDrawerOpen(true); }}
+                className={`w-full group flex items-center gap-3 px-3 py-2.5 text-[13px] font-semibold rounded-lg text-white/50 ${theme.hoverBg} hover:text-white/90 transition-all text-left`}
               >
-                <Bell className="w-4.5 h-4.5 shrink-0" />
-                <span className="flex-1">Notificaciones</span>
+                <Bell className="w-4 h-4 shrink-0 opacity-60 group-hover:opacity-100" />
+                <span className="flex-1 truncate">Notificaciones</span>
                 {unreadCount > 0 && (
-                  <span className="bg-rose-500 text-white text-[10px] font-black h-5 px-1.5 rounded-full flex items-center justify-center">
+                  <span className="bg-rose-500 text-white text-[10px] font-black h-4.5 px-1.5 rounded-full flex items-center justify-center">
                     {unreadCount}
                   </span>
                 )}
@@ -332,155 +371,155 @@ const MainLayout = () => {
         </nav>
 
         {/* Logout */}
-        <div className="p-4 border-t border-emerald-600/30">
-          <button 
-            onClick={handleLogout} 
-            className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-emerald-100 hover:text-rose-100 hover:bg-rose-500/10 rounded-xl transition-all"
+        <div className="p-3 border-t border-white/5">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-3 py-2.5 text-[13px] font-semibold text-white/40 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all"
           >
-            <LogOut className="w-4.5 h-4.5" />
+            <LogOut className="w-4 h-4 shrink-0" />
             <span>Cerrar sesión</span>
           </button>
         </div>
       </aside>
 
-      {/* MAIN CONTENT AREA */}
+      {/* ── MAIN CONTENT ────────────────────────────────────────────────── */}
       <div className="flex-grow flex flex-col min-w-0">
+
         {/* HEADER */}
-        <header className="h-16 bg-white/80 backdrop-blur-xl border-b border-slate-200/60 flex items-center justify-between px-6 sm:px-8 shrink-0 sticky top-0 z-30">
-          <div className="flex items-center gap-4">
-            <button 
-              className="lg:hidden text-slate-500 hover:text-emerald-600 p-2 hover:bg-slate-100 rounded-xl transition-all" 
+        <header className="h-14 bg-white border-b border-slate-100 flex items-center justify-between px-5 sm:px-7 shrink-0 sticky top-0 z-30">
+          <div className="flex items-center gap-3">
+            {/* Mobile burger */}
+            <button
+              className="lg:hidden text-slate-400 hover:text-slate-700 p-1.5 hover:bg-slate-100 rounded-lg transition-all"
               onClick={() => setIsMobileMenuOpen(true)}
             >
-              <Menu className="w-6 h-6" />
+              <Menu className="w-5 h-5" />
             </button>
-            <div className="flex flex-col">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Plataforma</span>
-              <span className="text-sm font-bold text-slate-800">
-                {userData?.rol === 'COMPRADOR' ? 'Panel del Comprador' : userData?.rol === 'TRANSPORTISTA' ? 'Panel del Transportista' : 'Panel del Productor'}
-              </span>
+
+            {/* Breadcrumb style title */}
+            <div className="flex items-center gap-2">
+              <div
+                className="w-1.5 h-5 rounded-full shrink-0"
+                style={{ backgroundColor: theme.accent }}
+              />
+              <div>
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block leading-none">Plataforma</span>
+                <span className="text-sm font-bold text-slate-800 block leading-tight mt-0.5">{theme.label}</span>
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-5">
-            {/* Notification Bell */}
+          <div className="flex items-center gap-3">
+            {/* Bell */}
             <button
               onClick={() => setIsNotifDrawerOpen(true)}
-              className={`relative p-2.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all ${isBellShaking ? 'animate-shake' : ''}`}
+              className={`relative p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-all ${isBellShaking ? 'animate-shake' : ''}`}
             >
-              <Bell className="w-5 h-5" />
+              <Bell className="w-4.5 h-4.5" />
               {unreadCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 bg-rose-500 text-white text-[9px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center border-2 border-white shadow-md animate-pulse">
-                  {unreadCount}
-                </span>
+                <span
+                  className="absolute top-1 right-1 w-2 h-2 rounded-full border-2 border-white"
+                  style={{ backgroundColor: theme.accent }}
+                />
               )}
             </button>
 
-            <div className="h-6 w-px bg-slate-200" />
+            <div className="h-5 w-px bg-slate-200" />
 
-            {/* Profile Info */}
-            <div className="flex items-center gap-3">
+            {/* Profile */}
+            <div className="flex items-center gap-2.5">
               <div className="hidden sm:flex flex-col items-end">
-                <span className="text-sm font-extrabold text-slate-800">{userData?.nombre_completo || 'Cargando...'}</span>
-                <span className={`badge text-[10px] py-0 px-2 mt-0.5 border ${stateBadgeClass}`}>
+                <span className="text-[13px] font-bold text-slate-800 leading-tight">{userData?.nombre_completo || '—'}</span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5 ${stateBadgeClass}`}>
                   {stateLabel}
                 </span>
               </div>
-              <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 border-2 border-emerald-500/20 flex items-center justify-center font-black text-sm shadow-md overflow-hidden shrink-0">
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs text-white shrink-0"
+                style={{ backgroundColor: theme.accent }}
+              >
                 {getInitials(userData?.nombre_completo)}
               </div>
             </div>
           </div>
         </header>
 
-        {/* CONTENT WITH GENEROUS PADDING */}
-        <main className="flex-1 overflow-y-auto p-6 sm:p-8">
-          <div className="max-w-7xl mx-auto space-y-8 page-enter">
+        {/* PAGE CONTENT */}
+        <main className="flex-1 overflow-y-auto p-5 sm:p-7">
+          <div className="max-w-7xl mx-auto space-y-6 page-enter">
             <VerificationBanner userData={userData} />
             <Outlet context={{ userData, refreshProfile: fetchProfile, refreshBadges: fetchBadges }} />
           </div>
         </main>
       </div>
 
-      {/* NOTIFICATIONS SLIDE-OUT DRAWER */}
+      {/* ── NOTIFICATIONS DRAWER ────────────────────────────────────────── */}
       {isNotifDrawerOpen && (
         <div className="fixed inset-0 z-50 flex justify-end">
-          {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
+          <div
+            className="absolute inset-0 bg-slate-900/30 backdrop-blur-[2px]"
             onClick={() => setIsNotifDrawerOpen(false)}
           />
 
-          {/* Drawer Body */}
-          <div className="relative w-96 max-w-full bg-white h-full shadow-2xl flex flex-col z-10 animate-slide-in-right">
-            {/* Header */}
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <Bell className="w-5 h-5 text-indigo-600" />
-                <h3 className="text-lg font-black text-slate-900">Notificaciones</h3>
+          <div className="relative w-88 max-w-full bg-white h-full shadow-2xl flex flex-col z-10 animate-slide-in-right border-l border-slate-100">
+
+            {/* Drawer header */}
+            <div className="h-14 flex items-center justify-between px-5 border-b border-slate-100 shrink-0">
+              <div className="flex items-center gap-2">
+                <Bell className="w-4 h-4 text-slate-500" />
+                <span className="text-[14px] font-black text-slate-900">Notificaciones</span>
                 {unreadCount > 0 && (
-                  <span className="bg-rose-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                    {unreadCount} nuevas
+                  <span className="bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full leading-none">
+                    {unreadCount}
                   </span>
                 )}
               </div>
-              <button 
-                onClick={() => setIsNotifDrawerOpen(false)}
-                className="p-1 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Actions & Filters */}
-            <div className="p-4 bg-slate-50 border-b border-slate-100 flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Filtrar por:</span>
+              <div className="flex items-center gap-2">
                 <button
                   onClick={markAllAsRead}
-                  className="text-xs font-black text-indigo-600 hover:text-indigo-700 hover:underline transition-all"
+                  className="text-[11px] font-bold text-slate-400 hover:text-slate-700 transition-colors"
                 >
-                  Marcar todo como leído
-                </button>
-              </div>
-              
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setNotifFilter('ALL')}
-                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
-                    notifFilter === 'ALL' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  Todas
+                  Marcar todo
                 </button>
                 <button
-                  onClick={() => setNotifFilter('UNREAD')}
-                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
-                    notifFilter === 'UNREAD' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'
-                  }`}
+                  onClick={() => setIsNotifDrawerOpen(false)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
                 >
-                  No leídas
+                  <X className="w-4 h-4" />
                 </button>
-                
-                {/* Por tipo dropdown */}
-                <select
-                  value={typeFilter}
-                  onChange={(e) => {
-                    setNotifFilter('BY_TYPE');
-                    setTypeFilter(e.target.value);
-                  }}
-                  className="px-2.5 py-1 rounded-full text-xs font-bold bg-white text-slate-600 border border-slate-200 focus:outline-none"
-                >
-                  <option value="success">Éxito</option>
-                  <option value="warning">Alerta</option>
-                  <option value="info">Info</option>
-                  <option value="celebration">Celebración</option>
-                </select>
               </div>
             </div>
 
-            {/* Notifications List */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+            {/* Filters */}
+            <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2 shrink-0">
+              {['ALL', 'UNREAD'].map(f => (
+                <button
+                  key={f}
+                  onClick={() => setNotifFilter(f)}
+                  className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all ${
+                    notifFilter === f
+                      ? 'text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                  }`}
+                  style={notifFilter === f ? { backgroundColor: theme.accent } : {}}
+                >
+                  {f === 'ALL' ? 'Todas' : 'No leídas'}
+                </button>
+              ))}
+              <select
+                value={typeFilter}
+                onChange={(e) => { setNotifFilter('BY_TYPE'); setTypeFilter(e.target.value); }}
+                className="ml-auto px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 border-0 focus:outline-none cursor-pointer"
+              >
+                <option value="success">Éxito</option>
+                <option value="warning">Alerta</option>
+                <option value="info">Info</option>
+                <option value="celebration">Celebración</option>
+              </select>
+            </div>
+
+            {/* List */}
+            <div className="flex-1 overflow-y-auto">
               {(() => {
                 const filtered = notifications.filter(n => {
                   if (notifFilter === 'UNREAD') return !n.leida;
@@ -490,10 +529,12 @@ const MainLayout = () => {
 
                 if (filtered.length === 0) {
                   return (
-                    <div className="flex flex-col items-center justify-center h-48 text-center p-6 text-slate-400">
-                      <Bell className="w-12 h-12 text-slate-300 mb-3" />
-                      <h4 className="text-sm font-black text-slate-700">No tenés notificaciones</h4>
-                      <p className="text-xs text-slate-400 font-semibold mt-1">Cuando haya actividad, aparecerá aquí.</p>
+                    <div className="flex flex-col items-center justify-center h-52 text-center p-6">
+                      <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mb-3">
+                        <Bell className="w-5 h-5 text-slate-300" />
+                      </div>
+                      <p className="text-sm font-bold text-slate-600">Sin notificaciones</p>
+                      <p className="text-xs text-slate-400 mt-1">Cuando haya actividad, aparecerá aquí.</p>
                     </div>
                   );
                 }
@@ -503,64 +544,56 @@ const MainLayout = () => {
                 const renderNotifItem = (n) => {
                   const details = getNotifDetails(n.tipo);
                   return (
-                    <div 
+                    <div
                       key={n.id}
-                      onClick={() => {
-                        markAsRead(n.id);
-                        setIsNotifDrawerOpen(false);
-                        if (n.ruta) navigate(n.ruta);
-                      }}
-                      className={`p-4 flex items-start gap-3.5 cursor-pointer hover:bg-slate-50 border border-slate-100/60 rounded-2xl transition-all relative ${details.border} ${
-                        !n.leida ? 'bg-indigo-50/10' : ''
-                      }`}
+                      onClick={() => { markAsRead(n.id); setIsNotifDrawerOpen(false); if (n.ruta) navigate(n.ruta); }}
+                      className={`flex items-start gap-3 px-4 py-3.5 cursor-pointer hover:bg-slate-50 transition-colors ${details.border} ${!n.leida ? 'bg-blue-50/30' : ''}`}
                     >
-                      {/* Unread Blue dot */}
-                      {!n.leida && (
-                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shrink-0 mt-2" />
-                      )}
-                      
-                      {/* Circle Icon */}
-                      <div className={`w-8 h-8 rounded-xl ${details.iconBg} flex items-center justify-center shrink-0`}>
+                      <div className={`w-7 h-7 rounded-lg ${details.iconBg} flex items-center justify-center shrink-0 mt-0.5`}>
                         {details.icon}
                       </div>
-                      
-                      <div className="flex-grow min-w-0 pr-2">
-                        <h4 className="text-xs font-black text-slate-900 tracking-wide">{n.titulo}</h4>
-                        <p className="text-[11px] text-slate-600 mt-1 font-semibold leading-relaxed">{n.mensaje}</p>
-                        <span className="text-[9px] font-bold text-slate-400 block mt-2">{getRelativeTime(new Date(n.fecha))}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[12px] font-bold text-slate-900 leading-snug">{n.titulo}</p>
+                        <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed line-clamp-2">{n.mensaje}</p>
+                        <span className="text-[10px] text-slate-400 font-semibold block mt-1">{getRelativeTime(new Date(n.fecha))}</span>
                       </div>
+                      {!n.leida && (
+                        <div className="w-1.5 h-1.5 rounded-full mt-2 shrink-0" style={{ backgroundColor: theme.accent }} />
+                      )}
                     </div>
                   );
                 };
 
+                const Section = ({ label, items }) => items.length === 0 ? null : (
+                  <div>
+                    <div className="px-4 py-2 bg-slate-50 border-b border-slate-100">
+                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{label}</span>
+                    </div>
+                    {items.map(n => renderNotifItem(n))}
+                  </div>
+                );
+
                 return (
                   <>
-                    {/* HOY */}
-                    {groups.today.length > 0 && (
-                      <div className="space-y-3">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block border-b border-slate-50 pb-1">Hoy</span>
-                        {groups.today.map(n => renderNotifItem(n))}
-                      </div>
-                    )}
-
-                    {/* ESTA SEMANA */}
-                    {groups.thisWeek.length > 0 && (
-                      <div className="space-y-3">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block border-b border-slate-50 pb-1">Esta Semana</span>
-                        {groups.thisWeek.map(n => renderNotifItem(n))}
-                      </div>
-                    )}
-
-                    {/* ANTERIOR */}
-                    {groups.older.length > 0 && (
-                      <div className="space-y-3">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block border-b border-slate-50 pb-1">Anterior</span>
-                        {groups.older.map(n => renderNotifItem(n))}
-                      </div>
-                    )}
+                    <Section label="Hoy" items={groups.today} />
+                    <Section label="Esta semana" items={groups.thisWeek} />
+                    <Section label="Anterior" items={groups.older} />
                   </>
                 );
               })()}
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-slate-100 shrink-0">
+              <button
+                onClick={() => { setIsNotifDrawerOpen(false); navigate('/notificaciones'); }}
+                className="w-full py-2.5 rounded-xl text-[12px] font-bold border transition-colors"
+                style={{ borderColor: theme.accent + '44', color: theme.accent }}
+                onMouseEnter={e => e.currentTarget.style.backgroundColor = theme.accent + '11'}
+                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+              >
+                Ver todas las notificaciones
+              </button>
             </div>
           </div>
         </div>
@@ -571,38 +604,37 @@ const MainLayout = () => {
         onClose={() => setShowCelebration(false)}
       />
 
-      {/* MODAL CONFLICTO PRODUCTOR (CARRITO) */}
+      {/* ── MODAL CONFLICTO CARRITO ──────────────────────────────────────── */}
       {conflictoProductor && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setConflictoProductor(null)}></div>
-          <div className="bg-white rounded-3xl w-full max-w-md relative z-10 overflow-hidden shadow-2xl border border-slate-100 p-6 space-y-6">
-            <div className="flex items-center gap-3 text-amber-600 bg-amber-50 p-3.5 rounded-2xl border border-amber-200">
-              <AlertTriangle className="w-6 h-6 shrink-0" />
-              <span className="text-xs font-black uppercase tracking-wider">Conflicto de Productor</span>
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setConflictoProductor(null)} />
+          <div className="bg-white rounded-2xl w-full max-w-sm relative z-10 shadow-2xl border border-slate-100 overflow-hidden">
+
+            {/* Modal header */}
+            <div className="bg-amber-50 border-b border-amber-100 px-5 py-4 flex items-center gap-2.5">
+              <AlertTriangle className="w-4.5 h-4.5 text-amber-600 shrink-0" />
+              <span className="text-[11px] font-black uppercase tracking-wider text-amber-700">Conflicto en el carrito</span>
             </div>
-            
-            <div className="space-y-2">
-              <h3 className="text-base font-extrabold text-slate-900 leading-snug">¿Querés reemplazar tu carrito?</h3>
-              <p className="text-xs font-semibold text-slate-500 leading-normal">
-                Tu carrito tiene productos de <strong className="text-slate-800">{conflictoProductor.productorExistente}</strong>. ¿Querés reemplazarlos con productos de <strong className="text-slate-800">{conflictoProductor.productorNuevo}</strong>?
+
+            <div className="p-5 space-y-3">
+              <h3 className="text-[15px] font-extrabold text-slate-900 leading-snug">¿Reemplazar el carrito?</h3>
+              <p className="text-[13px] text-slate-500 leading-relaxed">
+                Tu carrito tiene productos de <strong className="text-slate-700">{conflictoProductor.productorExistente}</strong>. ¿Querés reemplazarlos con productos de <strong className="text-slate-700">{conflictoProductor.productorNuevo}</strong>?
               </p>
             </div>
 
-            <div className="flex items-center gap-3 pt-2">
+            <div className="px-5 pb-5 flex items-center gap-2.5">
               <button
                 onClick={() => setConflictoProductor(null)}
-                className="flex-1 py-3 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl font-bold text-xs transition-colors border border-slate-200"
+                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold text-[13px] transition-colors"
               >
                 Cancelar
               </button>
               <button
-                onClick={() => {
-                  reemplazarCarrito(conflictoProductor.producto, conflictoProductor.cantidad);
-                  toast.success('Carrito reemplazado exitosamente');
-                }}
-                className="flex-1 py-3 bg-[#9b2335] hover:bg-[#7a1c2a] text-white rounded-xl font-bold text-xs transition-colors shadow-lg shadow-rose-950/20"
+                onClick={() => { reemplazarCarrito(conflictoProductor.producto, conflictoProductor.cantidad); toast.success('Carrito reemplazado'); }}
+                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-[13px] transition-colors"
               >
-                Reemplazar carrito
+                Reemplazar
               </button>
             </div>
           </div>

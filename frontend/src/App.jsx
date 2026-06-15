@@ -37,6 +37,26 @@ import AdminPedidosPage from './pages/AdminPedidosPage';
 import AdminConfiguracionPage from './pages/AdminConfiguracionPage';
 
 import MapaProductoresPage from './pages/MapaProductoresPage';
+import ComparadorPage from './pages/ComparadorPage';
+import NotificacionesPage from './pages/NotificacionesPage';
+import SuscripcionesPage from './pages/SuscripcionesPage';
+import axios from 'axios';
+
+// Interceptor global de Axios para manejar tokens expirados (401)
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      console.warn('Token expirado o inválido, redirigiendo al login...');
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      if (window.location.pathname !== '/login' && window.location.pathname !== '/' && window.location.pathname !== '/registro') {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 // Rutas donde NO se muestra el navbar global
 const HIDDEN_NAVBAR_ROUTES = [
@@ -46,7 +66,7 @@ const HIDDEN_NAVBAR_ROUTES = [
   '/dashboard/productor/pedidos', '/dashboard/productor/ingresos',
   '/dashboard/productor/perfil', '/admin/verificaciones', '/marketplace',
   '/carrito', '/dashboard/comprador/mis-pedidos', '/dashboard/comprador/perfil', '/dashboard/transportista/bolsa',
-  '/dashboard/transportista/hoja-de-ruta'
+  '/dashboard/transportista/hoja-de-ruta', '/comparador', '/notificaciones', '/suscripciones'
 ];
 
 const NavbarWrapper = () => {
@@ -141,8 +161,11 @@ function App() {
                 <Route path="/dashboard/productor/perfil" element={<MiPerfilProductorPage />} />
                 <Route path="/dashboard/comprador" element={<DashboardCompradorPage />} />
                 <Route path="/dashboard/comprador/mapa" element={<MapaProductoresPage />} />
+                <Route path="/notificaciones" element={<NotificacionesPage />} />
+                <Route path="/suscripciones" element={<SuscripcionesPage />} />
                 <Route path="/dashboard/transportista" element={<PanelTransportistaPage />} />
                 <Route path="/marketplace" element={<MarketplacePage />} />
+                <Route path="/comparador" element={<ComparadorPage />} />
                 <Route path="/producto/:id" element={<ProductoDetallePage />} />
                 <Route path="/carrito" element={<CarritoPage />} />
                 <Route path="/dashboard/comprador/pago-qr/:pedidoId" element={<PagoQRPage />} />

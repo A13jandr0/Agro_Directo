@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Package, MapPin, Truck, CheckCircle2, Navigation, FileText, Check } from 'lucide-react';
+import { Package, MapPin, Truck, CheckCircle2, Navigation, FileText, Check, User } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
 const PanelTransportistaPage = () => {
@@ -42,17 +43,19 @@ const PanelTransportistaPage = () => {
     fetchTab(activeTab);
   }, [activeTab]);
 
-  const handleResponderSolicitud = async (id, accion) => {
+  const navigate = useNavigate();
+
+  const handleAceptarViaje = async (id) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`http://localhost:5000/api/solicitudes-transporte/${id}/responder`, 
-        { accion }, 
+      await axios.put(`http://localhost:5000/api/pedidos/${id}/aceptar-viaje`, 
+        {}, 
         { headers: { Authorization: `Bearer ${token}` }}
       );
-      toast.success(accion === 'ACEPTADO' ? 'Solicitud aceptada' : 'Solicitud rechazada', 'La operación fue exitosa.');
+      toast.success('Viaje aceptado', 'El pedido ahora está en tránsito. Revisa tus Viajes en Curso.');
       fetchTab('pendientes');
     } catch (error) {
-      toast.error('Error', error.response?.data?.error || 'Ocurrió un error.');
+      toast.error('Error', error.response?.data?.error || 'No se pudo aceptar el viaje.');
     }
   };
 
@@ -68,6 +71,28 @@ const PanelTransportistaPage = () => {
     } catch (error) {
       toast.error('Error', error.response?.data?.error || 'No se pudo marcar como entregado.');
     }
+  };
+
+  const renderDestino = (direccionStr) => {
+    if (!direccionStr) return 'No indicada';
+    try {
+      const dirObj = JSON.parse(direccionStr);
+      if (dirObj.lat && dirObj.lng) {
+        return (
+          <a 
+            href={`https://www.google.com/maps/search/?api=1&query=${dirObj.lat},${dirObj.lng}`} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-800 underline font-bold"
+          >
+            Abrir en Google Maps
+          </a>
+        );
+      }
+    } catch (e) {
+      // No es JSON válido, devolver el string crudo
+    }
+    return direccionStr;
   };
 
   return (
@@ -121,7 +146,7 @@ const PanelTransportistaPage = () => {
         {activeTab === 'pendientes' && (
           <div className="space-y-4">
             {solicitudes.length === 0 ? (
-              <p className="text-slate-500 text-center py-8">No tienes solicitudes pendientes en este momento.</p>
+              <p className="text-slate-500 text-center py-8">No hay viajes disponibles en la bolsa en este momento.</p>
             ) : (
               solicitudes.map(sol => (
                 <div key={sol.id} className="border border-slate-200 rounded-xl p-5 hover:shadow-md transition-shadow">
@@ -130,29 +155,39 @@ const PanelTransportistaPage = () => {
                       <h3 className="text-lg font-bold text-slate-800">Carga de {sol.productor_nombre}</h3>
                       <p className="text-sm text-slate-500">Para: {sol.comprador_nombre}</p>
                     </div>
-                    <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold">Pendiente</span>
+                    <span className="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-xs font-bold">Disponible</span>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm">
                     <div className="flex items-start gap-2">
                       <MapPin className="w-4 h-4 text-slate-400 mt-0.5" />
                       <div>
-                        <span className="font-semibold text-slate-700 block">Origen</span>
+                        <span className="font-semibold text-slate-700 block">Origen (Finca)</span>
                         <span className="text-slate-600">{sol.origen}</span>
                       </div>
                     </div>
                     <div className="flex items-start gap-2">
                       <MapPin className="w-4 h-4 text-emerald-500 mt-0.5" />
                       <div>
-                        <span className="font-semibold text-slate-700 block">Destino</span>
-                        <span className="text-slate-600">{sol.destino}</span>
+                        <span className="font-semibold text-slate-700 block">Destino (Comprador)</span>
+                        <span className="text-slate-600">{renderDestino(sol.destino)}</span>
                       </div>
                     </div>
                   </div>
-                  <p className="text-sm text-slate-600 mb-4 bg-slate-50 p-3 rounded-lg border border-slate-100"><span className="font-semibold">Descripción:</span> {sol.descripcion_carga || 'Sin detalles'}</p>
-                  <div className="flex gap-3">
-                    <button onClick={() => handleResponderSolicitud(sol.id, 'ACEPTADO')} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-xl transition-colors">Aceptar</button>
-                    <button onClick={() => handleResponderSolicitud(sol.id, 'RECHAZADO')} className="flex-1 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold py-2 px-4 rounded-xl transition-colors">Rechazar</button>
+                  <div className="flex flex-col md:flex-row items-center justify-between bg-slate-50 p-4 rounded-xl mb-4 border border-slate-100">
+                    <div className="text-center md:text-left mb-2 md:mb-0">
+                      <span className="text-xs font-bold text-slate-500 block">Carga Total</span>
+                      <span className="text-sm font-semibold text-slate-800">
+                        {sol.cantidad ? `${sol.cantidad} ${sol.unidad_medida || 'unid.'} de ` : ''}{sol.nombre_producto || 'Varios productos'}
+                      </span>
+                    </div>
+                    <div className="text-center md:text-right">
+                      <span className="text-xs font-bold text-slate-500 block">Valor del Pedido</span>
+                      <span className="text-xl font-black text-slate-900">Bs. {Number(sol.monto_total).toFixed(2)}</span>
+                    </div>
                   </div>
+                  <button onClick={() => handleAceptarViaje(sol.id)} className="w-full bg-[#2563eb] hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition-colors shadow-md">
+                    Aceptar Viaje
+                  </button>
                 </div>
               ))
             )}
@@ -190,17 +225,17 @@ const PanelTransportistaPage = () => {
                       <MapPin className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
                       <div className="text-sm">
                         <span className="font-bold text-slate-700 block">Destino</span>
-                        <span className="text-slate-600">{v.destino}</span>
+                        <span className="text-slate-600">{renderDestino(v.destino)}</span>
                       </div>
                     </div>
                   </div>
 
                   <button 
-                    onClick={() => handleMarcarEntregado(v.id)} 
-                    className="w-full flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-4 rounded-xl transition-colors shadow-lg shadow-slate-900/20"
+                    onClick={() => navigate('/dashboard/transportista/hoja-de-ruta')} 
+                    className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl transition-colors shadow-lg shadow-emerald-600/20"
                   >
-                    <Check className="w-5 h-5" />
-                    Marcar como Entregado
+                    <FileText className="w-5 h-5" />
+                    Ver Hoja de Ruta
                   </button>
                 </div>
               ))
@@ -237,8 +272,5 @@ const PanelTransportistaPage = () => {
     </div>
   );
 };
-
-// Componente dummy para evitar error de import
-const User = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
 
 export default PanelTransportistaPage;

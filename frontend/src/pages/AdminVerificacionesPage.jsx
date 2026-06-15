@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { 
-  ShieldAlert, Mail, Eye, CheckCircle2, XCircle, Search, AlertCircle, X, 
-  Calendar, Check, ShieldCheck, User, Sparkles, FileText, CheckSquare, Square
-} from 'lucide-react';
+import {
+  ShieldAlert, Mail, Eye, CheckCircle2, XCircle, Search, AlertCircle, X,
+  Calendar, Check, ShieldCheck, User, Sparkles, FileText, CheckSquare, Square } from
+'lucide-react';
 import PageShell from '../components/ui/PageShell';
 import PollingIndicator from '../components/PollingIndicator';
 import { usePolling } from '../hooks/usePolling';
@@ -88,12 +88,12 @@ const AdminVerificacionesPage = () => {
       });
 
       if (accion === 'aprobar') {
-        toast.success('✓ Usuario verificado. Se le notificó.');
+        toast.success("Usuario verificado. Se le notific\xF3.");
         // Update user state locally
-        setUsuarios(prev => prev.map(u => u.id === selectedUser.id ? { ...u, estado: 'VERIFICADO' } : u));
+        setUsuarios((prev) => prev.map((u) => u.id === selectedUser.id ? { ...u, estado: 'VERIFICADO' } : u));
       } else {
         toast.success('Usuario notificado del rechazo');
-        setUsuarios(prev => prev.map(u => u.id === selectedUser.id ? { ...u, estado: 'RECHAZADO' } : u));
+        setUsuarios((prev) => prev.map((u) => u.id === selectedUser.id ? { ...u, estado: 'RECHAZADO' } : u));
       }
       setIsModalOpen(false);
     } catch (err) {
@@ -107,28 +107,28 @@ const AdminVerificacionesPage = () => {
   const getDocumentUrls = (user) => {
     const rawUrl = user.documento?.url || user.url_documento || null;
     if (!rawUrl) return [];
-    return rawUrl
-      .split(',')
-      .map((url) => url.trim())
-      .filter(Boolean);
+    return rawUrl.
+    split(',').
+    map((url) => url.trim()).
+    filter(Boolean);
   };
 
   // Document list builder based on role
   const getDocumentList = (user) => {
     const urls = getDocumentUrls(user);
-    
+
     if (user.rol === 'PRODUCTOR') {
       return [
-        { label: 'Cédula de Identidad (CI)', url: urls[0] || null },
-        { label: 'Registro Ambiental Único (RAU)', url: urls[1] || null }
-      ];
+      { label: 'Cédula de Identidad (CI)', url: urls[0] || null },
+      { label: 'Registro Ambiental Único (RAU)', url: urls[1] || null }];
+
     }
 
     return [
-      { label: 'Cédula de Identidad (CI)', url: urls[0] || null },
-      { label: 'Licencia de Conducir', url: urls[1] || null },
-      { label: 'SOAT Vigente', url: urls[2] || null }
-    ];
+    { label: 'Cédula de Identidad (CI)', url: urls[0] || null },
+    { label: 'Licencia de Conducir', url: urls[1] || null },
+    { label: 'SOAT Vigente', url: urls[2] || null }];
+
   };
 
   const renderDocumentPreview = (url) => {
@@ -140,8 +140,8 @@ const AdminVerificacionesPage = () => {
           <span className="text-[10px] text-slate-400/80 max-w-xs block leading-relaxed font-semibold">
             El usuario aún no subió este archivo o el documento no existe.
           </span>
-        </div>
-      );
+        </div>);
+
     }
 
     const externalUrl = url.startsWith('http') ? url : `http://localhost:5000${url}`;
@@ -149,42 +149,42 @@ const AdminVerificacionesPage = () => {
 
     return (
       <div className="w-full h-full flex flex-col items-center justify-center gap-3">
-        {isPdf ? (
-          <iframe
-            src={externalUrl}
-            title="Documento PDF"
-            className="w-full h-full border border-slate-200 rounded-3xl"
-          />
-        ) : (
-          <img
-            src={externalUrl}
-            alt="Documento adjunto"
-            className="max-w-full max-h-full object-contain"
-          />
-        )}
+        {isPdf ?
+        <iframe
+          src={externalUrl}
+          title="Documento PDF"
+          className="w-full h-full border border-slate-200 rounded-3xl" /> :
+
+
+        <img
+          src={externalUrl}
+          alt="Documento adjunto"
+          className="max-w-full max-h-full object-contain" />
+
+        }
         <a
           href={externalUrl}
           target="_blank"
           rel="noreferrer"
-          className="text-xs font-bold text-indigo-600 hover:underline"
-        >
+          className="text-xs font-bold text-indigo-600 hover:underline">
+          
           Abrir documento en una nueva pestaña
         </a>
-      </div>
-    );
+      </div>);
+
   };
 
   // Counts based on tab category
   // If user state matches: VERIFICADO -> Verificados, RECHAZADO -> Rechazados, otherwise -> Pendientes
-  const pendientesCount = usuarios.filter(u => u.estado !== 'VERIFICADO' && u.estado !== 'RECHAZADO').length;
-  const verificadosCount = usuarios.filter(u => u.estado === 'VERIFICADO').length;
-  const rechazadosCount = usuarios.filter(u => u.estado === 'RECHAZADO').length;
+  const pendientesCount = usuarios.filter((u) => u.estado !== 'VERIFICADO' && u.estado !== 'RECHAZADO').length;
+  const verificadosCount = usuarios.filter((u) => u.estado === 'VERIFICADO').length;
+  const rechazadosCount = usuarios.filter((u) => u.estado === 'RECHAZADO').length;
 
-  const currentList = usuarios.filter(u => {
+  const currentList = usuarios.filter((u) => {
     // Search query matching
-    const matchesSearch = u.nombre_completo.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          u.correo.toLowerCase().includes(searchQuery.toLowerCase());
-    
+    const matchesSearch = u.nombre_completo.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    u.correo.toLowerCase().includes(searchQuery.toLowerCase());
+
     if (!matchesSearch) return false;
 
     if (activeTab === 'Pendientes') return u.estado !== 'VERIFICADO' && u.estado !== 'RECHAZADO';
@@ -211,12 +211,12 @@ const AdminVerificacionesPage = () => {
         <div className="relative">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
-            type="text"
-            placeholder="Buscar por nombre o correo..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 w-full sm:w-60"
-          />
+              type="text"
+              placeholder="Buscar por nombre o correo..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 w-full sm:w-60" />
+            
         </div>
         </div>
       </div>
@@ -224,33 +224,33 @@ const AdminVerificacionesPage = () => {
       {/* Tabs */}
       <div className="flex border-b border-slate-200 gap-6 overflow-x-auto pb-1 hide-scrollbar">
         {[
-          { id: 'Pendientes', label: 'Pendientes', count: pendientesCount, badgeColor: 'bg-red-500 text-white' },
-          { id: 'Verificados', label: 'Verificados', count: verificadosCount, badgeColor: 'bg-emerald-500 text-white' },
-          { id: 'Rechazados', label: 'Rechazados', count: rechazadosCount, badgeColor: 'bg-slate-400 text-white' }
-        ].map(t => (
-          <button
-            key={t.id}
-            onClick={() => setActiveTab(t.id)}
-            className={`pb-3 px-2 text-xs font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap ${
-              activeTab === t.id ? 'border-indigo-600 text-indigo-600 font-extrabold' : 'border-transparent text-slate-400 hover:text-slate-600'
-            }`}
-          >
+        { id: 'Pendientes', label: 'Pendientes', count: pendientesCount, badgeColor: 'bg-red-500 text-white' },
+        { id: 'Verificados', label: 'Verificados', count: verificadosCount, badgeColor: 'bg-emerald-500 text-white' },
+        { id: 'Rechazados', label: 'Rechazados', count: rechazadosCount, badgeColor: 'bg-slate-400 text-white' }].
+        map((t) =>
+        <button
+          key={t.id}
+          onClick={() => setActiveTab(t.id)}
+          className={`pb-3 px-2 text-xs font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap ${
+          activeTab === t.id ? 'border-indigo-600 text-indigo-600 font-extrabold' : 'border-transparent text-slate-400 hover:text-slate-600'}`
+          }>
+          
             <span>{t.label}</span>
             <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${t.badgeColor}`}>
               {t.count}
             </span>
           </button>
-        ))}
+        )}
       </div>
 
       {/* Grid List */}
-      {loading ? (
-        <div className="py-24 text-center">
+      {loading ?
+      <div className="py-24 text-center">
           <div className="w-10 h-10 border-[3px] border-slate-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-3"></div>
           <p className="text-xs text-slate-400 font-bold">Cargando solicitudes...</p>
-        </div>
-      ) : currentList.length === 0 ? (
-        <div className="bg-white rounded-3xl border border-slate-200/60 py-16 flex flex-col items-center justify-center text-center px-6 shadow-sm max-w-lg mx-auto">
+        </div> :
+      currentList.length === 0 ?
+      <div className="bg-white rounded-3xl border border-slate-200/60 py-16 flex flex-col items-center justify-center text-center px-6 shadow-sm max-w-lg mx-auto">
           <div className="w-14 h-14 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center mb-5">
             <UserCheck className="w-7 h-7 text-slate-300" />
           </div>
@@ -258,23 +258,23 @@ const AdminVerificacionesPage = () => {
           <p className="text-xs text-slate-400 max-w-xs mt-2 font-semibold">
             Los registros del sistema aparecerán aquí cuando requieran revisión de credenciales.
           </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        </div> :
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {currentList.map((u) => {
-            const docs = getDocumentList(u);
-            const isPending = u.estado !== 'VERIFICADO' && u.estado !== 'RECHAZADO';
-            
-            return (
-              <div
-                key={u.id}
-                className="bg-white rounded-3xl border border-slate-100 p-5 shadow-sm flex flex-col justify-between hover:shadow-md transition-all duration-200"
-              >
+          const docs = getDocumentList(u);
+          const isPending = u.estado !== 'VERIFICADO' && u.estado !== 'RECHAZADO';
+
+          return (
+            <div
+              key={u.id}
+              className="bg-white rounded-3xl border border-slate-100 p-5 shadow-sm flex flex-col justify-between hover:shadow-md transition-all duration-200">
+              
                 <div>
                   <div className="flex items-center gap-3 border-b border-slate-50 pb-3 mb-4">
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm text-white shadow-sm shrink-0 ${
-                      u.rol === 'PRODUCTOR' ? 'bg-gradient-to-br from-emerald-500 to-teal-600' : 'bg-gradient-to-br from-amber-500 to-orange-600'
-                    }`}>
+                  u.rol === 'PRODUCTOR' ? 'bg-gradient-to-br from-emerald-500 to-teal-600' : 'bg-gradient-to-br from-amber-500 to-orange-600'}`
+                  }>
                       {u.nombre_completo.substring(0, 2).toUpperCase()}
                     </div>
                     <div className="min-w-0">
@@ -286,10 +286,10 @@ const AdminVerificacionesPage = () => {
                   {/* Badges & dates */}
                   <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold mb-4">
                     <span className={`badge ${
-                      u.rol === 'PRODUCTOR' 
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                        : 'bg-amber-50 text-amber-700 border-amber-200'
-                    }`}>
+                  u.rol === 'PRODUCTOR' ?
+                  'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                  'bg-amber-50 text-amber-700 border-amber-200'}`
+                  }>
                       {u.rol}
                     </span>
                     <span className="flex items-center gap-1">
@@ -301,48 +301,48 @@ const AdminVerificacionesPage = () => {
                   {/* Documents checklist preview */}
                   <div className="space-y-2.5">
                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Documentación Adjunta</span>
-                    {docs.map((doc, idx) => (
-                      <div key={idx} className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 flex items-center justify-between text-xs">
+                    {docs.map((doc, idx) =>
+                  <div key={idx} className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 flex items-center justify-between text-xs">
                         <span className="font-semibold text-slate-600 truncate max-w-[160px]">{doc.label}</span>
                         <span className="badge bg-blue-50 text-blue-700 border-blue-100 py-0.5 px-2 text-[9px] font-black">
                           Recibido
                         </span>
                       </div>
-                    ))}
+                  )}
                   </div>
                 </div>
 
                 <div className="border-t border-slate-50 pt-4 mt-5 flex justify-end">
-                  {isPending ? (
-                    <button
-                      onClick={() => handleOpenReview(u)}
-                      className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-600/10 flex items-center justify-center gap-1.5"
-                    >
+                  {isPending ?
+                <button
+                  onClick={() => handleOpenReview(u)}
+                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-600/10 flex items-center justify-center gap-1.5">
+                  
                       <Eye className="w-4 h-4" /> Revisar y Validar
-                    </button>
-                  ) : (
-                    <div className="flex items-center gap-1.5 text-xs font-bold">
-                      {u.estado === 'VERIFICADO' ? (
-                        <span className="text-emerald-600 flex items-center gap-1.5">
+                    </button> :
+
+                <div className="flex items-center gap-1.5 text-xs font-bold">
+                      {u.estado === 'VERIFICADO' ?
+                  <span className="text-emerald-600 flex items-center gap-1.5">
                           <CheckCircle2 className="w-4 h-4" /> Verificado
-                        </span>
-                      ) : (
-                        <span className="text-rose-600 flex items-center gap-1.5">
+                        </span> :
+
+                  <span className="text-rose-600 flex items-center gap-1.5">
                           <XCircle className="w-4 h-4" /> Rechazado
                         </span>
-                      )}
+                  }
                     </div>
-                  )}
+                }
                 </div>
-              </div>
-            );
-          })}
+              </div>);
+
+        })}
         </div>
-      )}
+      }
 
       {/* DOCUMENT REVIEW MODAL */}
-      {isModalOpen && selectedUser && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      {isModalOpen && selectedUser &&
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}></div>
           <div className="bg-white rounded-3xl w-full max-w-4xl relative z-10 overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
             
@@ -365,19 +365,19 @@ const AdminVerificacionesPage = () => {
                 <div className="space-y-3">
                   <span className="text-xs font-black text-slate-400 uppercase tracking-widest block">Documentos del Solicitante</span>
                   <div className="flex gap-2">
-                    {getDocumentList(selectedUser).map((doc, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setActiveDocIndex(idx)}
-                        className={`px-3 py-2 text-[10px] font-bold rounded-xl border transition-all ${
-                          activeDocIndex === idx 
-                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' 
-                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                        }`}
-                      >
-                        {idx === 0 ? 'Doc 1: CI' : idx === 1 ? (selectedUser.rol === 'PRODUCTOR' ? 'Doc 2: RAU' : 'Doc 2: Licencia') : 'Doc 3: SOAT'}
+                    {getDocumentList(selectedUser).map((doc, idx) =>
+                  <button
+                    key={idx}
+                    onClick={() => setActiveDocIndex(idx)}
+                    className={`px-3 py-2 text-[10px] font-bold rounded-xl border transition-all ${
+                    activeDocIndex === idx ?
+                    'bg-indigo-600 text-white border-indigo-600 shadow-sm' :
+                    'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`
+                    }>
+                    
+                        {idx === 0 ? 'Doc 1: CI' : idx === 1 ? selectedUser.rol === 'PRODUCTOR' ? 'Doc 2: RAU' : 'Doc 2: Licencia' : 'Doc 3: SOAT'}
                       </button>
-                    ))}
+                  )}
                   </div>
                 </div>
 
@@ -401,10 +401,10 @@ const AdminVerificacionesPage = () => {
                     <div className="space-y-3">
                       {/* Point 1 */}
                       <label className="flex items-start gap-3 p-3 bg-slate-50 hover:bg-slate-100 rounded-2xl border border-slate-100 cursor-pointer select-none">
-                        <button 
-                          onClick={() => setChkIdentidad(!chkIdentidad)}
-                          className="shrink-0 text-indigo-600 mt-0.5"
-                        >
+                        <button
+                        onClick={() => setChkIdentidad(!chkIdentidad)}
+                        className="shrink-0 text-indigo-600 mt-0.5">
+                        
                           {chkIdentidad ? <CheckSquare className="w-5 h-5 fill-indigo-50 text-indigo-600" /> : <Square className="w-5 h-5 text-slate-300" />}
                         </button>
                         <div>
@@ -417,10 +417,10 @@ const AdminVerificacionesPage = () => {
 
                       {/* Point 2 */}
                       <label className="flex items-start gap-3 p-3 bg-slate-50 hover:bg-slate-100 rounded-2xl border border-slate-100 cursor-pointer select-none">
-                        <button 
-                          onClick={() => setChkDatos(!chkDatos)}
-                          className="shrink-0 text-indigo-600 mt-0.5"
-                        >
+                        <button
+                        onClick={() => setChkDatos(!chkDatos)}
+                        className="shrink-0 text-indigo-600 mt-0.5">
+                        
                           {chkDatos ? <CheckSquare className="w-5 h-5 fill-indigo-50 text-indigo-600" /> : <Square className="w-5 h-5 text-slate-300" />}
                         </button>
                         <div>
@@ -433,10 +433,10 @@ const AdminVerificacionesPage = () => {
 
                       {/* Point 3 */}
                       <label className="flex items-start gap-3 p-3 bg-slate-50 hover:bg-slate-100 rounded-2xl border border-slate-100 cursor-pointer select-none">
-                        <button 
-                          onClick={() => setChkIdVigencia(!chkIdVigencia)}
-                          className="shrink-0 text-indigo-600 mt-0.5"
-                        >
+                        <button
+                        onClick={() => setChkIdVigencia(!chkIdVigencia)}
+                        className="shrink-0 text-indigo-600 mt-0.5">
+                        
                           {chkIdVigencia ? <CheckSquare className="w-5 h-5 fill-indigo-50 text-indigo-600" /> : <Square className="w-5 h-5 text-slate-300" />}
                         </button>
                         <div>
@@ -450,65 +450,65 @@ const AdminVerificacionesPage = () => {
                   </div>
 
                   {/* Rejection reason if active */}
-                  {rechazoMode && (
-                    <div className="space-y-2 animate-fade-in">
+                  {rechazoMode &&
+                <div className="space-y-2 animate-fade-in">
                       <label className="block text-xs font-black text-rose-600 uppercase tracking-wider">Motivo de Rechazo *</label>
                       <textarea
-                        rows="3"
-                        value={motivoRechazo}
-                        onChange={e => setMotivoRechazo(e.target.value)}
-                        placeholder="Describí los motivos específicos de la desaprobación..."
-                        className="w-full px-4 py-3 bg-rose-50/20 border border-rose-200 rounded-xl text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-400 resize-none text-slate-800"
-                      />
+                    rows="3"
+                    value={motivoRechazo}
+                    onChange={(e) => setMotivoRechazo(e.target.value)}
+                    placeholder="Describí los motivos específicos de la desaprobación..."
+                    className="w-full px-4 py-3 bg-rose-50/20 border border-rose-200 rounded-xl text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-400 resize-none text-slate-800" />
+                  
                     </div>
-                  )}
+                }
                 </div>
 
                 {/* Confirmations */}
                 <div className="flex gap-3 border-t border-slate-100 pt-4">
-                  {rechazoMode ? (
-                    <>
+                  {rechazoMode ?
+                <>
                       <button
-                        onClick={() => setRechazoMode(false)}
-                        className="flex-1 py-3 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl font-bold text-xs border border-slate-200"
-                      >
+                    onClick={() => setRechazoMode(false)}
+                    className="flex-1 py-3 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl font-bold text-xs border border-slate-200">
+                    
                         Cancelar
                       </button>
                       <button
-                        onClick={() => handleAction('rechazar')}
-                        disabled={actionLoading}
-                        className="flex-1 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs transition-all shadow-md shadow-rose-900/10"
-                      >
+                    onClick={() => handleAction('rechazar')}
+                    disabled={actionLoading}
+                    className="flex-1 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs transition-all shadow-md shadow-rose-900/10">
+                    
                         Confirmar Rechazo
                       </button>
-                    </>
-                  ) : (
-                    <>
+                    </> :
+
+                <>
                       <button
-                        onClick={() => handleAction('rechazar')}
-                        disabled={actionLoading}
-                        className="flex-1 py-3 border border-rose-200 text-rose-600 hover:bg-rose-50 rounded-xl font-bold text-xs transition-colors flex items-center justify-center gap-1.5"
-                      >
+                    onClick={() => handleAction('rechazar')}
+                    disabled={actionLoading}
+                    className="flex-1 py-3 border border-rose-200 text-rose-600 hover:bg-rose-50 rounded-xl font-bold text-xs transition-colors flex items-center justify-center gap-1.5">
+                    
                         <XCircle className="w-4 h-4" /> Rechazar
                       </button>
                       <button
-                        onClick={() => handleAction('aprobar')}
-                        disabled={actionLoading}
-                        className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl font-bold text-xs transition-all shadow-md shadow-emerald-600/10 flex items-center justify-center gap-1.5"
-                      >
+                    onClick={() => handleAction('aprobar')}
+                    disabled={actionLoading}
+                    className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl font-bold text-xs transition-all shadow-md shadow-emerald-600/10 flex items-center justify-center gap-1.5">
+                    
                         <CheckCircle2 className="w-4 h-4" /> Aprobar
                       </button>
                     </>
-                  )}
+                }
                 </div>
               </div>
 
             </div>
           </div>
         </div>
-      )}
-    </PageShell>
-  );
+      }
+    </PageShell>);
+
 };
 
 export default AdminVerificacionesPage;

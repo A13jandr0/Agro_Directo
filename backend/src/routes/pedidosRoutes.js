@@ -42,8 +42,14 @@ router.get('/bolsa', verifyToken, checkRole(['TRANSPORTISTA']), checkVerified, p
 // Transportista: Pedido actual en tránsito
 router.get('/transportista/actual', verifyToken, checkRole(['TRANSPORTISTA']), checkVerified, pedidosController.getPedidoActualTransportista);
 
-// Transportista: Aceptar una ruta
+// Transportista: Aceptar una ruta (old)
 router.put('/:id/aceptar-ruta', verifyToken, checkRole(['TRANSPORTISTA']), checkVerified, pedidosController.aceptarRuta);
+
+// Transportista: Aceptar viaje (PedidosYa flow)
+router.put('/:id/aceptar-viaje', verifyToken, checkRole(['TRANSPORTISTA']), checkVerified, pedidosController.aceptarViaje);
+
+// Transportista: Notificar que recogió y va en camino
+router.put('/:id/notificar-camino', verifyToken, checkRole(['TRANSPORTISTA']), checkVerified, pedidosController.notificarCamino);
 
 // Transportista: Finalizar entrega con firma
 router.put('/:id/entregar', verifyToken, checkRole(['TRANSPORTISTA']), checkVerified, upload.single('firma'), pedidosController.entregarPedido);

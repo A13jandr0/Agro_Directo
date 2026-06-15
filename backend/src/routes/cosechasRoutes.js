@@ -17,6 +17,11 @@ router.post('/', verifyToken, checkRole(['PRODUCTOR']), checkVerified, uploadFot
 router.get('/mi-catalogo', verifyToken, checkRole(['PRODUCTOR']), cosechasController.miCatalogo);
 router.put('/:id', verifyToken, checkRole(['PRODUCTOR']), checkVerified, uploadFoto, cosechasController.actualizarCosecha);
 router.delete('/:id', verifyToken, checkRole(['PRODUCTOR']), checkVerified, cosechasController.eliminarCosecha);
+
+// US09: Comparador y Precios Abasto (Deben ir antes de /:id para evitar conflictos)
+router.get('/comparador', cosechasController.compararCosechas);
+router.get('/precios-abasto', cosechasController.getPreciosAbasto);
+
 router.get('/:id', verifyToken, cosechasController.getCosechaById);
 
 module.exports = router;

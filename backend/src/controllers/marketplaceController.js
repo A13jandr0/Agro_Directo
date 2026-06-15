@@ -89,49 +89,63 @@ exports.obtenerProductos = async (req, res) => {
 exports.obtenerProductoresMapa = async (req, res) => {
     try {
         const pool = await getPool();
-        const result = await pool.request()
-            .query(`
-                SELECT 
-                    p.id AS productor_id,
-                    u.nombre_completo AS nombre,
-                    p.nombre_finca,
-                    p.municipio,
-                    p.provincia,
-                    p.departamento,
-                    ISNULL(p.ubicacion_gps.Lat, -17.8) AS latitud,
-                    ISNULL(p.ubicacion_gps.Long, -63.1667) AS longitud,
-                    u.estado AS estado_usuario,
-                    ISNULL(
-                        (
-                            SELECT STRING_AGG(c.nombre_producto, ', ') WITHIN GROUP (ORDER BY c.nombre_producto)
-                            FROM Cosechas c
-                            WHERE c.productor_id = p.id AND c.estado_publicacion = 'Activo'
-                        ),
-                        ''
-                    ) AS productos_activos
-                FROM perfil_productor p
-                INNER JOIN usuarios u ON u.id = p.usuario_id
-                ORDER BY p.nombre_finca ASC
-            `);
+        const latComprador = parseFloat(req.query.lat_comprador);
+        const lngComprador = parseFloat(req.query.lng_comprador);
+        // Si radio_km es null o NaN, usaremos un valor grande (ej. 100000) para "Todo"
+        const radioKm = parseFloat(req.query.radio_km) || 100000;
 
-        console.log('[Marketplace] Productores obtenidos:', result.recordset.length);
+        const aplicarFiltro = !Number.isNaN(latComprador) && !Number.isNaN(lngComprador);
+
+        const request = pool.request();
+        if (aplicarFiltro) {
+            request.input('lat', sql.Float, latComprador)
+                   .input('lng', sql.Float, lngComprador)
+                   .input('radio_km', sql.Float, radioKm);
+        }
+
+        let query = `
+            SELECT pp.id, 
+                   pp.nombre_finca, 
+                   pp.municipio, 
+                   pp.provincia,
+                   u.nombre_completo AS nombre_productor,
+                   ISNULL(pp.ubicacion_gps.Lat, -17.8) AS latitud,
+                   ISNULL(pp.ubicacion_gps.Long, -63.1667) AS longitud,
+                   COUNT(c.id) AS total_productos
+        `;
+
+        if (aplicarFiltro) {
+            query += `, pp.ubicacion_gps.STDistance(geography::Point(@lat, @lng, 4326)) / 1000 AS distancia_km `;
+        } else {
+            query += `, NULL AS distancia_km `;
+        }
         
-        const productores = result.recordset.map((row) => ({
-            productor_id: row.productor_id,
-            nombre: row.nombre,
-            nombre_finca: row.nombre_finca,
-            municipio: row.municipio,
-            provincia: row.provincia,
-            departamento: row.departamento,
-            latitud: row.latitud,
-            longitud: row.longitud,
-            estado_usuario: row.estado_usuario,
-            productos: row.productos_activos
-                ? row.productos_activos.split(',').map((prod) => prod.trim()).filter(Boolean)
-                : []
-        }));
+        query += `
+            FROM perfil_productor pp
+            INNER JOIN usuarios u ON pp.usuario_id = u.id
+            LEFT JOIN Cosechas c ON c.productor_id = pp.id AND c.estado_publicacion = 'Activo'
+            WHERE pp.ubicacion_gps IS NOT NULL
+        `;
 
-        res.json(productores);
+        if (aplicarFiltro && radioKm < 100000) {
+            query += ` AND pp.ubicacion_gps.STDistance(geography::Point(@lat, @lng, 4326)) / 1000 <= @radio_km `;
+        }
+
+        query += `
+            GROUP BY pp.id, pp.nombre_finca, pp.municipio, pp.provincia, u.nombre_completo,
+                     pp.ubicacion_gps.Lat, pp.ubicacion_gps.Long
+        `;
+
+        if (aplicarFiltro) {
+            query += `, pp.ubicacion_gps.STDistance(geography::Point(@lat, @lng, 4326)) ORDER BY distancia_km ASC`;
+        } else {
+            query += ` ORDER BY pp.nombre_finca ASC`;
+        }
+
+        const result = await request.query(query);
+
+        console.log('[Marketplace] Productores obtenidos para mapa:', result.recordset.length);
+        res.json(result.recordset);
     } catch (error) {
         console.error('[Marketplace] Error obteniendo productores para el mapa:', error);
         res.json([]);

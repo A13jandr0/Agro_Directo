@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Shield, ShieldAlert, Clock, Star, MapPin, Phone, Mail, TrendingUp, Award, MessageCircle } from 'lucide-react';
 
 const ProducerProfile = ({ producer, products = [] }) => {
@@ -33,26 +33,26 @@ const ProducerProfile = ({ producer, products = [] }) => {
     <div className="max-w-4xl mx-auto my-8">
 
       {/* ALERTA DE VERIFICACIÓN PENDIENTE (US03) */}
-      {esPendiente && (
-        <div className="bg-amber-50 border-l-4 border-amber-500 p-4 mb-6 rounded-r-lg shadow-sm flex items-start gap-3">
+      {esPendiente &&
+      <div className="bg-amber-50 border-l-4 border-amber-500 p-4 mb-6 rounded-r-lg shadow-sm flex items-start gap-3">
           <ShieldAlert className="w-7 h-7 text-amber-600 mt-0.5 flex-shrink-0" />
           <div>
             <h3 className="text-amber-800 font-bold text-lg">Verificación pendiente</h3>
             <p className="text-amber-700 text-sm">Este perfil aún no ha sido verificado por el equipo de AgroDirecto. Proceda con precaución antes de realizar transacciones.</p>
           </div>
         </div>
-      )}
+      }
 
       {/* ALERTA DE RECHAZO */}
-      {esRechazado && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-lg shadow-sm flex items-start gap-3">
+      {esRechazado &&
+      <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-lg shadow-sm flex items-start gap-3">
           <ShieldAlert className="w-7 h-7 text-red-600 mt-0.5 flex-shrink-0" />
           <div>
             <h3 className="text-red-800 font-bold text-lg">Productor no verificado</h3>
             <p className="text-red-700 text-sm">La verificación de este productor fue rechazada. No se recomienda realizar transacciones.</p>
           </div>
         </div>
-      )}
+      }
 
       {/* CABECERA DEL PERFIL */}
       <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden mb-8">
@@ -69,25 +69,25 @@ const ProducerProfile = ({ producer, products = [] }) => {
               <div className="ml-4 mb-2">
                 <h1 className="text-3xl font-bold text-gray-800">{producer.nombreCompleto}</h1>
                 <p className="text-emerald-600 font-semibold text-lg flex items-center gap-2">
-                  🏡 {producer.nombreFinca || 'Finca sin nombre'}
+                  <Star size={16} className="inline-block mr-1" /> {producer.nombreFinca || 'Finca sin nombre'}
                 </p>
               </div>
             </div>
 
             <div className="mt-4 sm:mt-0 pb-2">
-              {esVerificado ? (
-                <div className="bg-emerald-100 border border-emerald-300 text-emerald-800 px-4 py-2 rounded-full font-bold flex items-center gap-2 shadow-sm">
+              {esVerificado ?
+              <div className="bg-emerald-100 border border-emerald-300 text-emerald-800 px-4 py-2 rounded-full font-bold flex items-center gap-2 shadow-sm">
                   <Shield className="w-5 h-5" />Perfil Verificado
-                </div>
-              ) : esPendiente ? (
-                <div className="bg-amber-100 border border-amber-300 text-amber-800 px-4 py-2 rounded-full font-semibold flex items-center gap-2">
+                </div> :
+              esPendiente ?
+              <div className="bg-amber-100 border border-amber-300 text-amber-800 px-4 py-2 rounded-full font-semibold flex items-center gap-2">
                   <Clock className="w-5 h-5" />Verificación Pendiente
-                </div>
-              ) : (
-                <div className="bg-red-100 border border-red-300 text-red-800 px-4 py-2 rounded-full font-semibold flex items-center gap-2">
+                </div> :
+
+              <div className="bg-red-100 border border-red-300 text-red-800 px-4 py-2 rounded-full font-semibold flex items-center gap-2">
                   <ShieldAlert className="w-5 h-5" />No Verificado
                 </div>
-              )}
+              }
             </div>
           </div>
 
@@ -111,16 +111,16 @@ const ProducerProfile = ({ producer, products = [] }) => {
             {/* CALIFICACIÓN o PRODUCTOR NUEVO */}
             <div className="mb-5">
               <span className="block text-xs text-gray-500 uppercase font-semibold mb-2">Calificación</span>
-              {esProductorNuevo ? (
-                <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1.5 rounded-full">
-                  🌟 Productor Nuevo
-                </span>
-              ) : (
-                <div className="flex items-center gap-2">
+              {esProductorNuevo ?
+              <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1.5 rounded-full">
+                  <Star size={16} className="inline-block mr-1" /> Productor Nuevo
+                </span> :
+
+              <div className="flex items-center gap-2">
                   {renderStars(producer.calificacionPromedio)}
                   <span className="font-bold text-gray-700 text-lg">{producer.calificacionPromedio.toFixed(1)}</span>
                 </div>
-              )}
+              }
             </div>
 
             <div className="space-y-3">
@@ -156,18 +156,18 @@ const ProducerProfile = ({ producer, products = [] }) => {
               <span className="text-sm font-normal text-gray-500 bg-gray-100 px-3 py-1 rounded-full">{products.length} encontrados</span>
             </h2>
 
-            {products.length === 0 ? (
-              <div className="text-center py-16 border-2 border-dashed border-gray-200 rounded-xl">
-                <div className="text-5xl mb-3">🌱</div>
+            {products.length === 0 ?
+            <div className="text-center py-16 border-2 border-dashed border-gray-200 rounded-xl">
+                <div className="text-5xl mb-3"><Star size={16} className="inline-block mr-1" /></div>
                 <h3 className="text-gray-400 font-medium">Este productor aún no tiene productos publicados.</h3>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {products.map(product => (
-                  <div key={product.id} className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow group cursor-pointer">
+              </div> :
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {products.map((product) =>
+              <div key={product.id} className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow group cursor-pointer">
                     <div className="h-40 bg-gray-200 relative overflow-hidden">
                       <img src={product.imagenUrl || `https://placehold.co/400x300/1D9E75/white?text=${encodeURIComponent(product.nombre)}`}
-                        alt={product.nombre} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  alt={product.nombre} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                       <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded-full text-xs font-bold text-emerald-700 shadow">{product.categoria}</div>
                     </div>
                     <div className="p-4">
@@ -181,14 +181,14 @@ const ProducerProfile = ({ producer, products = [] }) => {
                       </div>
                     </div>
                   </div>
-                ))}
+              )}
               </div>
-            )}
+            }
           </div>
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 };
 
 export default ProducerProfile;

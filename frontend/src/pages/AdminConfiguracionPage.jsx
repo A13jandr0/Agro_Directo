@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Save, ShieldAlert, Database, HelpCircle, Activity } from 'lucide-react';
+import { Settings, Save, ShieldAlert, Database, HelpCircle, Activity, Star } from 'lucide-react';
 import PageShell from '../components/ui/PageShell';
 import { useToast } from '../context/ToastContext';
 
@@ -22,7 +22,7 @@ const AdminConfiguracionPage = () => {
     <PageShell>
       <div>
         <span className="inline-flex bg-slate-900 text-white px-3 py-1 rounded-full text-xs font-bold">
-          ⚙️ Parámetros Globales
+          <Star size={16} className="inline-block mr-1" /><Star size={16} className="inline-block mr-1" /> Parámetros Globales
         </span>
         <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mt-2">Configuración del Sistema</h1>
         <p className="text-sm text-slate-400 mt-1">Configurá las comisiones, políticas de verificación y comportamiento de la app</p>
@@ -43,9 +43,9 @@ const AdminConfiguracionPage = () => {
                 <input
                   type="number"
                   value={comision}
-                  onChange={e => setComision(parseFloat(e.target.value))}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-                />
+                  onChange={(e) => setComision(parseFloat(e.target.value))}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                
               </div>
 
               <div className="space-y-2">
@@ -53,9 +53,9 @@ const AdminConfiguracionPage = () => {
                 <input
                   type="number"
                   value={radioKm}
-                  onChange={e => setRadioKm(parseInt(e.target.value))}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-                />
+                  onChange={(e) => setRadioKm(parseInt(e.target.value))}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                
               </div>
             </div>
 
@@ -71,9 +71,9 @@ const AdminConfiguracionPage = () => {
                   type="button"
                   onClick={() => setRequiereRAU(!requiereRAU)}
                   className={`w-10 h-6 rounded-full p-0.5 transition-colors shrink-0 ${
-                    requiereRAU ? 'bg-emerald-500' : 'bg-slate-200'
-                  }`}
-                >
+                  requiereRAU ? 'bg-emerald-500' : 'bg-slate-200'}`
+                  }>
+                  
                   <div className={`w-5 h-5 bg-white rounded-full transition-transform shadow-md ${requiereRAU ? 'translate-x-4' : ''}`} />
                 </button>
               </label>
@@ -106,8 +106,8 @@ const AdminConfiguracionPage = () => {
             <button
               onClick={handleSave}
               disabled={isSaving}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white py-3 rounded-xl font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2"
-            >
+              className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white py-3 rounded-xl font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2">
+              
               <Save className="w-4 h-4" />
               {isSaving ? 'Guardando...' : 'Guardar Cambios'}
             </button>
@@ -115,8 +115,8 @@ const AdminConfiguracionPage = () => {
         </div>
 
       </div>
-    </PageShell>
-  );
+    </PageShell>);
+
 };
 
 export default AdminConfiguracionPage;

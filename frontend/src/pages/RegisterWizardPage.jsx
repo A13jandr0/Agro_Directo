@@ -3,44 +3,44 @@ import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import {
   Leaf, ShoppingCart, Truck, Check, ChevronLeft, ChevronRight,
-  Upload, FileText, CheckCircle, Clock, AlertCircle, Eye, EyeOff, X
-} from 'lucide-react';
+  Upload, FileText, CheckCircle, Clock, AlertCircle, Eye, EyeOff, X } from
+'lucide-react';
 import { useToast } from '../context/ToastContext';
 
 // Municipios / Ciudades de Bolivia
 const BOLIVIAN_CITIES = [
-  'Santa Cruz de la Sierra',
-  'La Paz',
-  'Cochabamba',
-  'Oruro',
-  'Potosí',
-  'Tarija',
-  'Sucre',
-  'Trinidad',
-  'Cobija',
-  'Montero',
-  'Warnes',
-  'El Alto'
-];
+'Santa Cruz de la Sierra',
+'La Paz',
+'Cochabamba',
+'Oruro',
+'Potosí',
+'Tarija',
+'Sucre',
+'Trinidad',
+'Cobija',
+'Montero',
+'Warnes',
+'El Alto'];
+
 
 // Provincias de Santa Cruz
 const SANTA_CRUZ_PROVINCES = [
-  'Andrés Ibáñez',
-  'Obispo Santistevan',
-  'Warnes',
-  'Ichilo',
-  'Sara',
-  'Chiquitos',
-  'Cordillera',
-  'Vallegrande',
-  'Florida',
-  'Manuel María Caballero',
-  'Ñuflo de Chávez',
-  'Velasco',
-  'Guarayos',
-  'Germán Busch',
-  'Ángel Sandoval'
-];
+'Andrés Ibáñez',
+'Obispo Santistevan',
+'Warnes',
+'Ichilo',
+'Sara',
+'Chiquitos',
+'Cordillera',
+'Vallegrande',
+'Florida',
+'Manuel María Caballero',
+'Ñuflo de Chávez',
+'Velasco',
+'Guarayos',
+'Germán Busch',
+'Ángel Sandoval'];
+
 
 const RegisterWizardPage = () => {
   const navigate = useNavigate();
@@ -64,19 +64,19 @@ const RegisterWizardPage = () => {
     celular: '',
     ciudad: '',
     acepto_terminos: false,
-    
+
     // Productor
     nombre_finca: '',
     tipo_produccion: '',
     hectareas: '',
     provincia: '',
     foto_perfil: null,
-    
+
     // Comprador
     tipo_comprador: '',
     nombre_negocio: '',
     nit: '',
-    
+
     // Transportista
     placa_vehiculo: '',
     tipo_transporte: '',
@@ -105,25 +105,25 @@ const RegisterWizardPage = () => {
 
     switch (field) {
       case 'nombre_completo':
-        if (!value.trim()) err = 'El nombre completo es requerido';
-        else if (value.trim().length < 3) err = 'El nombre debe tener al menos 3 caracteres';
+        if (!value.trim()) err = 'El nombre completo es requerido';else
+        if (value.trim().length < 3) err = 'El nombre debe tener al menos 3 caracteres';
         break;
       case 'correo':
-        if (!value.trim()) err = 'El correo electrónico es requerido';
-        else if (!emailRegex.test(value)) err = 'Ingresá un correo electrónico válido';
+        if (!value.trim()) err = 'El correo electrónico es requerido';else
+        if (!emailRegex.test(value)) err = 'Ingresá un correo electrónico válido';
         break;
       case 'contrasena':
-        if (!value) err = 'La contraseña es requerida';
-        else if (value.length < 8) err = 'Debe tener al menos 8 caracteres';
-        else if (!/[A-Z]/.test(value)) err = 'Debe contener al menos una mayúscula';
-        else if (!/[0-9]/.test(value)) err = 'Debe contener al menos un número';
+        if (!value) err = 'La contraseña es requerida';else
+        if (value.length < 8) err = 'Debe tener al menos 8 caracteres';else
+        if (!/[A-Z]/.test(value)) err = 'Debe contener al menos una mayúscula';else
+        if (!/[0-9]/.test(value)) err = 'Debe contener al menos un número';
         break;
       case 'confirmar_contrasena':
         if (value !== formData.contrasena) err = 'Las contraseñas no coinciden';
         break;
       case 'celular':
-        if (!value.trim()) err = 'El teléfono celular es requerido';
-        else if (!phoneRegex.test(value.replace(/\s+/g, ''))) err = 'Ingresá un número de celular válido';
+        if (!value.trim()) err = 'El teléfono celular es requerido';else
+        if (!phoneRegex.test(value.replace(/\s+/g, ''))) err = 'Ingresá un número de celular válido';
         break;
       case 'ciudad':
         if (!value) err = 'Selecciona tu ciudad/municipio';
@@ -159,19 +159,19 @@ const RegisterWizardPage = () => {
         break;
     }
 
-    setErrors(prev => ({ ...prev, [field]: err }));
+    setErrors((prev) => ({ ...prev, [field]: err }));
     return err === '';
   };
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
     validateField(field, value);
   };
 
   // Drag and Drop & File Upload handlers
   const handleFileUpload = (field, file) => {
     if (!file) return;
-    
+
     // Validar tipo de archivo (imagen o pdf)
     const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
     if (!validTypes.includes(file.type)) {
@@ -185,35 +185,35 @@ const RegisterWizardPage = () => {
       return;
     }
 
-    setFormData(prev => ({ ...prev, [field]: file }));
-    
+    setFormData((prev) => ({ ...prev, [field]: file }));
+
     if (file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onload = () => {
-        setPreviews(prev => ({ ...prev, [field]: reader.result }));
+        setPreviews((prev) => ({ ...prev, [field]: reader.result }));
       };
       reader.readAsDataURL(file);
     } else {
-      setPreviews(prev => ({ ...prev, [field]: 'pdf' })); // Indicador de PDF
+      setPreviews((prev) => ({ ...prev, [field]: 'pdf' })); // Indicador de PDF
     }
   };
 
   const removeFile = (field) => {
-    setFormData(prev => ({ ...prev, [field]: null }));
-    setPreviews(prev => ({ ...prev, [field]: null }));
+    setFormData((prev) => ({ ...prev, [field]: null }));
+    setPreviews((prev) => ({ ...prev, [field]: null }));
   };
 
   const handleZoneToggle = (prov) => {
-    const zones = formData.zonas_operacion.includes(prov)
-      ? formData.zonas_operacion.filter(z => z !== prov)
-      : [...formData.zonas_operacion, prov];
-    
-    setFormData(prev => ({ ...prev, zonas_operacion: zones }));
-    
+    const zones = formData.zonas_operacion.includes(prov) ?
+    formData.zonas_operacion.filter((z) => z !== prov) :
+    [...formData.zonas_operacion, prov];
+
+    setFormData((prev) => ({ ...prev, zonas_operacion: zones }));
+
     if (zones.length === 0) {
-      setErrors(prev => ({ ...prev, zonas_operacion: 'Debes seleccionar al menos una provincia de operación' }));
+      setErrors((prev) => ({ ...prev, zonas_operacion: 'Debes seleccionar al menos una provincia de operación' }));
     } else {
-      setErrors(prev => ({ ...prev, zonas_operacion: '' }));
+      setErrors((prev) => ({ ...prev, zonas_operacion: '' }));
     }
   };
 
@@ -230,12 +230,12 @@ const RegisterWizardPage = () => {
       const commonFields = ['nombre_completo', 'correo', 'contrasena', 'confirmar_contrasena', 'celular', 'ciudad'];
       let isStepValid = true;
 
-      commonFields.forEach(f => {
+      commonFields.forEach((f) => {
         if (!validateField(f, formData[f])) isStepValid = false;
       });
 
       if (formData.rol === 'PRODUCTOR') {
-        ['nombre_finca', 'tipo_production', 'hectareas', 'provincia'].forEach(f => {
+        ['nombre_finca', 'tipo_production', 'hectareas', 'provincia'].forEach((f) => {
           if (f === 'tipo_production') {
             if (!validateField('tipo_produccion', formData.tipo_produccion)) isStepValid = false;
           } else {
@@ -245,12 +245,12 @@ const RegisterWizardPage = () => {
       } else if (formData.rol === 'COMPRADOR') {
         if (!validateField('tipo_comprador', formData.tipo_comprador)) isStepValid = false;
       } else if (formData.rol === 'TRANSPORTISTA') {
-        ['placa_vehiculo', 'tipo_transporte', 'capacidad_carga_kg'].forEach(f => {
+        ['placa_vehiculo', 'tipo_transporte', 'capacidad_carga_kg'].forEach((f) => {
           if (!validateField(f, formData[f])) isStepValid = false;
         });
         if (formData.zonas_operacion.length === 0) {
           isStepValid = false;
-          setErrors(prev => ({ ...prev, zonas_operacion: 'Debes seleccionar al menos una provincia de operación' }));
+          setErrors((prev) => ({ ...prev, zonas_operacion: 'Debes seleccionar al menos una provincia de operación' }));
         }
       }
 
@@ -265,7 +265,7 @@ const RegisterWizardPage = () => {
   };
 
   const handlePrevStep = () => {
-    setStep(prev => Math.max(prev - 1, 1));
+    setStep((prev) => Math.max(prev - 1, 1));
   };
 
   const handleRegisterSubmit = async () => {
@@ -344,7 +344,7 @@ const RegisterWizardPage = () => {
               Authorization: `Bearer ${token}`
             }
           });
-          console.log('✓ Documentos subidos correctamente durante el registro');
+          console.log("Documentos subidos correctamente durante el registro");
         } catch (docError) {
           console.warn('Advertencia: Los documentos no se subieron durante el registro. Puedes subirlos después.', docError);
           // No lanzar error aquí, permitir que continúe el flujo de registro
@@ -384,38 +384,38 @@ const RegisterWizardPage = () => {
 
         {/* Stepper Visual (3 pasos) */}
         <div className="flex items-center justify-center max-w-md mx-auto mb-10">
-          {[1, 2, 3].map((num) => (
-            <React.Fragment key={num}>
-              {num > 1 && (
-                <div 
-                  className={`h-1 flex-1 rounded-full transition-all duration-300 mx-2 ${
-                    step >= num ? 'bg-emerald-500' : 'bg-slate-200'
-                  }`} 
-                />
-              )}
+          {[1, 2, 3].map((num) =>
+          <React.Fragment key={num}>
+              {num > 1 &&
+            <div
+              className={`h-1 flex-1 rounded-full transition-all duration-300 mx-2 ${
+              step >= num ? 'bg-emerald-500' : 'bg-slate-200'}`
+              } />
+
+            }
               <div className="flex flex-col items-center">
-                <div 
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all duration-300 ${
-                    step > num
-                      ? 'bg-emerald-500 border-emerald-500 text-white shadow-md'
-                      : step === num
-                      ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-500/25 scale-110'
-                      : 'bg-white border-slate-200 text-slate-400'
-                  }`}
-                >
+                <div
+                className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all duration-300 ${
+                step > num ?
+                'bg-emerald-500 border-emerald-500 text-white shadow-md' :
+                step === num ?
+                'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-500/25 scale-110' :
+                'bg-white border-slate-200 text-slate-400'}`
+                }>
+                
                   {step > num ? <Check className="w-5 h-5" /> : num}
                 </div>
               </div>
             </React.Fragment>
-          ))}
+          )}
         </div>
 
         {/* Wizard Panel */}
         <div className="bg-white rounded-3xl shadow-xl shadow-slate-900/[0.03] border border-slate-100 p-6 sm:p-10">
           
           {/* PASO 1 — Selección de rol */}
-          {step === 1 && (
-            <div className="animate-fade-in">
+          {step === 1 &&
+          <div className="animate-fade-in">
               <div className="text-center mb-8">
                 <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
                   ¿Cuál es tu rol en AgroDirecto?
@@ -425,14 +425,14 @@ const RegisterWizardPage = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Tarjeta Productor */}
-                <div 
-                  onClick={() => handleInputChange('rol', 'PRODUCTOR')}
-                  className={`rounded-2xl border-2 p-6 cursor-pointer transition-all duration-300 hover:scale-105 ${
-                    formData.rol === 'PRODUCTOR'
-                      ? 'border-emerald-500 bg-emerald-50/50 shadow-md shadow-emerald-500/5'
-                      : 'border-slate-200 bg-gradient-to-br from-emerald-50/10 to-teal-50/5 hover:border-emerald-200'
-                  }`}
-                >
+                <div
+                onClick={() => handleInputChange('rol', 'PRODUCTOR')}
+                className={`rounded-2xl border-2 p-6 cursor-pointer transition-all duration-300 hover:scale-105 ${
+                formData.rol === 'PRODUCTOR' ?
+                'border-emerald-500 bg-emerald-50/50 shadow-md shadow-emerald-500/5' :
+                'border-slate-200 bg-gradient-to-br from-emerald-50/10 to-teal-50/5 hover:border-emerald-200'}`
+                }>
+                
                   <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600 mb-4">
                     <Leaf className="w-6 h-6" />
                   </div>
@@ -443,14 +443,14 @@ const RegisterWizardPage = () => {
                 </div>
 
                 {/* Tarjeta Comprador */}
-                <div 
-                  onClick={() => handleInputChange('rol', 'COMPRADOR')}
-                  className={`rounded-2xl border-2 p-6 cursor-pointer transition-all duration-300 hover:scale-105 ${
-                    formData.rol === 'COMPRADOR'
-                      ? 'border-emerald-500 bg-emerald-50/50 shadow-md shadow-emerald-500/5'
-                      : 'border-slate-200 bg-gradient-to-br from-blue-50/10 to-indigo-50/5 hover:border-blue-200'
-                  }`}
-                >
+                <div
+                onClick={() => handleInputChange('rol', 'COMPRADOR')}
+                className={`rounded-2xl border-2 p-6 cursor-pointer transition-all duration-300 hover:scale-105 ${
+                formData.rol === 'COMPRADOR' ?
+                'border-emerald-500 bg-emerald-50/50 shadow-md shadow-emerald-500/5' :
+                'border-slate-200 bg-gradient-to-br from-blue-50/10 to-indigo-50/5 hover:border-blue-200'}`
+                }>
+                
                   <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 mb-4">
                     <ShoppingCart className="w-6 h-6" />
                   </div>
@@ -461,14 +461,14 @@ const RegisterWizardPage = () => {
                 </div>
 
                 {/* Tarjeta Transportista */}
-                <div 
-                  onClick={() => handleInputChange('rol', 'TRANSPORTISTA')}
-                  className={`rounded-2xl border-2 p-6 cursor-pointer transition-all duration-300 hover:scale-105 ${
-                    formData.rol === 'TRANSPORTISTA'
-                      ? 'border-emerald-500 bg-emerald-50/50 shadow-md shadow-emerald-500/5'
-                      : 'border-slate-200 bg-gradient-to-br from-amber-50/10 to-orange-50/5 hover:border-amber-200'
-                  }`}
-                >
+                <div
+                onClick={() => handleInputChange('rol', 'TRANSPORTISTA')}
+                className={`rounded-2xl border-2 p-6 cursor-pointer transition-all duration-300 hover:scale-105 ${
+                formData.rol === 'TRANSPORTISTA' ?
+                'border-emerald-500 bg-emerald-50/50 shadow-md shadow-emerald-500/5' :
+                'border-slate-200 bg-gradient-to-br from-amber-50/10 to-orange-50/5 hover:border-amber-200'}`
+                }>
+                
                   <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600 mb-4">
                     <Truck className="w-6 h-6" />
                   </div>
@@ -479,11 +479,11 @@ const RegisterWizardPage = () => {
                 </div>
               </div>
             </div>
-          )}
+          }
 
           {/* PASO 2 — Datos Personales */}
-          {step === 2 && (
-            <div className="animate-fade-in space-y-6">
+          {step === 2 &&
+          <div className="animate-fade-in space-y-6">
               <div className="text-center mb-6">
                 <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Datos de tu Cuenta</h2>
                 <p className="text-sm text-slate-400 mt-2">Completá la información del perfil</p>
@@ -494,28 +494,28 @@ const RegisterWizardPage = () => {
                 <div>
                   <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Nombre completo</label>
                   <input
-                    type="text"
-                    value={formData.nombre_completo}
-                    onChange={(e) => handleInputChange('nombre_completo', e.target.value)}
-                    placeholder="Ej. Juan Pérez Mamani"
-                    className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all ${
-                      errors.nombre_completo ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'
-                    }`}
-                  />
+                  type="text"
+                  value={formData.nombre_completo}
+                  onChange={(e) => handleInputChange('nombre_completo', e.target.value)}
+                  placeholder="Ej. Juan Pérez Mamani"
+                  className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all ${
+                  errors.nombre_completo ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'}`
+                  } />
+                
                   {errors.nombre_completo && <span className="text-rose-600 text-xs font-semibold mt-1 block">{errors.nombre_completo}</span>}
                 </div>
 
                 <div>
                   <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Correo electrónico</label>
                   <input
-                    type="email"
-                    value={formData.correo}
-                    onChange={(e) => handleInputChange('correo', e.target.value)}
-                    placeholder="juan@correo.com"
-                    className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all ${
-                      errors.correo ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'
-                    }`}
-                  />
+                  type="email"
+                  value={formData.correo}
+                  onChange={(e) => handleInputChange('correo', e.target.value)}
+                  placeholder="juan@correo.com"
+                  className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all ${
+                  errors.correo ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'}`
+                  } />
+                
                   {errors.correo && <span className="text-rose-600 text-xs font-semibold mt-1 block">{errors.correo}</span>}
                 </div>
 
@@ -523,19 +523,19 @@ const RegisterWizardPage = () => {
                   <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Contraseña</label>
                   <div className="relative">
                     <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={formData.contrasena}
-                      onChange={(e) => handleInputChange('contrasena', e.target.value)}
-                      placeholder="Contraseña segura"
-                      className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 pr-10 transition-all ${
-                        errors.contrasena ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'
-                      }`}
-                    />
+                    type={showPassword ? 'text' : 'password'}
+                    value={formData.contrasena}
+                    onChange={(e) => handleInputChange('contrasena', e.target.value)}
+                    placeholder="Contraseña segura"
+                    className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 pr-10 transition-all ${
+                    errors.contrasena ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'}`
+                    } />
+                  
                     <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
-                    >
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
+                    
                       {showPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
                     </button>
                   </div>
@@ -546,19 +546,19 @@ const RegisterWizardPage = () => {
                   <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Confirmar contraseña</label>
                   <div className="relative">
                     <input
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      value={formData.confirmar_contrasena}
-                      onChange={(e) => handleInputChange('confirmar_contrasena', e.target.value)}
-                      placeholder="Repetir contraseña"
-                      className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 pr-10 transition-all ${
-                        errors.confirmar_contrasena ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'
-                      }`}
-                    />
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={formData.confirmar_contrasena}
+                    onChange={(e) => handleInputChange('confirmar_contrasena', e.target.value)}
+                    placeholder="Repetir contraseña"
+                    className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 pr-10 transition-all ${
+                    errors.confirmar_contrasena ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'}`
+                    } />
+                  
                     <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
-                    >
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
+                    
                       {showConfirmPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
                     </button>
                   </div>
@@ -568,63 +568,63 @@ const RegisterWizardPage = () => {
                 <div>
                   <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Teléfono celular</label>
                   <input
-                    type="tel"
-                    value={formData.celular}
-                    onChange={(e) => handleInputChange('celular', e.target.value)}
-                    placeholder="Ej. +591 77711122"
-                    className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all ${
-                      errors.celular ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'
-                    }`}
-                  />
+                  type="tel"
+                  value={formData.celular}
+                  onChange={(e) => handleInputChange('celular', e.target.value)}
+                  placeholder="Ej. +591 77711122"
+                  className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all ${
+                  errors.celular ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'}`
+                  } />
+                
                   {errors.celular && <span className="text-rose-600 text-xs font-semibold mt-1 block">{errors.celular}</span>}
                 </div>
 
                 <div>
                   <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Ciudad (Bolivia)</label>
                   <select
-                    value={formData.ciudad}
-                    onChange={(e) => handleInputChange('ciudad', e.target.value)}
-                    className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all ${
-                      errors.ciudad ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'
-                    }`}
-                  >
+                  value={formData.ciudad}
+                  onChange={(e) => handleInputChange('ciudad', e.target.value)}
+                  className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all ${
+                  errors.ciudad ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'}`
+                  }>
+                  
                     <option value="">Selecciona tu ciudad...</option>
-                    {BOLIVIAN_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    {BOLIVIAN_CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
                   </select>
                   {errors.ciudad && <span className="text-rose-600 text-xs font-semibold mt-1 block">{errors.ciudad}</span>}
                 </div>
               </div>
 
               {/* ROL PRODUCTOR ADICIONAL */}
-              {formData.rol === 'PRODUCTOR' && (
-                <div className="border-t border-slate-100 pt-6 space-y-5">
+              {formData.rol === 'PRODUCTOR' &&
+            <div className="border-t border-slate-100 pt-6 space-y-5">
                   <h3 className="text-base font-bold text-slate-800">Detalles de la Finca</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
                       <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Nombre de la Finca</label>
                       <input
-                        type="text"
-                        value={formData.nombre_finca}
-                        onChange={(e) => handleInputChange('nombre_finca', e.target.value)}
-                        placeholder="Ej. Hacienda El Sol"
-                        className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all ${
-                          errors.nombre_finca ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'
-                        }`}
-                      />
+                    type="text"
+                    value={formData.nombre_finca}
+                    onChange={(e) => handleInputChange('nombre_finca', e.target.value)}
+                    placeholder="Ej. Hacienda El Sol"
+                    className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all ${
+                    errors.nombre_finca ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'}`
+                    } />
+                  
                       {errors.nombre_finca && <span className="text-rose-600 text-xs font-semibold mt-1 block">{errors.nombre_finca}</span>}
                     </div>
 
                     <div>
                       <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Provincia (Santa Cruz)</label>
                       <select
-                        value={formData.provincia}
-                        onChange={(e) => handleInputChange('provincia', e.target.value)}
-                        className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all ${
-                          errors.provincia ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'
-                        }`}
-                      >
+                    value={formData.provincia}
+                    onChange={(e) => handleInputChange('provincia', e.target.value)}
+                    className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all ${
+                    errors.provincia ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'}`
+                    }>
+                    
                         <option value="">Selecciona provincia...</option>
-                        {SANTA_CRUZ_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
+                        {SANTA_CRUZ_PROVINCES.map((p) => <option key={p} value={p}>{p}</option>)}
                       </select>
                       {errors.provincia && <span className="text-rose-600 text-xs font-semibold mt-1 block">{errors.provincia}</span>}
                     </div>
@@ -632,12 +632,12 @@ const RegisterWizardPage = () => {
                     <div>
                       <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Tipo de producción</label>
                       <select
-                        value={formData.tipo_produccion}
-                        onChange={(e) => handleInputChange('tipo_produccion', e.target.value)}
-                        className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all ${
-                          errors.tipo_produccion ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'
-                        }`}
-                      >
+                    value={formData.tipo_produccion}
+                    onChange={(e) => handleInputChange('tipo_produccion', e.target.value)}
+                    className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all ${
+                    errors.tipo_produccion ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'}`
+                    }>
+                    
                         <option value="">Selecciona tipo...</option>
                         <option value="Frutas">Frutas</option>
                         <option value="Verduras">Verduras</option>
@@ -651,15 +651,15 @@ const RegisterWizardPage = () => {
                     <div>
                       <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Hectáreas aproximadas</label>
                       <input
-                        type="number"
-                        min="1"
-                        value={formData.hectareas}
-                        onChange={(e) => handleInputChange('hectareas', e.target.value)}
-                        placeholder="Ej. 15"
-                        className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all ${
-                          errors.hectareas ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'
-                        }`}
-                      />
+                    type="number"
+                    min="1"
+                    value={formData.hectareas}
+                    onChange={(e) => handleInputChange('hectareas', e.target.value)}
+                    placeholder="Ej. 15"
+                    className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all ${
+                    errors.hectareas ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'}`
+                    } />
+                  
                       {errors.hectareas && <span className="text-rose-600 text-xs font-semibold mt-1 block">{errors.hectareas}</span>}
                     </div>
 
@@ -667,59 +667,59 @@ const RegisterWizardPage = () => {
                     <div className="md:col-span-2">
                       <label className="block text-[13px] font-bold text-slate-700 mb-2">Foto de la Finca / Perfil</label>
                       <div className="flex flex-col md:flex-row gap-4 items-center">
-                        <div 
-                          onDragOver={(e) => e.preventDefault()}
-                          onDrop={(e) => {
-                            e.preventDefault();
-                            handleFileUpload('foto_perfil', e.dataTransfer.files[0]);
-                          }}
-                          className="flex-1 w-full border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors bg-slate-50 hover:bg-slate-50/80"
-                        >
-                          <input 
-                            type="file" 
-                            id="foto_perfil"
-                            accept="image/*"
-                            onChange={(e) => handleFileUpload('foto_perfil', e.target.files[0])}
-                            className="hidden" 
-                          />
+                        <div
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        handleFileUpload('foto_perfil', e.dataTransfer.files[0]);
+                      }}
+                      className="flex-1 w-full border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors bg-slate-50 hover:bg-slate-50/80">
+                      
+                          <input
+                        type="file"
+                        id="foto_perfil"
+                        accept="image/*"
+                        onChange={(e) => handleFileUpload('foto_perfil', e.target.files[0])}
+                        className="hidden" />
+                      
                           <label htmlFor="foto_perfil" className="cursor-pointer text-center">
                             <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2" />
                             <span className="text-sm font-bold text-emerald-600">Subir foto de perfil</span>
                             <span className="text-xs text-slate-400 block mt-1">Arrastrá y soltá una imagen aquí</span>
                           </label>
                         </div>
-                        {previews.foto_perfil && (
-                          <div className="relative w-32 h-32 rounded-2xl overflow-hidden border border-slate-200 shrink-0">
+                        {previews.foto_perfil &&
+                    <div className="relative w-32 h-32 rounded-2xl overflow-hidden border border-slate-200 shrink-0">
                             <img src={previews.foto_perfil} className="w-full h-full object-cover" alt="Preview" />
-                            <button 
-                              type="button"
-                              onClick={() => removeFile('foto_perfil')}
-                              className="absolute top-1 right-1 bg-black/60 text-white p-1 rounded-full hover:bg-black"
-                            >
+                            <button
+                        type="button"
+                        onClick={() => removeFile('foto_perfil')}
+                        className="absolute top-1 right-1 bg-black/60 text-white p-1 rounded-full hover:bg-black">
+                        
                               <X className="w-3.5 h-3.5" />
                             </button>
                           </div>
-                        )}
+                    }
                       </div>
                     </div>
                   </div>
                 </div>
-              )}
+            }
 
               {/* ROL COMPRADOR ADICIONAL */}
-              {formData.rol === 'COMPRADOR' && (
-                <div className="border-t border-slate-100 pt-6 space-y-5">
+              {formData.rol === 'COMPRADOR' &&
+            <div className="border-t border-slate-100 pt-6 space-y-5">
                   <h3 className="text-base font-bold text-slate-800">Detalles de Compras</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
                       <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Tipo de comprador</label>
                       <select
-                        value={formData.tipo_comprador}
-                        onChange={(e) => handleInputChange('tipo_comprador', e.target.value)}
-                        className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all ${
-                          errors.tipo_comprador ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'
-                        }`}
-                      >
+                    value={formData.tipo_comprador}
+                    onChange={(e) => handleInputChange('tipo_comprador', e.target.value)}
+                    className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all ${
+                    errors.tipo_comprador ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'}`
+                    }>
+                    
                         <option value="">Selecciona tipo...</option>
                         <option value="Persona natural">Persona natural</option>
                         <option value="Negocio">Negocio</option>
@@ -730,62 +730,62 @@ const RegisterWizardPage = () => {
                       {errors.tipo_comprador && <span className="text-rose-600 text-xs font-semibold mt-1 block">{errors.tipo_comprador}</span>}
                     </div>
 
-                    {formData.tipo_comprador && formData.tipo_comprador !== 'Persona natural' && (
-                      <>
+                    {formData.tipo_comprador && formData.tipo_comprador !== 'Persona natural' &&
+                <>
                         <div>
                           <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Nombre del Negocio (Opcional)</label>
                           <input
-                            type="text"
-                            value={formData.nombre_negocio}
-                            onChange={(e) => handleInputChange('nombre_negocio', e.target.value)}
-                            placeholder="Nombre comercial"
-                            className="w-full px-4 py-3 bg-gray-50 border border-slate-200 rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                          />
+                      type="text"
+                      value={formData.nombre_negocio}
+                      onChange={(e) => handleInputChange('nombre_negocio', e.target.value)}
+                      placeholder="Nombre comercial"
+                      className="w-full px-4 py-3 bg-gray-50 border border-slate-200 rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                    
                         </div>
                         <div>
                           <label className="block text-[13px] font-bold text-slate-700 mb-1.5">NIT (Opcional)</label>
                           <input
-                            type="text"
-                            value={formData.nit}
-                            onChange={(e) => handleInputChange('nit', e.target.value)}
-                            placeholder="Número de identificación tributaria"
-                            className="w-full px-4 py-3 bg-gray-50 border border-slate-200 rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                          />
+                      type="text"
+                      value={formData.nit}
+                      onChange={(e) => handleInputChange('nit', e.target.value)}
+                      placeholder="Número de identificación tributaria"
+                      className="w-full px-4 py-3 bg-gray-50 border border-slate-200 rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                    
                         </div>
                       </>
-                    )}
+                }
                   </div>
                 </div>
-              )}
+            }
 
               {/* ROL TRANSPORTISTA ADICIONAL */}
-              {formData.rol === 'TRANSPORTISTA' && (
-                <div className="border-t border-slate-100 pt-6 space-y-5">
+              {formData.rol === 'TRANSPORTISTA' &&
+            <div className="border-t border-slate-100 pt-6 space-y-5">
                   <h3 className="text-base font-bold text-slate-800">Detalles del Vehículo</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
                       <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Número de placa</label>
                       <input
-                        type="text"
-                        value={formData.placa_vehiculo}
-                        onChange={(e) => handleInputChange('placa_vehiculo', e.target.value)}
-                        placeholder="Ej. 3422-XYZ"
-                        className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all ${
-                          errors.placa_vehiculo ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'
-                        }`}
-                      />
+                    type="text"
+                    value={formData.placa_vehiculo}
+                    onChange={(e) => handleInputChange('placa_vehiculo', e.target.value)}
+                    placeholder="Ej. 3422-XYZ"
+                    className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all ${
+                    errors.placa_vehiculo ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'}`
+                    } />
+                  
                       {errors.placa_vehiculo && <span className="text-rose-600 text-xs font-semibold mt-1 block">{errors.placa_vehiculo}</span>}
                     </div>
 
                     <div>
                       <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Tipo de vehículo</label>
                       <select
-                        value={formData.tipo_transporte}
-                        onChange={(e) => handleInputChange('tipo_transporte', e.target.value)}
-                        className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all ${
-                          errors.tipo_transporte ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'
-                        }`}
-                      >
+                    value={formData.tipo_transporte}
+                    onChange={(e) => handleInputChange('tipo_transporte', e.target.value)}
+                    className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all ${
+                    errors.tipo_transporte ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'}`
+                    }>
+                    
                         <option value="">Selecciona tipo...</option>
                         <option value="Camión">Camión</option>
                         <option value="Camioneta">Camioneta</option>
@@ -797,15 +797,15 @@ const RegisterWizardPage = () => {
                     <div>
                       <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Capacidad de carga (Kg)</label>
                       <input
-                        type="number"
-                        min="1"
-                        value={formData.capacidad_carga_kg}
-                        onChange={(e) => handleInputChange('capacidad_carga_kg', e.target.value)}
-                        placeholder="Ej. 2500"
-                        className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all ${
-                          errors.capacidad_carga_kg ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'
-                        }`}
-                      />
+                    type="number"
+                    min="1"
+                    value={formData.capacidad_carga_kg}
+                    onChange={(e) => handleInputChange('capacidad_carga_kg', e.target.value)}
+                    placeholder="Ej. 2500"
+                    className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all ${
+                    errors.capacidad_carga_kg ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'}`
+                    } />
+                  
                       {errors.capacidad_carga_kg && <span className="text-rose-600 text-xs font-semibold mt-1 block">{errors.capacidad_carga_kg}</span>}
                     </div>
 
@@ -813,36 +813,36 @@ const RegisterWizardPage = () => {
                     <div className="md:col-span-2">
                       <label className="block text-[13px] font-bold text-slate-700 mb-2">Provincias de Operación (Santa Cruz)</label>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-200 max-h-48 overflow-y-auto">
-                        {SANTA_CRUZ_PROVINCES.map((prov) => (
-                          <label key={prov} className="flex items-center gap-2 cursor-pointer select-none">
+                        {SANTA_CRUZ_PROVINCES.map((prov) =>
+                    <label key={prov} className="flex items-center gap-2 cursor-pointer select-none">
                             <input
-                              type="checkbox"
-                              checked={formData.zonas_operacion.includes(prov)}
-                              onChange={() => handleZoneToggle(prov)}
-                              className="w-4 h-4 rounded text-emerald-600 border-slate-300 focus:ring-emerald-500 cursor-pointer"
-                            />
+                        type="checkbox"
+                        checked={formData.zonas_operacion.includes(prov)}
+                        onChange={() => handleZoneToggle(prov)}
+                        className="w-4 h-4 rounded text-emerald-600 border-slate-300 focus:ring-emerald-500 cursor-pointer" />
+                      
                             <span className="text-xs font-semibold text-slate-700">{prov}</span>
                           </label>
-                        ))}
+                    )}
                       </div>
                       {errors.zonas_operacion && <span className="text-rose-600 text-xs font-semibold mt-1.5 block">{errors.zonas_operacion}</span>}
                     </div>
                   </div>
                 </div>
-              )}
+            }
             </div>
-          )}
+          }
 
           {/* PASO 3 — Documentos & Finalización */}
-          {step === 3 && (
-            <div className="animate-fade-in space-y-6">
+          {step === 3 &&
+          <div className="animate-fade-in space-y-6">
               <div className="text-center mb-6">
                 <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Verificación de Cuenta</h2>
                 <p className="text-sm text-slate-400 mt-2">Seguridad y confianza en nuestro marketplace</p>
               </div>
 
-              {formData.rol !== 'COMPRADOR' ? (
-                <>
+              {formData.rol !== 'COMPRADOR' ?
+            <>
                   {/* Banner Informativo Azul */}
                   <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-2xl p-4 flex items-start gap-3">
                     <Clock className="w-5 h-5 text-blue-600 shrink-0 mt-0.5 animate-float" />
@@ -858,40 +858,40 @@ const RegisterWizardPage = () => {
                     {/* CI Uploader */}
                     <div className="space-y-2">
                       <label className="block text-[13px] font-bold text-slate-700">Carnet de Identidad (Ambos lados)</label>
-                      <div 
-                        onDragOver={(e) => e.preventDefault()}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          handleFileUpload('doc_ci', e.dataTransfer.files[0]);
-                        }}
-                        className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors bg-slate-50 hover:bg-slate-50/80"
-                      >
-                        <input 
-                          type="file" 
-                          id="doc_ci"
-                          onChange={(e) => handleFileUpload('doc_ci', e.target.files[0])}
-                          className="hidden" 
-                        />
+                      <div
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      handleFileUpload('doc_ci', e.dataTransfer.files[0]);
+                    }}
+                    className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors bg-slate-50 hover:bg-slate-50/80">
+                    
+                        <input
+                      type="file"
+                      id="doc_ci"
+                      onChange={(e) => handleFileUpload('doc_ci', e.target.files[0])}
+                      className="hidden" />
+                    
                         <label htmlFor="doc_ci" className="cursor-pointer text-center">
                           <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2" />
                           <span className="text-xs font-bold text-emerald-600">Cargar CI</span>
                         </label>
                       </div>
-                      {formData.doc_ci && (
-                        <div className="flex items-center justify-between p-2.5 bg-slate-100 rounded-xl">
+                      {formData.doc_ci &&
+                  <div className="flex items-center justify-between p-2.5 bg-slate-100 rounded-xl">
                           <div className="flex items-center gap-2 overflow-hidden">
                             <FileText className="w-4.5 h-4.5 text-slate-500 shrink-0" />
                             <span className="text-xs font-semibold text-slate-700 truncate">{formData.doc_ci.name}</span>
                           </div>
-                          <button 
-                            type="button"
-                            onClick={() => removeFile('doc_ci')}
-                            className="text-rose-600 hover:bg-rose-50 p-1 rounded-lg transition-colors"
-                          >
+                          <button
+                      type="button"
+                      onClick={() => removeFile('doc_ci')}
+                      className="text-rose-600 hover:bg-rose-50 p-1 rounded-lg transition-colors">
+                      
                             <X className="w-4 h-4" />
                           </button>
                         </div>
-                      )}
+                  }
                     </div>
 
                     {/* RAU / Licencia Uploader */}
@@ -899,45 +899,45 @@ const RegisterWizardPage = () => {
                       <label className="block text-[13px] font-bold text-slate-700">
                         {formData.rol === 'PRODUCTOR' ? 'Registro Agrario Único (RAU)' : 'Licencia de conducir + SOAT'}
                       </label>
-                      <div 
-                        onDragOver={(e) => e.preventDefault()}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          handleFileUpload('doc_adicional', e.dataTransfer.files[0]);
-                        }}
-                        className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors bg-slate-50 hover:bg-slate-50/80"
-                      >
-                        <input 
-                          type="file" 
-                          id="doc_adicional"
-                          onChange={(e) => handleFileUpload('doc_adicional', e.target.files[0])}
-                          className="hidden" 
-                        />
+                      <div
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      handleFileUpload('doc_adicional', e.dataTransfer.files[0]);
+                    }}
+                    className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors bg-slate-50 hover:bg-slate-50/80">
+                    
+                        <input
+                      type="file"
+                      id="doc_adicional"
+                      onChange={(e) => handleFileUpload('doc_adicional', e.target.files[0])}
+                      className="hidden" />
+                    
                         <label htmlFor="doc_adicional" className="cursor-pointer text-center">
                           <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2" />
                           <span className="text-xs font-bold text-emerald-600">Cargar Documento</span>
                         </label>
                       </div>
-                      {formData.doc_adicional && (
-                        <div className="flex items-center justify-between p-2.5 bg-slate-100 rounded-xl">
+                      {formData.doc_adicional &&
+                  <div className="flex items-center justify-between p-2.5 bg-slate-100 rounded-xl">
                           <div className="flex items-center gap-2 overflow-hidden">
                             <FileText className="w-4.5 h-4.5 text-slate-500 shrink-0" />
                             <span className="text-xs font-semibold text-slate-700 truncate">{formData.doc_adicional.name}</span>
                           </div>
-                          <button 
-                            type="button"
-                            onClick={() => removeFile('doc_adicional')}
-                            className="text-rose-600 hover:bg-rose-50 p-1 rounded-lg transition-colors"
-                          >
+                          <button
+                      type="button"
+                      onClick={() => removeFile('doc_adicional')}
+                      className="text-rose-600 hover:bg-rose-50 p-1 rounded-lg transition-colors">
+                      
                             <X className="w-4 h-4" />
                           </button>
                         </div>
-                      )}
+                  }
                     </div>
                   </div>
-                </>
-              ) : (
-                <div className="text-center py-10 bg-emerald-50/40 border border-emerald-100 rounded-2xl animate-scale-bounce">
+                </> :
+
+            <div className="text-center py-10 bg-emerald-50/40 border border-emerald-100 rounded-2xl animate-scale-bounce">
                   <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4 text-emerald-600">
                     <CheckCircle className="w-8 h-8" />
                   </div>
@@ -946,17 +946,17 @@ const RegisterWizardPage = () => {
                     Tu cuenta como comprador se activa inmediatamente sin necesidad de subir documentos de acreditación.
                   </p>
                 </div>
-              )}
+            }
 
               {/* Aceptación de términos y condiciones */}
               <div className="border-t border-slate-100 pt-6">
                 <label className="flex items-start gap-3 cursor-pointer select-none">
                   <input
-                    type="checkbox"
-                    checked={formData.acepto_terminos}
-                    onChange={(e) => handleInputChange('acepto_terminos', e.target.checked)}
-                    className="w-4 h-4 rounded text-emerald-600 border-slate-300 focus:ring-emerald-500 mt-0.5 cursor-pointer"
-                  />
+                  type="checkbox"
+                  checked={formData.acepto_terminos}
+                  onChange={(e) => handleInputChange('acepto_terminos', e.target.checked)}
+                  className="w-4 h-4 rounded text-emerald-600 border-slate-300 focus:ring-emerald-500 mt-0.5 cursor-pointer" />
+                
                   <span className="text-xs font-semibold text-slate-600 leading-normal">
                     Declaro que la información proporcionada es verdadera y acepto los{' '}
                     <a href="#" className="text-emerald-600 font-bold hover:underline">
@@ -971,40 +971,40 @@ const RegisterWizardPage = () => {
                 </label>
               </div>
             </div>
-          )}
+          }
 
           {/* Botones del footer del wizard */}
           <div className="flex justify-between mt-8 pt-6 border-t border-slate-100">
-            {step > 1 ? (
-              <button 
-                onClick={handlePrevStep}
-                className="flex items-center gap-2 px-5 py-3 border border-slate-200 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-50 hover:border-slate-300 transition-all"
-              >
+            {step > 1 ?
+            <button
+              onClick={handlePrevStep}
+              className="flex items-center gap-2 px-5 py-3 border border-slate-200 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-50 hover:border-slate-300 transition-all">
+              
                 <ChevronLeft className="w-4 h-4" />
                 Atrás
-              </button>
-            ) : (
-              <div />
-            )}
+              </button> :
 
-            {step < 3 ? (
-              <button 
-                onClick={handleNextStep}
-                disabled={step === 1 && !formData.rol}
-                className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
+            <div />
+            }
+
+            {step < 3 ?
+            <button
+              onClick={handleNextStep}
+              disabled={step === 1 && !formData.rol}
+              className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed">
+              
                 Continuar
                 <ChevronRight className="w-4 h-4" />
-              </button>
-            ) : (
-              <button 
-                onClick={handleRegisterSubmit}
-                disabled={loading}
-                className="flex items-center gap-2 px-7 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-600/20 transition-all disabled:opacity-60"
-              >
+              </button> :
+
+            <button
+              onClick={handleRegisterSubmit}
+              disabled={loading}
+              className="flex items-center gap-2 px-7 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-600/20 transition-all disabled:opacity-60">
+              
                 {loading ? 'Procesando cuenta...' : 'Crear mi cuenta'}
               </button>
-            )}
+            }
           </div>
         </div>
 
@@ -1017,11 +1017,11 @@ const RegisterWizardPage = () => {
       </div>
 
       {/* MODALES DE ÉXITO POST-REGISTRO (OVERLAY FOCUS MODAL) */}
-      {showSuccessModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+      {showSuccessModal &&
+      <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
           {formData.rol !== 'COMPRADOR' ? (
-            /* PRODUCTOR / TRANSPORTISTA: Cuenta en revisión */
-            <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-slate-100 text-center animate-scale-bounce">
+        /* PRODUCTOR / TRANSPORTISTA: Cuenta en revisión */
+        <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-slate-100 text-center animate-scale-bounce">
               <div className="w-16 h-16 bg-amber-50 border border-amber-200 rounded-full flex items-center justify-center text-amber-600 mx-auto mb-5 animate-float">
                 <Clock className="w-8 h-8" />
               </div>
@@ -1030,15 +1030,15 @@ const RegisterWizardPage = () => {
                 Tus credenciales y acreditaciones comerciales han sido enviadas correctamente. Te notificaremos vía correo electrónico o SMS cuando sea aprobada en las siguientes 24 a 48 horas.
               </p>
               <button
-                onClick={() => navigate('/login')}
-                className="w-full mt-6 py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-sm shadow-md transition-all"
-              >
+            onClick={() => navigate('/login')}
+            className="w-full mt-6 py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-sm shadow-md transition-all">
+            
                 Ir al inicio
               </button>
-            </div>
-          ) : (
-            /* COMPRADOR: Cuenta creada y activa inmediatamente */
-            <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-slate-100 text-center animate-scale-bounce relative overflow-hidden">
+            </div>) : (
+
+        /* COMPRADOR: Cuenta creada y activa inmediatamente */
+        <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-slate-100 text-center animate-scale-bounce relative overflow-hidden">
               {/* Partículas de Confetti (CSS animado simple) */}
               <div className="absolute inset-0 pointer-events-none opacity-30 select-none">
                 <div className="absolute w-2.5 h-2.5 bg-red-400 rounded-full animate-float top-4 left-6" />
@@ -1055,17 +1055,17 @@ const RegisterWizardPage = () => {
                 ¡Tu cuenta de comprador ya está activa e inmediatamente lista para explorar! Accedé para ver las cosechas cruceñas más frescas disponibles.
               </p>
               <button
-                onClick={() => navigate('/marketplace')}
-                className="w-full mt-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-600/20 transition-all hover:-translate-y-0.5"
-              >
+            onClick={() => navigate('/marketplace')}
+            className="w-full mt-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-600/20 transition-all hover:-translate-y-0.5">
+            
                 Ir al marketplace
               </button>
-            </div>
-          )}
+            </div>)
+        }
         </div>
-      )}
-    </div>
-  );
+      }
+    </div>);
+
 };
 
 export default RegisterWizardPage;

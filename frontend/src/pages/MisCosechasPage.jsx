@@ -1,42 +1,43 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { 
-  Sprout, Plus, Search, Eye, ShoppingCart, Edit2, Trash2, 
-  Upload, AlertTriangle, Calendar, X, FileText, MapPin, 
-  Check, ArrowRight, Loader2, Info, AlertCircle
-} from 'lucide-react';
+import {
+  Sprout, Plus, Search, Eye, ShoppingCart, Edit2, Trash2,
+  Upload, AlertTriangle, Calendar, X, FileText, MapPin,
+  Check, ArrowRight, Loader2, Info, AlertCircle, Star } from
+'lucide-react';
 import { useToast } from '../context/ToastContext';
+import { getImageUrl, handleImageError } from '../utils/imageUtils';
 import FocusModal from '../components/ui/FocusModal';
 import PageShell from '../components/ui/PageShell';
 
 // Categorías con íconos
 const CATEGORIES = [
-  { id: 'Frutas', label: 'Frutas🍎', icon: '🍎' },
-  { id: 'Verduras', label: 'Verduras🥬', icon: '🥬' },
-  { id: 'Tubérculos', label: 'Tubérculos🥔', icon: '🥔' },
-  { id: 'Granos', label: 'Granos🌾', icon: '🌾' },
-  { id: 'Carnes', label: 'Carnes🥩', icon: '🥩' },
-  { id: 'Lácteos', label: 'Lácteos🥛', icon: '🥛' }
-];
+{ id: 'Frutas', label: "Frutas", icon: "" },
+{ id: 'Verduras', label: "Verduras", icon: "" },
+{ id: 'Tubérculos', label: "Tub\xE9rculos", icon: "" },
+{ id: 'Granos', label: "Granos", icon: "" },
+{ id: 'Carnes', label: "Carnes", icon: "" },
+{ id: 'Lácteos', label: "L\xE1cteos", icon: "" }];
+
 
 const SANTA_CRUZ_PROVINCES = [
-  'Andrés Ibáñez',
-  'Obispo Santistevan',
-  'Warnes',
-  'Ichilo',
-  'Sara',
-  'Chiquitos',
-  'Cordillera',
-  'Vallegrande',
-  'Florida',
-  'Manuel María Caballero',
-  'Ñuflo de Chávez',
-  'Velasco',
-  'Guarayos',
-  'Germán Busch',
-  'Ángel Sandoval'
-];
+'Andrés Ibáñez',
+'Obispo Santistevan',
+'Warnes',
+'Ichilo',
+'Sara',
+'Chiquitos',
+'Cordillera',
+'Vallegrande',
+'Florida',
+'Manuel María Caballero',
+'Ñuflo de Chávez',
+'Velasco',
+'Guarayos',
+'Germán Busch',
+'Ángel Sandoval'];
+
 
 const MOCK_MUNICIPIOS = {
   'Andrés Ibáñez': ['Santa Cruz de la Sierra', 'Cotoca', 'El Torno', 'La Guardia', 'Porongo'],
@@ -80,16 +81,44 @@ const MisCosechasPage = () => {
   const [errorFormulario, setErrorFormulario] = useState(null);
   const [tieneUbicacion, setTieneUbicacion] = useState(null);
 
-  // Precios abasto mock para comparador
-  const MOCK_ABASTO_PRICES = {
-    'Tomate': 28.50,
-    'Papa': 18.00,
-    'Zanahoria': 15.50,
-    'Cebolla': 22.00,
-    'Plátano': 20.00,
-    'Maíz': 95.00,
-    'Soya': 120.00
-  };
+  const [preciosAbasto, setPreciosAbasto] = useState({});
+
+  useEffect(() => {
+    const fetchPreciosAbasto = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await axios.get('http://localhost:5000/api/precios-abasto', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        console.log("Data recibida del backend:", res.data);
+        
+        let datos = null;
+        if (Array.isArray(res.data)) {
+          datos = res.data;
+        } else if (res.data && Array.isArray(res.data.recordset)) {
+          datos = res.data.recordset;
+        } else if (res.data && Array.isArray(res.data.data)) {
+          datos = res.data.data;
+        } else if (res.data && Array.isArray(res.data.precios)) {
+          datos = res.data.precios;
+        }
+
+        if (datos) {
+          const preciosMap = {};
+          datos.forEach((p) => {
+            preciosMap[p.nombre_producto] = p.precio_promedio_bs;
+          });
+          setPreciosAbasto(preciosMap);
+        } else {
+          console.warn('Estructura inesperada en la respuesta de precios-abasto', res.data);
+        }
+      } catch (err) {
+        console.error('Error fetching precios abasto', err);
+      }
+    };
+    fetchPreciosAbasto();
+  }, []);
 
   useEffect(() => {
     const verificarPerfil = async () => {
@@ -99,20 +128,20 @@ const MisCosechasPage = () => {
 
         let perfil = null;
         let userDataResult = null;
-        
+
         try {
           const perfilRes = await axios.get('http://localhost:5000/api/usuarios/mi-perfil', {
             headers: { Authorization: `Bearer ${token}` }
           });
           userDataResult = perfilRes.data;
           setUserData(userDataResult);
-        } catch (e) { console.error(e); }
+        } catch (e) {console.error(e);}
 
         const endpoints = [
-          'http://localhost:5000/api/productor/perfil',
-          'http://localhost:5000/api/usuarios/mi-perfil',
-          'http://localhost:5000/api/auth/me'
-        ];
+        'http://localhost:5000/api/productor/perfil',
+        'http://localhost:5000/api/usuarios/mi-perfil',
+        'http://localhost:5000/api/auth/me'];
+
 
         for (const ep of endpoints) {
           try {
@@ -126,10 +155,10 @@ const MisCosechasPage = () => {
 
         let tieneGPS = false;
         if (perfil) {
-          tieneGPS = (perfil.latitud != null && perfil.longitud != null && perfil.latitud !== 0 && perfil.longitud !== 0) ||
-                     (perfil.ubicacion_gps?.lat != null && perfil.ubicacion_gps?.lng != null) ||
-                     (perfil.lat != null && perfil.lng != null) ||
-                     (perfil.wkt != null && perfil.wkt !== '');
+          tieneGPS = perfil.latitud != null && perfil.longitud != null && perfil.latitud !== 0 && perfil.longitud !== 0 ||
+          perfil.ubicacion_gps?.lat != null && perfil.ubicacion_gps?.lng != null ||
+          perfil.lat != null && perfil.lng != null ||
+          perfil.wkt != null && perfil.wkt !== '';
         }
 
         if (!tieneGPS) {
@@ -138,7 +167,7 @@ const MisCosechasPage = () => {
         }
 
         if (!tieneGPS && userDataResult?.perfil_productor?.ubicacion_gps) {
-            tieneGPS = true;
+          tieneGPS = true;
         }
 
         setTieneUbicacion(tieneGPS);
@@ -159,8 +188,8 @@ const MisCosechasPage = () => {
       const res = await axios.get('http://localhost:5000/api/cosechas/mi-catalogo', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
-      const formatted = res.data.map(item => ({
+
+      const formatted = res.data.map((item) => ({
         id: item.id,
         nombre: item.nombre_producto,
         categoria: item.categoria,
@@ -171,11 +200,11 @@ const MisCosechasPage = () => {
         es_preventa: item.es_preventa,
         fecha_disponibilidad: item.fecha_disponibilidad?.split('T')?.[0] || item.fecha_disponibilidad,
         foto_url: item.foto_url,
-        estado: item.es_preventa 
-          ? 'Preventa' 
-          : (Number(item.cantidad_disponible) <= 0 
-            ? 'Agotada' 
-            : (item.estado_publicacion === 'Pausado' || item.estado_publicacion === 'Inactivo' ? 'Inactivas' : 'Activas'))
+        estado: item.es_preventa ?
+        'Preventa' :
+        Number(item.cantidad_disponible) <= 0 ?
+        'Agotada' :
+        item.estado_publicacion === 'Pausado' || item.estado_publicacion === 'Inactivo' ? 'Inactivas' : 'Activas'
       }));
       setProductos(formatted);
     } catch (error) {
@@ -187,9 +216,9 @@ const MisCosechasPage = () => {
   };
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+      setErrors((prev) => ({ ...prev, [field]: '' }));
     }
   };
 
@@ -213,15 +242,15 @@ const MisCosechasPage = () => {
     const nombre = formData.nombre_producto?.trim() || '';
     if (nombre.length < 3) err.nombre_producto = 'El nombre debe tener al menos 3 caracteres';
     if (nombre.toLowerCase() === 'sin comentarios' || nombre.toLowerCase() === 'sin nombre') err.nombre_producto = 'Por favor, ingresá un nombre válido y descriptivo';
-    
+
     if (!formData.categoria) err.categoria = 'Selecciona una categoría';
-    
+
     const desc = formData.descripcion?.trim() || '';
     if (desc.length < 15) err.descripcion = 'La descripción debe tener al menos 15 caracteres';
     if (!formData.precio_unitario || Number(formData.precio_unitario) <= 0) err.precio_unitario = 'El precio debe ser mayor a 0';
     if (!formData.cantidad_disponible || Number(formData.cantidad_disponible) <= 0) err.cantidad_disponible = 'El stock debe ser mayor a 0';
     if (!formData.unidad_medida) err.unidad_medida = 'Selecciona una unidad';
-    
+
     if (!formData.fecha_disponibilidad) {
       err.fecha_disponibilidad = 'Selecciona la fecha de entrega';
     } else {
@@ -273,17 +302,17 @@ const MisCosechasPage = () => {
 
       if (editingId) {
         await axios.put(`http://localhost:5000/api/cosechas/${editingId}`, formPayload, {
-          headers: { 
+          headers: {
             'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${token}` 
+            Authorization: `Bearer ${token}`
           }
         });
         toast.success('Cosecha actualizada con éxito');
       } else {
         await axios.post('http://localhost:5000/api/cosechas', formPayload, {
-          headers: { 
+          headers: {
             'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${token}` 
+            Authorization: `Bearer ${token}`
           }
         });
         toast.success('Cosecha publicada con éxito');
@@ -322,7 +351,7 @@ const MisCosechasPage = () => {
       provincia: 'Andrés Ibáñez',
       municipio: 'Santa Cruz de la Sierra'
     });
-    setPreview(prod.foto_url ? `http://localhost:5000${prod.foto_url}` : null);
+    setPreview(prod.foto_url || null);
     setFoto(null);
     setErrors({});
     setIsModalOpen(true);
@@ -362,23 +391,30 @@ const MisCosechasPage = () => {
     setErrors({});
   };
 
-  // Autocomplete & abasto comparison calculations
-  const matchAbasto = MOCK_ABASTO_PRICES[formData.nombre_producto] || null;
-  const abastoDiff = matchAbasto && formData.precio_unitario 
-    ? ((Number(formData.precio_unitario) - matchAbasto) / matchAbasto) * 100 
-    : null;
+  const getPreviewSrc = (previewUrl) => {
+    if (!previewUrl) return null;
+    if (previewUrl.startsWith('data:') || previewUrl.startsWith('http')) {
+      return previewUrl;
+    }
+    return `http://localhost:5000${previewUrl}`;
+  };
+
+  const matchAbasto = preciosAbasto[formData.nombre_producto] || null;
+  const abastoDiff = matchAbasto && formData.precio_unitario ?
+  (Number(formData.precio_unitario) - matchAbasto) / matchAbasto * 100 :
+  null;
 
   // Tabs filtering
   const getTabCounts = (tab) => {
     if (tab === 'Todas') return productos.length;
-    if (tab === 'Activas') return productos.filter(p => p.estado === 'Activas' || p.estado === 'Activo').length;
-    if (tab === 'Preventas') return productos.filter(p => p.es_preventa).length;
-    if (tab === 'Agotadas') return productos.filter(p => p.estado === 'Agotada' || p.estado === 'Agotado').length;
-    if (tab === 'Inactivas') return productos.filter(p => p.estado === 'Inactivas' || p.estado === 'Inactivo').length;
+    if (tab === 'Activas') return productos.filter((p) => p.estado === 'Activas' || p.estado === 'Activo').length;
+    if (tab === 'Preventas') return productos.filter((p) => p.es_preventa).length;
+    if (tab === 'Agotadas') return productos.filter((p) => p.estado === 'Agotada' || p.estado === 'Agotado').length;
+    if (tab === 'Inactivas') return productos.filter((p) => p.estado === 'Inactivas' || p.estado === 'Inactivo').length;
     return 0;
   };
 
-  const filteredProductos = productos.filter(p => {
+  const filteredProductos = productos.filter((p) => {
     const matchesSearch = p.nombre.toLowerCase().includes(searchQuery.toLowerCase());
     if (activeTab === 'Todas') return matchesSearch;
     if (activeTab === 'Activas') return matchesSearch && (p.estado === 'Activas' || p.estado === 'Activo');
@@ -394,29 +430,29 @@ const MisCosechasPage = () => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold border border-emerald-100">
-            🌱 Catálogo AgroDirecto
+            <Star size={16} className="inline-block mr-1" /> Catálogo AgroDirecto
           </span>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mt-2">Mis Cosechas</h1>
           <p className="text-sm text-slate-400 mt-1">Gestioná tu inventario y habilitá preventas para entregas futuras</p>
         </div>
         
-        {userData?.estado === 'VERIFICADO' ? (
-          <button 
-            onClick={openCreateModal}
-            className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md transition-all hover:-translate-y-0.5"
-          >
+        {userData?.estado === 'VERIFICADO' ?
+        <button
+          onClick={openCreateModal}
+          className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md transition-all hover:-translate-y-0.5">
+          
             <Plus className="w-5 h-5" />
             Nueva Cosecha
-          </button>
-        ) : (
-          <span className="badge bg-amber-50 text-amber-700 border-amber-200 py-2.5 px-4 font-bold text-xs">
+          </button> :
+
+        <span className="badge bg-amber-50 text-amber-700 border-amber-200 py-2.5 px-4 font-bold text-xs">
             ⏳ Verificación requerida para publicar
           </span>
-        )}
+        }
       </div>
 
-      {userData?.estado !== 'VERIFICADO' && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-start gap-3 mt-6">
+      {userData?.estado !== 'VERIFICADO' &&
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-start gap-3 mt-6">
           <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
           <div className="flex-1">
             <h4 className="text-sm font-bold text-amber-900">Tu cuenta está pendiente de verificación.</h4>
@@ -426,10 +462,10 @@ const MisCosechasPage = () => {
             Ver mi perfil
           </button>
         </div>
-      )}
+      }
 
-      {tieneUbicacion === false && (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 flex items-center justify-between gap-4 mt-6">
+      {tieneUbicacion === false &&
+      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 flex items-center justify-between gap-4 mt-6">
           <div className="flex items-start gap-3">
             <MapPin className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
             <div className="flex-1">
@@ -441,13 +477,13 @@ const MisCosechasPage = () => {
             Ir a Mi Finca →
           </button>
         </div>
-      )}
+      }
 
       {/* Tabs & Search */}
       <div className="card-elevated p-5 flex flex-col md:flex-row items-center justify-between gap-5">
         {/* Tabs */}
         <div className="flex flex-wrap gap-2 w-full md:w-auto">
-          {['Todas', 'Activas', 'Preventas', 'Agotadas', 'Inactivas'].map(tab => {
+          {['Todas', 'Activas', 'Preventas', 'Agotadas', 'Inactivas'].map((tab) => {
             const isActive = activeTab === tab;
             const count = getTabCounts(tab);
             return (
@@ -455,19 +491,19 @@ const MisCosechasPage = () => {
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-                  isActive 
-                    ? 'bg-emerald-600 text-white shadow-md' 
-                    : 'bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-700'
-                }`}
-              >
+                isActive ?
+                'bg-emerald-600 text-white shadow-md' :
+                'bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`
+                }>
+                
                 <span>{tab}</span>
                 <span className={`px-2 py-0.5 rounded-full text-[10px] ${
-                  isActive ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'
-                }`}>
+                isActive ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'}`
+                }>
                   {count}
                 </span>
-              </button>
-            );
+              </button>);
+
           })}
         </div>
 
@@ -479,74 +515,84 @@ const MisCosechasPage = () => {
             placeholder="Buscar cosecha..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 rounded-xl text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 border border-slate-200/40 transition-all"
-          />
+            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 rounded-xl text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 border border-slate-200/40 transition-all" />
+          
         </div>
       </div>
 
       {/* Cosechas Grid */}
-      {loading ? (
-        <div className="py-24 text-center">
+      {loading ?
+      <div className="py-24 text-center">
           <Loader2 className="w-10 h-10 animate-spin text-emerald-600 mx-auto mb-4" />
           <p className="text-slate-500 font-bold text-sm">Cargando cosechas...</p>
-        </div>
-      ) : filteredProductos.length === 0 ? (
-        <div className="bg-white rounded-3xl border border-slate-200/60 p-16 text-center max-w-lg mx-auto shadow-sm">
+        </div> :
+      filteredProductos.length === 0 ?
+      <div className="bg-white rounded-3xl border border-slate-200/60 p-16 text-center max-w-lg mx-auto shadow-sm">
           <Sprout className="w-12 h-12 text-slate-300 mx-auto mb-4" />
           <h3 className="text-lg font-black text-slate-800">No hay cosechas</h3>
           <p className="text-xs text-slate-400 mt-2 font-semibold">
             No tenés cosechas en esta pestaña que coincidan con la búsqueda.
           </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-          {filteredProductos.map((prod) => (
-            <div 
-              key={prod.id} 
-              className="bg-white rounded-3xl shadow-sm border border-slate-200/60 overflow-hidden flex flex-col group hover:-translate-y-1.5 hover:shadow-xl hover:shadow-emerald-900/5 transition-all duration-300"
-            >
+        </div> :
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          {filteredProductos.map((prod) =>
+        <div
+          key={prod.id}
+          className="bg-white rounded-3xl shadow-sm border border-slate-200/60 overflow-hidden flex flex-col group hover:-translate-y-1.5 hover:shadow-xl hover:shadow-emerald-900/5 transition-all duration-300">
+          
               {/* Product Photo */}
               <div className="h-44 relative bg-slate-50 overflow-hidden">
-                {prod.foto_url ? (
-                  <img src={`http://localhost:5000${prod.foto_url}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={prod.nombre} />
-                ) : (
+                {console.log("Cargando imagen en mis cosechas:", prod.foto_url)}
+                {prod.foto_url ?
+                  <>
+                    <img 
+                      src={getImageUrl(prod.foto_url)}
+                      onError={handleImageError}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 relative z-10" 
+                      alt={prod.nombre} 
+                    />
+                    <div className="w-full h-full bg-gradient-to-br from-emerald-50 to-teal-50 hidden items-center justify-center absolute inset-0 z-0">
+                      <Sprout className="w-12 h-12 text-emerald-200" />
+                    </div>
+                  </> :
                   <div className="w-full h-full bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center">
                     <Sprout className="w-12 h-12 text-emerald-200" />
                   </div>
-                )}
+                }
                 {/* State Badge top-right */}
                 <div className="absolute top-3 right-3">
                   {(() => {
-                    const diasFaltantes = prod.fecha_disponibilidad ? Math.ceil((new Date(prod.fecha_disponibilidad) - new Date()) / (1000 * 60 * 60 * 24)) : 0;
-                    if (prod.es_preventa && diasFaltantes > 0) {
-                      return (
-                        <div className="flex items-center gap-1 bg-white/90 backdrop-blur px-2 py-1 rounded-full shadow-sm">
+                const diasFaltantes = prod.fecha_disponibilidad ? Math.ceil((new Date(prod.fecha_disponibilidad) - new Date()) / (1000 * 60 * 60 * 24)) : 0;
+                if (prod.es_preventa && diasFaltantes > 0) {
+                  return (
+                    <div className="flex items-center gap-1 bg-white/90 backdrop-blur px-2 py-1 rounded-full shadow-sm">
                           <span className="bg-blue-50 text-blue-700 border border-blue-200 rounded-full px-3 py-0.5 text-[10px] font-semibold">
                             Preventa
                           </span>
                           <span className="text-[10px] text-slate-500 font-bold px-1">
                             Disponible en {diasFaltantes} días
                           </span>
-                        </div>
-                      );
-                    }
-                    if (prod.es_preventa && diasFaltantes <= 0) {
-                      return (
-                        <span className="badge bg-emerald-50 text-emerald-700 border-emerald-200">
+                        </div>);
+
+                }
+                if (prod.es_preventa && diasFaltantes <= 0) {
+                  return (
+                    <span className="badge bg-emerald-50 text-emerald-700 border-emerald-200">
                           Activa (Disponible hoy)
-                        </span>
-                      );
-                    }
-                    return (
-                      <span className={`badge ${
-                        prod.estado === 'Agotada' 
-                          ? 'bg-rose-50 text-rose-700 border-rose-200' 
-                          : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                      }`}>
+                        </span>);
+
+                }
+                return (
+                  <span className={`badge ${
+                  prod.estado === 'Agotada' ?
+                  'bg-rose-50 text-rose-700 border-rose-200' :
+                  'bg-emerald-50 text-emerald-700 border-emerald-200'}`
+                  }>
                         {prod.estado === 'Activas' ? 'Activa' : prod.estado}
-                      </span>
-                    );
-                  })()}
+                      </span>);
+
+              })()}
                 </div>
               </div>
 
@@ -557,12 +603,12 @@ const MisCosechasPage = () => {
                   <h3 className="text-base font-black text-slate-800 tracking-tight mt-1 line-clamp-1">{prod.nombre}</h3>
                   <p className="text-xs text-slate-400 line-clamp-2 mt-2 leading-relaxed font-semibold">{prod.descripcion}</p>
                   
-                  {prod.es_preventa && (
-                    <div className="mt-3 inline-flex items-center gap-1 bg-blue-50 text-blue-800 px-2.5 py-1 rounded-lg text-[10px] font-bold">
+                  {prod.es_preventa &&
+              <div className="mt-3 inline-flex items-center gap-1 bg-blue-50 text-blue-800 px-2.5 py-1 rounded-lg text-[10px] font-bold">
                       <Calendar className="w-3.5 h-3.5" />
                       Disponible: {prod.fecha_disponibilidad}
                     </div>
-                  )}
+              }
                 </div>
 
                 <div className="mt-6 pt-4 border-t border-slate-100">
@@ -576,36 +622,63 @@ const MisCosechasPage = () => {
                     </span>
                   </div>
 
+                  {/* Comparativa Abasto */}
+                  {(() => {
+                const matchName = Object.keys(preciosAbasto).find((name) => prod.nombre.toLowerCase().includes(name.toLowerCase().substring(0, 5)));
+                const precioAbasto = matchName ? preciosAbasto[matchName] : null;
+                if (precioAbasto) {
+                  const diffPct = (prod.precio - precioAbasto) / precioAbasto * 100;
+                  return (
+                    <div className="mb-4">
+                          <div className="flex justify-between text-[10px] font-bold mb-1">
+                            <span className="text-slate-500">Tu precio: Bs. {prod.precio.toFixed(2)}</span>
+                            <span className="text-blue-600">Abasto: Bs. {precioAbasto.toFixed(2)}</span>
+                          </div>
+                          <div className="w-full bg-slate-100 rounded-full h-1.5 mb-2 overflow-hidden flex">
+                            <div className={`h-full ${diffPct > 0 ? 'bg-red-400' : 'bg-green-400'}`} style={{ width: '50%' }}></div>
+                            <div className={`h-full ${diffPct <= 0 ? 'bg-red-400' : 'bg-green-400'}`} style={{ width: '50%' }}></div>
+                          </div>
+                          {diffPct < -10 &&
+                      <div className="bg-yellow-50 text-yellow-800 border border-yellow-200 p-2 rounded-lg text-[10px] font-bold">
+                              <Star size={16} className="inline-block mr-1" /> Considera subir tu precio — estás vendiendo {Math.abs(diffPct).toFixed(0)}% bajo el mercado
+                            </div>
+                      }
+                        </div>);
+
+                }
+                return null;
+              })()}
+
                   {/* 3 action buttons: Editar (outline azul) | Ver pedidos | Eliminar (outline rojo) */}
                   <div className="flex items-center gap-2">
-                    <button 
-                      onClick={() => openEditModal(prod)}
-                      className="flex-1 py-2 border border-blue-200 text-blue-600 hover:bg-blue-50 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
-                    >
+                    <button
+                  onClick={() => openEditModal(prod)}
+                  className="flex-1 py-2 border border-blue-200 text-blue-600 hover:bg-blue-50 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5">
+                  
                       <Edit2 className="w-3.5 h-3.5" />
                       Editar
                     </button>
-                    <button 
-                      onClick={() => navigate('/dashboard/productor/pedidos')}
-                      className="py-2 px-3 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl text-xs font-bold transition-all"
-                      title="Ver pedidos asociados"
-                    >
+                    <button
+                  onClick={() => navigate('/dashboard/productor/pedidos')}
+                  className="py-2 px-3 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl text-xs font-bold transition-all"
+                  title="Ver pedidos asociados">
+                  
                       Pedidos
                     </button>
-                    <button 
-                      onClick={() => handleDelete(prod.id)}
-                      className="py-2 px-3 border border-rose-200 text-rose-600 hover:bg-rose-50 rounded-xl text-xs font-bold transition-all"
-                      title="Eliminar cosecha"
-                    >
+                    <button
+                  onClick={() => handleDelete(prod.id)}
+                  className="py-2 px-3 border border-rose-200 text-rose-600 hover:bg-rose-50 rounded-xl text-xs font-bold transition-all"
+                  title="Eliminar cosecha">
+                  
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
               </div>
             </div>
-          ))}
+        )}
         </div>
-      )}
+      }
 
       {/* MODAL CREAR/EDITAR COSECHA */}
       <FocusModal
@@ -615,32 +688,32 @@ const MisCosechasPage = () => {
         subtitle={editingId ? 'Actualizá los datos de tu producción' : 'Completá los datos para publicar tu producto en el marketplace'}
         icon={Sprout}
         footer={
-          <div className="flex items-center gap-3 justify-end w-full">
+        <div className="flex items-center gap-3 justify-end w-full">
             <button
-              onClick={() => setIsModalOpen(false)}
-              className="px-6 py-2.5 border border-slate-200 hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-600"
-            >
+            onClick={() => setIsModalOpen(false)}
+            className="px-6 py-2.5 border border-slate-200 hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-600">
+            
               Cancelar
             </button>
             <button
-              onClick={handleSubmit}
-              disabled={isSubmitting || tieneUbicacion === false}
-              className={`px-6 py-2.5 rounded-xl text-xs font-bold shadow-md shadow-emerald-600/10 flex items-center gap-1.5 transition-all ${
-                tieneUbicacion === false 
-                  ? "opacity-50 cursor-not-allowed bg-slate-300 text-slate-500" 
-                  : "bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white"
-              }`}
-            >
+            onClick={handleSubmit}
+            disabled={isSubmitting || tieneUbicacion === false}
+            className={`px-6 py-2.5 rounded-xl text-xs font-bold shadow-md shadow-emerald-600/10 flex items-center gap-1.5 transition-all ${
+            tieneUbicacion === false ?
+            "opacity-50 cursor-not-allowed bg-slate-300 text-slate-500" :
+            "bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white"}`
+            }>
+            
               {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-              {isSubmitting ? 'Publicando...' : (editingId ? 'Guardar cambios' : 'Publicar Cosecha')}
+              {isSubmitting ? 'Publicando...' : editingId ? 'Guardar cambios' : 'Publicar Cosecha'}
             </button>
           </div>
-        }
-      >
+        }>
+        
         <form onSubmit={handleSubmit} className="space-y-6">
           
-          {tieneUbicacion === false && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 flex items-center gap-2">
+          {tieneUbicacion === false &&
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
               <span className="text-sm text-amber-700">
                 Registrá la ubicación de tu finca para publicar.
@@ -649,14 +722,14 @@ const MisCosechasPage = () => {
                 </button>
               </span>
             </div>
-          )}
+          }
           
-          {errorFormulario && (
-            <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 flex items-start gap-2 mb-4">
+          {errorFormulario &&
+          <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 flex items-start gap-2 mb-4">
               <AlertCircle className="w-4 h-4 text-rose-600 mt-0.5 shrink-0" />
               <p className="text-sm text-rose-700">{errorFormulario}</p>
             </div>
-          )}
+          }
 
           {/* SECCIÓN 1: Información Básica */}
           <div className="space-y-4">
@@ -666,42 +739,50 @@ const MisCosechasPage = () => {
             <div>
               <label className="block text-xs font-bold text-slate-600 mb-2">Foto del producto</label>
               <div className="flex items-center gap-4">
-                <div 
+                <div
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => {
                     e.preventDefault();
                     handleFileUpload(e.dataTransfer.files[0]);
                   }}
-                  className="flex-1 border-2 border-dashed border-slate-300 hover:border-emerald-500 bg-slate-50 hover:bg-slate-50/50 rounded-2xl p-5 flex flex-col items-center justify-center cursor-pointer transition-colors"
-                >
+                  className="flex-1 border-2 border-dashed border-slate-300 hover:border-emerald-500 bg-slate-50 hover:bg-slate-50/50 rounded-2xl p-5 flex flex-col items-center justify-center cursor-pointer transition-colors">
+                  
                   <input
                     type="file"
                     id="modal-foto"
                     accept="image/*"
                     onChange={(e) => handleFileUpload(e.target.files[0])}
-                    className="hidden"
-                  />
+                    className="hidden" />
+                  
                   <label htmlFor="modal-foto" className="cursor-pointer text-center">
                     <Upload className="w-7 h-7 text-slate-400 mx-auto mb-1.5" />
                     <span className="text-xs font-bold text-emerald-600 block">Subir foto de la cosecha</span>
                     <span className="text-[10px] text-slate-400">Arrastrá una imagen aquí</span>
                   </label>
                 </div>
-                {preview && (
-                  <div className="relative w-24 h-24 rounded-2xl overflow-hidden border border-slate-200 shrink-0">
-                    <img src={preview} className="w-full h-full object-cover" alt="Preview" />
-                    <button 
-                      type="button"
-                      onClick={() => {
-                        setFoto(null);
-                        setPreview(null);
+                {preview &&
+                <div className="relative w-24 h-24 rounded-2xl overflow-hidden border border-slate-200 shrink-0">
+                    <img 
+                      src={getPreviewSrc(preview)} 
+                      onError={(e) => {
+                        e.target.src = 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=400';
+                        e.target.onerror = null;
                       }}
-                      className="absolute top-1, right-1 bg-black/60 text-white p-0.5 rounded-full hover:bg-black"
-                    >
+                      className="w-full h-full object-cover" 
+                      alt="Preview" 
+                    />
+                    <button
+                    type="button"
+                    onClick={() => {
+                      setFoto(null);
+                      setPreview(null);
+                    }}
+                    className="absolute top-1, right-1 bg-black/60 text-white p-0.5 rounded-full hover:bg-black">
+                    
                       <X className="w-3 h-3" />
                     </button>
                   </div>
-                )}
+                }
               </div>
             </div>
 
@@ -715,9 +796,9 @@ const MisCosechasPage = () => {
                 onChange={(e) => handleInputChange('nombre_producto', e.target.value)}
                 placeholder="Ej. Tomate perita, Papa huaycha"
                 className={`w-full rounded-xl bg-gray-50 border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:bg-white transition-all ${
-                  errors.nombre_producto ? 'border-rose-300 ring-2 ring-rose-100' : 'border-gray-200'
-                }`}
-              />
+                errors.nombre_producto ? 'border-rose-300 ring-2 ring-rose-100' : 'border-gray-200'}`
+                } />
+              
               <datalist id="productos-comunes">
                 <option value="Tomate" />
                 <option value="Papa" />
@@ -738,16 +819,16 @@ const MisCosechasPage = () => {
                 value={formData.categoria}
                 onChange={(e) => handleInputChange('categoria', e.target.value)}
                 className={`w-full rounded-xl bg-gray-50 border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:bg-white transition-all ${
-                  errors.categoria ? 'border-rose-300 ring-2 ring-rose-100' : 'border-gray-200'
-                }`}
-              >
+                errors.categoria ? 'border-rose-300 ring-2 ring-rose-100' : 'border-gray-200'}`
+                }>
+                
                 <option value="">Seleccioná una categoría</option>
-                <option value="Verduras">🥬 Verduras</option>
-                <option value="Frutas">🍎 Frutas</option>
-                <option value="Granos">🌾 Granos</option>
-                <option value="Tubérculos">🥔 Tubérculos</option>
-                <option value="Carnes">🥩 Carnes</option>
-                <option value="Lácteos">🥛 Lácteos</option>
+                <option value="Verduras">Verduras</option>
+                <option value="Frutas">Frutas</option>
+                <option value="Granos">Granos</option>
+                <option value="Tubérculos">Tubérculos</option>
+                <option value="Carnes">Carnes</option>
+                <option value="Lácteos">Lácteos</option>
               </select>
               {errors.categoria && <span className="text-rose-600 text-xs font-semibold mt-1 block">{errors.categoria}</span>}
             </div>
@@ -764,9 +845,9 @@ const MisCosechasPage = () => {
                 placeholder="Detalla la calidad, tamaño, variedad o recomendaciones de la cosecha..."
                 rows="3"
                 className={`w-full rounded-xl bg-gray-50 border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:bg-white transition-all resize-none ${
-                  errors.descripcion ? 'border-rose-300 ring-2 ring-rose-100' : 'border-gray-200'
-                }`}
-              />
+                errors.descripcion ? 'border-rose-300 ring-2 ring-rose-100' : 'border-gray-200'}`
+                } />
+              
               {errors.descripcion && <span className="text-rose-600 text-xs font-semibold mt-1 block">{errors.descripcion}</span>}
             </div>
           </div>
@@ -785,9 +866,9 @@ const MisCosechasPage = () => {
                   onChange={(e) => handleInputChange('precio_unitario', e.target.value)}
                   placeholder="25.00"
                   className={`w-full rounded-xl bg-gray-50 border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:bg-white transition-all ${
-                    errors.precio_unitario ? 'border-rose-300 ring-2 ring-rose-100' : 'border-gray-200'
-                  }`}
-                />
+                  errors.precio_unitario ? 'border-rose-300 ring-2 ring-rose-100' : 'border-gray-200'}`
+                  } />
+                
                 {errors.precio_unitario && <span className="text-rose-600 text-xs font-semibold mt-1 block">{errors.precio_unitario}</span>}
               </div>
 
@@ -799,15 +880,15 @@ const MisCosechasPage = () => {
                   onChange={(e) => handleInputChange('cantidad_disponible', e.target.value)}
                   placeholder="50"
                   className={`w-full rounded-xl bg-gray-50 border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:bg-white transition-all ${
-                    errors.cantidad_disponible ? 'border-rose-300 ring-2 ring-rose-100' : 'border-gray-200'
-                  }`}
-                />
+                  errors.cantidad_disponible ? 'border-rose-300 ring-2 ring-rose-100' : 'border-gray-200'}`
+                  } />
+                
                 {errors.cantidad_disponible && <span className="text-rose-600 text-xs font-semibold mt-1 block">{errors.cantidad_disponible}</span>}
-                {formData.cantidad_disponible && Number(formData.cantidad_disponible) < 10 && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-amber-600 mt-1.5 animate-pulse">
-                    ⚠️ Últimas unidades disponibles
+                {formData.cantidad_disponible && Number(formData.cantidad_disponible) < 10 &&
+                <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-amber-600 mt-1.5 animate-pulse">
+                    <Star size={16} className="inline-block mr-1" /><Star size={16} className="inline-block mr-1" /> Últimas unidades disponibles
                   </span>
-                )}
+                }
               </div>
             </div>
 
@@ -819,9 +900,9 @@ const MisCosechasPage = () => {
                   value={formData.unidad_medida}
                   onChange={(e) => handleInputChange('unidad_medida', e.target.value)}
                   className={`w-full rounded-xl bg-gray-50 border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:bg-white transition-all ${
-                    errors.unidad_medida ? 'border-rose-300 ring-2 ring-rose-100' : 'border-gray-200'
-                  }`}
-                >
+                  errors.unidad_medida ? 'border-rose-300 ring-2 ring-rose-100' : 'border-gray-200'}`
+                  }>
+                  
                   <option value="">Seleccioná una unidad</option>
                   <option value="Quintal">Quintal</option>
                   <option value="Arroba">Arroba</option>
@@ -842,16 +923,16 @@ const MisCosechasPage = () => {
                   min={new Date().toISOString().split('T')[0]}
                   onChange={(e) => handleInputChange('fecha_disponibilidad', e.target.value)}
                   className={`w-full rounded-xl bg-gray-50 border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:bg-white transition-all ${
-                    errors.fecha_disponibilidad ? 'border-rose-300 ring-2 ring-rose-100' : 'border-gray-200'
-                  }`}
-                />
+                  errors.fecha_disponibilidad ? 'border-rose-300 ring-2 ring-rose-100' : 'border-gray-200'}`
+                  } />
+                
                 {errors.fecha_disponibilidad && <span className="text-rose-600 text-xs font-semibold mt-1 block">{errors.fecha_disponibilidad}</span>}
               </div>
             </div>
 
             {/* WIDGET COMPARADOR */}
-            {matchAbasto && (
-              <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3.5 flex items-start gap-2 text-emerald-900 mt-4">
+            {matchAbasto &&
+            <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3.5 flex items-start gap-2 text-emerald-900 mt-4">
                 <Info className="w-4.5 h-4.5 text-emerald-600 shrink-0 mt-0.5" />
                 <div className="text-xs font-semibold leading-normal">
                   Precio Abasto hoy:{' '}
@@ -863,7 +944,7 @@ const MisCosechasPage = () => {
                   de la media del mercado.
                 </div>
               </div>
-            )}
+            }
           </div>
 
           {/* SECCIÓN 3: Origen */}
@@ -880,11 +961,11 @@ const MisCosechasPage = () => {
                     handleInputChange('municipio', ''); // Reset municipio
                   }}
                   className={`w-full rounded-xl bg-gray-50 border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:bg-white transition-all ${
-                    errors.provincia ? 'border-rose-300 ring-2 ring-rose-100' : 'border-gray-200'
-                  }`}
-                >
+                  errors.provincia ? 'border-rose-300 ring-2 ring-rose-100' : 'border-gray-200'}`
+                  }>
+                  
                   <option value="">Seleccionar...</option>
-                  {SANTA_CRUZ_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
+                  {SANTA_CRUZ_PROVINCES.map((p) => <option key={p} value={p}>{p}</option>)}
                 </select>
                 {errors.provincia && <span className="text-rose-600 text-xs font-semibold mt-1 block">{errors.provincia}</span>}
               </div>
@@ -896,13 +977,13 @@ const MisCosechasPage = () => {
                   disabled={!formData.provincia}
                   onChange={(e) => handleInputChange('municipio', e.target.value)}
                   className={`w-full px-4 py-2.5 bg-gray-50 border rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 ${
-                    errors.municipio ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'
-                  }`}
-                >
+                  errors.municipio ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-200'}`
+                  }>
+                  
                   <option value="">Seleccionar...</option>
-                  {(MOCK_MUNICIPIOS[formData.provincia] || ['Santa Cruz de la Sierra', 'Montero', 'Warnes', 'La Guardia']).map(m => (
-                    <option key={m} value={m}>{m}</option>
-                  ))}
+                  {(MOCK_MUNICIPIOS[formData.provincia] || ['Santa Cruz de la Sierra', 'Montero', 'Warnes', 'La Guardia']).map((m) =>
+                  <option key={m} value={m}>{m}</option>
+                  )}
                 </select>
                 {errors.municipio && <span className="text-rose-600 text-xs font-semibold mt-1 block">{errors.municipio}</span>}
               </div>
@@ -925,8 +1006,8 @@ const MisCosechasPage = () => {
           </div>
         </form>
       </FocusModal>
-    </PageShell>
-  );
+    </PageShell>);
+
 };
 
 export default MisCosechasPage;

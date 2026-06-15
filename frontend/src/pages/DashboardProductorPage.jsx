@@ -9,6 +9,7 @@ import axios from 'axios';
 import PageShell from '../components/ui/PageShell';
 import MetricCard from '../components/ui/MetricCard';
 import { useToast } from '../context/ToastContext';
+import { getImageUrl, handleImageError } from '../utils/imageUtils';
 
 const DashboardProductorPage = () => {
   const navigate = useNavigate();
@@ -126,6 +127,14 @@ const DashboardProductorPage = () => {
 
   const isPendingVerification = userData?.estado === 'PENDIENTE_VERIFICACION' || userData?.estado === 'PENDIENTE';
 
+  // --- LOGS AGREGADOS PARA DEPURACIÓN ---
+  console.log("--- RENDERING DASHBOARD PRODUCTOR ---");
+  console.log("1. Métricas calculadas desde el backend:", metricas);
+  console.log("2. Pedidos pendientes mapeados:", pedidos);
+  console.log("3. Productos recientes (catálogo):", productos);
+  console.log("4. (No hay gráficos de Recharts en este componente)");
+  // --------------------------------------
+
   const renderBadge = (estado) => {
     const styles = {
       Activo: 'bg-emerald-50 text-emerald-700 border-emerald-200',
@@ -216,7 +225,7 @@ const DashboardProductorPage = () => {
                 <div 
                   key={p.id}
                   className={`bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between ${
-                    p.urgency === 'HOY' ? 'border-l-4 border-l-rose-500' : 'border-l-4 border-l-amber-500'
+                    p.urgencia === 'HOY' ? 'border-l-4 border-l-rose-500' : 'border-l-4 border-l-amber-500'
                   }`}
                 >
                   <div>
@@ -226,7 +235,7 @@ const DashboardProductorPage = () => {
                     </p>
                     <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-400 mt-2 uppercase tracking-wide">
                       <Clock className="w-3 h-3" />
-                      {p.urgency === 'HOY' ? 'Responder hoy' : 'Esta semana'}
+                      {p.urgencia === 'HOY' ? 'Responder hoy' : 'Esta semana'}
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
@@ -272,10 +281,20 @@ const DashboardProductorPage = () => {
                 >
                   <div className="h-32 bg-slate-100 relative">
                     {prod.foto_url ? (
-                      <img src={`http://localhost:5000${prod.foto_url}`} className="w-full h-full object-cover" alt={prod.nombre} />
+                      <>
+                        <img 
+                          src={getImageUrl(prod.foto_url)} 
+                          className="w-full h-full object-cover z-10 relative" 
+                          alt={prod.nombre} 
+                          onError={handleImageError}
+                        />
+                        <div className="w-full h-full bg-gradient-to-br from-emerald-50 to-teal-50 hidden items-center justify-center absolute inset-0 z-0">
+                          <Sprout className="w-10 h-10 text-emerald-200" />
+                        </div>
+                      </>
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center">
-                        <Leaf className="w-10 h-10 text-emerald-200" />
+                        <Sprout className="w-10 h-10 text-emerald-200" />
                       </div>
                     )}
                     <div className="absolute top-2 right-2">{renderBadge(prod.estado)}</div>

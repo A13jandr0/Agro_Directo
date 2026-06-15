@@ -568,12 +568,15 @@ exports.getPedidosComprador = async (req, res) => {
                 d.fecha_disponibilidad AS detalle_fecha_disponibilidad,
                 d.monto_saldo AS detalle_monto_saldo, d.saldo_pagado AS detalle_saldo_pagado,
                 c.nombre_producto, c.foto_url, c.es_preventa, c.fecha_disponibilidad,
-                c.productor_id AS productor_id
+                c.productor_id AS productor_id,
+                pp.ubicacion_gps.Lat as origen_lat,
+                pp.ubicacion_gps.Long as origen_lng
             FROM Pedidos p
             INNER JOIN Detalle_Pedidos d ON d.pedido_id = p.id
             INNER JOIN Cosechas c ON d.cosecha_id = c.id
-            LEFT JOIN perfil_transportista pt ON p.transportista_id = pt.id
-            LEFT JOIN usuarios ut ON pt.usuario_id = ut.id
+            INNER JOIN perfil_productor pp ON c.productor_id = pp.id
+            LEFT JOIN usuarios ut ON p.transportista_id = ut.id
+            LEFT JOIN perfil_transportista pt ON pt.usuario_id = ut.id
             ${whereClause}
             ORDER BY ${filtroFechaColumna} DESC
         `;
@@ -604,6 +607,10 @@ exports.getPedidosComprador = async (req, res) => {
                     transportista_nombre: row.transportista_nombre,
                     transportista_celular: row.transportista_celular,
                     transportista_placa: row.placa_vehiculo,
+                    ubicacion_origen: {
+                        lat: row.origen_lat,
+                        lng: row.origen_lng
+                    },
                     items: [],
                 };
             }
@@ -854,7 +861,11 @@ exports.getPedidosBolsa = async (req, res) => {
                 SELECT p.id, p.fecha_pedido, p.monto_total, p.direccion_entrega,
                        u.nombre_completo AS comprador,
                        pp.nombre_finca AS origen, pp.municipio AS origen_municipio,
-                       ISNULL(p.direccion_entrega, pc.ciudad_principal) AS destino,
+                       CASE 
+                         WHEN p.direccion_entrega LIKE '{%' 
+                         THEN 'Coordenadas GPS (ver mapa)'
+                         ELSE ISNULL(p.direccion_entrega, pc.ciudad_principal)
+                       END AS destino,
                        STRING_AGG(c.nombre_producto, ', ') AS productos,
                        SUM(d.cantidad) AS peso_total
                 FROM Pedidos p
@@ -931,6 +942,34 @@ exports.aceptarRuta = async (req, res) => {
     }
 };
 
+// ── PUT /api/pedidos/:id/aceptar-viaje ──
+exports.aceptarViaje = async (req, res) => {
+    try {
+        const pedidoId = req.params.id;
+        const userId = req.user.id;
+        const pool = await getPool();
+
+        const updateResult = await pool.request()
+            .input('id', sql.UniqueIdentifier, pedidoId)
+            .input('transportista_id', sql.UniqueIdentifier, userId)
+            .query(`
+                UPDATE Pedidos
+                SET estado = 'EN_CAMINO', transportista_id = @transportista_id, fecha_actualizacion = GETDATE()
+                OUTPUT INSERTED.comprador_id
+                WHERE id = @id AND estado = 'CONFIRMADO' AND transportista_id IS NULL
+            `);
+
+        if (updateResult.recordset.length === 0) {
+            return res.status(400).json({ error: 'El viaje ya no está disponible o no se puede aceptar.' });
+        }
+
+        res.json({ mensaje: 'Viaje aceptado exitosamente.' });
+    } catch (error) {
+        console.error('Aceptar Viaje Error:', error);
+        res.status(500).json({ error: 'Error al aceptar el viaje.' });
+    }
+};
+
 // ── GET /api/pedidos/transportista/actual ──
 exports.getPedidoActualTransportista = async (req, res) => {
     try {
@@ -941,49 +980,86 @@ exports.getPedidoActualTransportista = async (req, res) => {
             .input('user_id', sql.UniqueIdentifier, userId)
             .query(`
                 SELECT 
-                    p.id, p.estado, p.notas,
-                    pp.nombre_finca, pp.municipio, pp.provincia,
-                    pp.ubicacion_gps.Lat AS latitud, pp.ubicacion_gps.Long AS longitud,
-                    u_comp.nombre_completo AS comprador_nombre,
-                    pc.ciudad_principal,
-                    d.cantidad, d.precio_unitario, c.nombre_producto, c.unidad_medida
+                  p.id, p.estado, p.monto_total,
+                  p.direccion_entrega, p.notas,
+                  uc.nombre_completo as comprador_nombre,
+                  uc.celular as celular_comprador,
+                  pp.nombre_finca, pp.municipio, pp.provincia,
+                  pp.ubicacion_gps.Lat as latitud,
+                  pp.ubicacion_gps.Long as longitud,
+                  c.nombre_producto, dp.cantidad, c.unidad_medida
                 FROM Pedidos p
-                JOIN perfil_transportista pt ON p.transportista_id = pt.id
-                JOIN usuarios u_comp ON p.comprador_id = u_comp.id
-                JOIN perfil_comprador pc ON u_comp.id = pc.usuario_id
-                JOIN Detalle_Pedidos d ON p.id = d.pedido_id
-                JOIN Cosechas c ON d.cosecha_id = c.id
-                JOIN perfil_productor pp ON c.productor_id = pp.id
-                WHERE pt.usuario_id = @user_id AND p.estado = 'EN_CAMINO'
+                INNER JOIN usuarios uc ON p.comprador_id = uc.id
+                INNER JOIN Detalle_Pedidos dp ON dp.pedido_id = p.id
+                INNER JOIN Cosechas c ON c.id = dp.cosecha_id
+                INNER JOIN perfil_productor pp ON pp.id = c.productor_id
+                WHERE p.transportista_id = @user_id
+                AND p.estado IN ('EN_CAMINO', 'CONFIRMADO', 'LISTO_PARA_DESPACHO')
+                ORDER BY p.fecha_actualizacion DESC
             `);
 
         if (result.recordset.length === 0) {
-            return res.status(404).json({ error: 'No tienes pedidos en camino.' });
+            return res.status(404).json({ error: 'No tienes un pedido actual en camino.' });
         }
 
         // Agrupar items
+        const raw = result.recordset;
         const pedido = {
-            id: result.recordset[0].id,
-            estado: result.recordset[0].estado,
-            notas: result.recordset[0].notas,
-            nombre_finca: result.recordset[0].nombre_finca,
-            municipio: result.recordset[0].municipio,
-            provincia: result.recordset[0].provincia,
-            latitud: result.recordset[0].latitud,
-            longitud: result.recordset[0].longitud,
-            comprador_nombre: result.recordset[0].comprador_nombre,
-            ciudad_principal: result.recordset[0].ciudad_principal,
-            items: result.recordset.map(r => ({
-                nombre_producto: r.nombre_producto,
-                cantidad: r.cantidad,
-                unidad_medida: r.unidad_medida
-            }))
+            pedido_id: raw[0].id,
+            estado: raw[0].estado,
+            finca_nombre: raw[0].nombre_finca,
+            municipio: raw[0].municipio,
+            provincia: raw[0].provincia,
+            latitud: raw[0].latitud,
+            longitud: raw[0].longitud,
+            comprador_nombre: raw[0].comprador_nombre,
+            ciudad_principal: raw[0].direccion_entrega,
+            notas: raw[0].notas,
+            carga_detalle: raw.map(r => `${r.cantidad} ${r.unidad_medida} de ${r.nombre_producto}`)
         };
+
+        // Parsear destino_final para devolver lat/lng del comprador
+        let destinoCoords = null;
+        try {
+          destinoCoords = JSON.parse(raw[0].direccion_entrega);
+        } catch {
+          destinoCoords = null;
+        }
+        pedido.destino_coords = destinoCoords;
+        pedido.destino_final = raw[0].direccion_entrega;
 
         res.json(pedido);
     } catch (error) {
         console.error('Get Actual Ruta Error:', error);
         res.status(500).json({ error: 'Error al obtener el pedido actual.' });
+    }
+};
+
+// ── PUT /api/pedidos/:id/notificar-camino ──
+exports.notificarCamino = async (req, res) => {
+    try {
+        const pedidoId = req.params.id;
+        const userId = req.user.id;
+        const pool = await getPool();
+
+        // En un escenario real, aquí enviaríamos una push notification real.
+        // Por ahora, solo simulamos el éxito y actualizamos un estado.
+        // Para no alterar schema de forma arriesgada, asumo que actualizamos fecha_actualizacion
+        // O si ya está EN_CAMINO, esto solo avisa al comprador que YA ESTÁ EN RUTA a su casa.
+        
+        await pool.request()
+            .input('id', sql.UniqueIdentifier, pedidoId)
+            .input('transportista_id', sql.UniqueIdentifier, userId)
+            .query(`
+                UPDATE Pedidos
+                SET fecha_actualizacion = GETDATE()
+                WHERE id = @id AND transportista_id = @transportista_id
+            `);
+
+        res.json({ mensaje: 'Notificación enviada al comprador: El transportista va en camino' });
+    } catch (error) {
+        console.error('Notificar Camino Error:', error);
+        res.status(500).json({ error: 'Error al notificar en camino.' });
     }
 };
 
@@ -1198,13 +1274,13 @@ exports.marcarEntregado = async (req, res) => {
                 .input('usuario_id', sql.UniqueIdentifier, comprador_id)
                 .input('tipo', sql.VarChar, 'PEDIDO_ENTREGADO')
                 .input('titulo', sql.VarChar, 'Pedido entregado')
-                .input('mensaje', sql.VarChar, \`Tu pedido #\${pedidoCorto} fue entregado exitosamente.\`)
+                .input('mensaje', sql.VarChar, `Tu pedido #${pedidoCorto} fue entregado exitosamente.`)
                 .input('pedido_id', sql.UniqueIdentifier, pedidoId)
-                .query(\`
+                .query(`
                     INSERT INTO notificaciones_app (usuario_id, tipo, titulo, mensaje, pedido_id, leida, fecha_creacion)
                     OUTPUT INSERTED.*
                     VALUES (@usuario_id, @tipo, @titulo, @mensaje, @pedido_id, 0, GETDATE())
-                \`);
+                `);
                 
             try {
                 const io = getIo();

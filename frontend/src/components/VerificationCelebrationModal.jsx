@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, Star } from 'lucide-react';
 
 const VerificationCelebrationModal = ({ open, onClose }) => {
   if (!open) return null;
@@ -11,19 +11,19 @@ const VerificationCelebrationModal = ({ open, onClose }) => {
         <div className="w-20 h-20 mx-auto mb-5 bg-emerald-50 rounded-full flex items-center justify-center">
           <CheckCircle2 className="w-12 h-12 text-emerald-500 animate-bounce" />
         </div>
-        <h2 className="text-2xl font-black text-slate-900 mb-2">🎉 ¡Tu cuenta fue verificada!</h2>
+        <h2 className="text-2xl font-black text-slate-900 mb-2"><Star size={16} className="inline-block mr-1" /> ¡Tu cuenta fue verificada!</h2>
         <p className="text-sm text-slate-500 font-medium mb-6">
           Ya podés usar todas las funcionalidades de AgroDirecto.
         </p>
         <button
           onClick={onClose}
-          className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl transition-colors shadow-lg shadow-emerald-600/20"
-        >
+          className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl transition-colors shadow-lg shadow-emerald-600/20">
+          
           ¡Empezar!
         </button>
       </div>
-    </div>
-  );
+    </div>);
+
 };
 
 export default VerificationCelebrationModal;
